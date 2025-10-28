@@ -1,1 +1,15 @@
-
+services:
+  - type: web
+    name: telegram-radio-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: 8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU
+        sync: false
+      - key: RENDER_SERVICE_NAME
+        fromService:
+          type: web
+          name: telegram-radio-bot
+          property: name
