@@ -22,9 +22,6 @@ BOT_TOKEN = os.environ.get("8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU")  # 
 MANAGER_CHAT_ID = os.environ.get("MANAGER_CHAT_ID")  # опционально: куда отправлять заявки (chat id)
 # Если MANAGER_CHAT_ID не задан, бот будет отправлять PDF только пользователю.
 
-if not BOT_TOKEN:
-    raise RuntimeError("Не задан BOT_TOKEN в переменных окружения")
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
