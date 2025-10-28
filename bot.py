@@ -1,487 +1,765 @@
+# bot.py
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-import sqlite3
-from datetime import datetime
+import datetime
+import random
+from io import BytesIO
 
-# Настройка логирования
+from telegram import (
+    Update, InlineKeyboardButton, InlineKeyboardMarkup,
+    ReplyKeyboardMarkup, KeyboardButton, InputFile
+)
+from telegram.ext import (
+    Application, CommandHandler, CallbackQueryHandler,
+    MessageHandler, filters, ContextTypes
+)
+# Для генерации простого PDF
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+
+# ---------- Настройки ----------
+BOT_TOKEN = os.environ.get("8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU")  # Установите в Render
+MANAGER_CHAT_ID = os.environ.get("MANAGER_CHAT_ID")  # опционально: куда отправлять заявки (chat id)
+# Если MANAGER_CHAT_ID не задан, бот будет отправлять PDF только пользователю.
+
+if not BOT_TOKEN:
+    raise RuntimeError("Не задан BOT_TOKEN в переменных окружения")
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Состояния разговора
-MAIN_MENU, CREATE_CAMPAIGN, RADIO_SELECTION, TIME_SLOTS, BRANDED_SECTIONS, CONTACT_INFO, CAMPAIGN_TEXT = range(7)
+# ---------- Исходные данные (настройте при необходимости) ----------
+stations = [
+    {"id": 1, "name": "Love Radio", "listeners": 3200, "price": 280, "emoji": "❤️"},
+    {"id": 2, "name": "Авторадио", "listeners": 2800, "price": 260, "emoji": "🚗"},
+    {"id": 3, "name": "Радио Дача", "listeners": 3500, "price": 240, "emoji": "🏡"},
+    {"id": 4, "name": "Радио Шансон", "listeners": 2600, "price": 250, "emoji": "🎵"},
+    {"id": 5, "name": "Ретро FM", "listeners": 2900, "price": 230, "emoji": "📻"},
+    {"id": 6, "name": "Юмор FM", "listeners": 2100, "price": 270, "emoji": "😊"}
+]
 
-# Токен бота
-TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
+time_slots = [
+    "06:00-07:00 🌅", "07:00-08:00 🚀", "08:00-09:00 📈",
+    "09:00-10:00 ☕", "10:00-11:00 📊", "11:00-12:00 ⏰",
+    "12:00-13:00 🍽️", "13:00-14:00 📋", "14:00-15:00 🔄",
+    "15:00-16:00 📝", "16:00-17:00 🏃", "17:00-18:00 🚀",
+    "18:00-19:00 📈", "19:00-20:00 🏠", "20:00-21:00 🌙"
+]
 
-# Инициализация базы данных
-def init_db():
-    conn = sqlite3.connect('campaigns.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS campaigns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            campaign_number TEXT,
-            radio_stations TEXT,
-            time_slots TEXT,
-            branded_section TEXT,
-            campaign_text TEXT,
-            contact_name TEXT,
-            company TEXT,
-            phone TEXT,
-            email TEXT,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+rubrics = [
+    {"key": "auto", "title": "АВТОРУБРИКИ", "delta": 0.20},
+    {"key": "realty", "title": "НЕДВИЖИМОСТЬ", "delta": 0.15},
+    {"key": "medical", "title": "МЕДИЦИНСКИЕ РУБРИКИ", "delta": 0.25},
+    {"key": "custom", "title": "ИНДИВИДУАЛЬНАЯ РУБРИКА", "delta": 0.30},
+]
 
-# Главное меню
+BASE_PRICE_PER_SEC = 4.0  # рублей за секунду (информационная)
+
+# ---------- Хранилище (в памяти) ----------
+# Структура: user_sessions[user_id] = {...}
+user_sessions = {}
+# Для истории заказов на сессии (можно хранить отдельно)
+orders_store = {}
+
+# ---------- Помощники ----------
+def format_station_line(s):
+    return f"{s['emoji']} {s['name']} — {s['listeners']} слушателей/день — {s['price']}₽/ролик"
+
+def calc_total_cost(session):
+    # Возвращает сумму в рублях (float)
+    selected_ids = session.get('selected_stations', [])
+    if not selected_ids:
+        return 0.0
+    selected_stations = [s for s in stations if s['id'] in selected_ids]
+
+    spots_per_day = session.get('spots_per_day', 5)
+    campaign_days = session.get('campaign_days', 30)
+    total = 0.0
+    spots_per_station = spots_per_day / max(1, len(selected_stations))
+
+    for st in selected_stations:
+        station_cost = st['price'] * spots_per_station * campaign_days
+        # premium slots multiplier
+        premium_slots = 0
+        for slot in session.get('selected_slots', []):
+            if '🌅' in slot or '🚀' in slot or '🌇' in slot:
+                premium_slots += 1
+        station_cost *= (1 + premium_slots * 0.05)
+        total += station_cost
+
+    # скидки за объем
+    total_spots = spots_per_day * campaign_days
+    discount = 0.0
+    if total_spots >= 300:
+        discount = 0.6
+    elif total_spots >= 200:
+        discount = 0.5
+    elif total_spots >= 100:
+        discount = 0.4
+    elif total_spots >= 50:
+        discount = 0.2
+
+    # бонус за multiple станций
+    station_bonus = 0.1 if len(selected_stations) > 1 else 0.0
+
+    # рубрики надбавка
+    rubric_key = session.get('selected_rubric')
+    rubric_delta = 0.0
+    for r in rubrics:
+        if r['key'] == rubric_key:
+            rubric_delta = r['delta']
+            break
+
+    final = total * (1 - discount - station_bonus)
+    final *= (1 + rubric_delta)
+    return final
+
+def generate_order_pdf(order_info: dict) -> BytesIO:
+    """Создаёт простой pdf-файл в памяти и возвращает BytesIO."""
+    bio = BytesIO()
+    p = canvas.Canvas(bio, pagesize=A4)
+    width, height = A4
+    x = 50
+    y = height - 50
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(x, y, "YA-RADIO — Предварительное предложение")
+    y -= 30
+
+    p.setFont("Helvetica", 11)
+    for key, value in [
+        ("Номер заявки", order_info.get("order_id")),
+        ("Клиент", order_info.get("client_name") or "-"),
+        ("Телефон", order_info.get("phone") or "-"),
+        ("Email", order_info.get("email") or "-"),
+        ("Компания", order_info.get("company") or "-"),
+        ("Станции", ", ".join(order_info.get("stations", []))),
+        ("Слоты", ", ".join(order_info.get("slots", []))),
+        ("Рубрика", order_info.get("rubric") or "-"),
+        ("Период (дни)", str(order_info.get("days"))),
+        ("Роликов/день", str(order_info.get("spots_per_day"))),
+        ("Итоговая стоимость (₽)", f"{order_info.get('total_cost'):.0f}")
+    ]:
+        p.drawString(x, y, f"{key}: {value}")
+        y -= 18
+        if y < 80:
+            p.showPage()
+            y = height - 50
+
+    p.showPage()
+    p.save()
+    bio.seek(0)
+    return bio
+
+def gen_order_id():
+    return f"R-{random.randint(10000, 99999)}"
+
+# ---------- Handlers ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("🚀 СОЗДАТЬ КАМПАНИЮ", callback_data="create_campaign")],
-        [InlineKeyboardButton("📊 СТАТИСТИКА ОХВАТА", callback_data="statistics")],
-        [InlineKeyboardButton("📋 МОИ ЗАКАЗЫ", callback_data="my_orders")],
-        [InlineKeyboardButton("ℹ️ О НАС", callback_data="about")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    if update.message:
-        await update.message.reply_text(
-            "🔴 РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
-            "📍 Ялуторовск • Заводоуковск\n\n"
-            "📊 18,500+ в день\n👥 156,000+ в месяц\n\n"
-            "🎯 52% доля рынка\n💰 4₽/сек базовая цена",
-            reply_markup=reply_markup
-        )
-    else:
-        await update.callback_query.edit_message_text(
-            "🔴 РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
-            "📍 Ялуторовск • Заводоуковск\n\n"
-            "📊 18,500+ в день\n👥 156,000+ в месяц\n\n"
-            "🎯 52% доля рынка\n💰 4₽/сек базовая цена",
-            reply_markup=reply_markup
-        )
-    
-    return MAIN_MENU
-
-# Создание кампании
-async def create_campaign(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    keyboard = [[InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(
-        "◀️ Назад     Конструктор ролика\n\n"
-        "📎 ПРИКРЕПИТЕ ГОТОВЫЙ РОЛИК ИЛИ ВВЕДИТЕ ТЕКСТ\n\n"
-        "ИЛИ\n\n"
-        "📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
-        "⏱️ Примерная длительность: 18 секунд",
-        reply_markup=reply_markup
-    )
-    
-    return CREATE_CAMPAIGN
-
-# Ввод текста ролика
-async def enter_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    await query.edit_message_text(
-        "◀️ Назад     Конструктор ролика\n\n"
-        "📝 Введите текст для радиоролика (до 500 знаков):\n\n"
-        "Пример:\n"
-        "Автомобили в Тюмени! Новые модели в наличии. Выгодный трейд-ин и кредит 0%. "
-        "Тест-драйв в день обращения!"
-    )
-    
-    return CAMPAIGN_TEXT
-
-# Обработка текста ролика
-async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if len(text) > 500:
-        await update.message.reply_text("❌ Текст превышает 500 знаков. Сократите текст.")
-        return CAMPAIGN_TEXT
-    
-    context.user_data['campaign_text'] = text
-    char_count = len(text)
-    
-    keyboard = [[InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_radio_selection")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.message.reply_text(
-        f"◀️ Назад     Конструктор ролика\n\n"
-        f"✅ Текст принят: {char_count} знаков из 500\n"
-        f"⏱️ Примерная длительность: {max(15, char_count // 7)} секунд\n\n"
-        f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА:\n"
-        f"┌─────────────────────────────────────┐\n"
-        f"│ {text:<37} │\n"
-        f"└─────────────────────────────────────┘\n\n"
-        f"○ {char_count} знаков из 500",
-        reply_markup=reply_markup
-    )
-    
-    return CREATE_CAMPAIGN
-
-# Выбор радиостанций
-async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    selected_radios = context.user_data.get('selected_radios', [])
-    total_listeners = sum({
-        'LOVE RADIO': 3200,
-        'АВТОРАДИО': 2800,
-        'РАДИО ДАЧА': 3500,
-        'РАДИО ШАНСОН': 2600,
-        'РЕТРО FM': 2900,
-        'ЮМОР FM': 2100
-    }.get(radio, 0) for radio in selected_radios)
-    
-    # Создаем клавиатуру с выбранными станциями
-    keyboard = []
-    radio_stations = [
-        ("LOVE RADIO", "radio_love"),
-        ("АВТОРАДИО", "radio_auto"),
-        ("РАДИО ДАЧА", "radio_dacha"), 
-        ("РАДИО ШАНСОН", "radio_chanson"),
-        ("РЕТРО FM", "radio_retro"),
-        ("ЮМОР FM", "radio_humor")
-    ]
-    
-    for name, callback in radio_stations:
-        emoji = "🔘" if name in selected_radios else "⚪"
-        keyboard.append([InlineKeyboardButton(f"{emoji} {name}", callback_data=callback)])
-    
-    keyboard.append([InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_time")])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(
-        "◀️ Назад     Выбор радиостанций\n\n"
-        "📻 ВЫБЕРИТЕ РАДИОСТАНЦИИ:\n\n"
-        "🔘 LOVE RADIO - 3,200 слушателей/день\n👩 Молодёжь 18-35 лет\n\n"
-        "🔘 АВТОРАДИО - 2,800 слушателей/день\n👨 Автомобилисты 25-50 лет\n\n"
-        "🔘 РАДИО ДАЧА - 3,500 слушателей/день\n👨👩 Семья 35-65 лет\n\n"
-        "🔘 РАДИО ШАНСОН - 2,600 слушателей/день\n👨 Мужчины 30-60 лет\n\n"
-        "🔘 РЕТРО FM - 2,900 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
-        "🔘 ЮМОР FM - 2,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
-        f"Выбрано: {len(selected_radios)} станций • {total_listeners} слушателей",
-        reply_markup=reply_markup
-    )
-    
-    return RADIO_SELECTION
-
-# Обработка выбора радиостанций
-async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    radio_data = {
-        'radio_love': 'LOVE RADIO',
-        'radio_auto': 'АВТОРАДИО', 
-        'radio_dacha': 'РАДИО ДАЧА',
-        'radio_chanson': 'РАДИО ШАНСОН',
-        'radio_retro': 'РЕТРО FM',
-        'radio_humor': 'ЮМОР FM'
+    user = update.effective_user
+    user_id = user.id
+    user_sessions[user_id] = {
+        'selected_stations': [],
+        'selected_slots': [],
+        'selected_rubric': None,
+        'audio_file_id': None,
+        'audio_info': None,
+        'text_for_spot': None,
+        'campaign_days': 30,
+        'spots_per_day': 5,
+        'step': 'main',
+        'awaiting': None  # for sequential inputs (e.g., contact fields)
     }
-    
-    if query.data in radio_data:
-        radio_name = radio_data[query.data]
-        selected_radios = context.user_data.get('selected_radios', [])
-        
-        if radio_name in selected_radios:
-            selected_radios.remove(radio_name)
-        else:
-            selected_radios.append(radio_name)
-        
-        context.user_data['selected_radios'] = selected_radios
-        return await radio_selection(update, context)
-    
-    elif query.data == "continue_time":
-        if not context.user_data.get('selected_radios'):
-            await query.answer("❌ Выберите хотя бы одну радиостанцию!", show_alert=True)
-            return RADIO_SELECTION
-        return await time_slots(update, context)
-    
-    return RADIO_SELECTION
 
-# Выбор временных слотов
-async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
     keyboard = [
-        [InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_branded")]
+        ['🚀 Создать кампанию', '📊 Статистика охвата'],
+        ['📋 Мои заказы', 'ℹ️ О нас']
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(
-        "◀️ Назад     Временные слоты\n\n"
-        "🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
-        "🌅 УТРЕННИЕ СЛОТЫ (+25%)\n"
-        "• 06:00-07:00 • Подъем, сборы\n"
-        "• 07:00-08:00 • Утренние поездки\n"
-        "• 08:00-09:00 • Пик трафика 🚀\n"
-        "• 09:00-10:00 • Начало работы\n\n"
-        "☀️ ДНЕВНЫЕ СЛОТЫ\n"
-        "• 10:00-16:00 • Рабочий процесс\n\n"
-        "🌇 ВЕЧЕРНИЕ СЛОТЫ (+20%)\n"
-        "• 16:00-21:00 • Вечерние поездки и отдых\n\n"
-        "📊 Статистика выбора:\n"
-        "• Выбрано слотов: 4\n"
-        "• Роликов в день: 5\n"
-        "• Доплата за премиум-время: 680₽",
-        reply_markup=reply_markup
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    message = (
+        "🎧 *Добро пожаловать в YA-RADIO!*\n\n"
+        "Официальный вещатель в Ялуторовске и Заводоуковске.\n\n"
+        "Я помогу настроить и заказать радиокампанию — от выбора станций до отправки заявки."
     )
-    
-    context.user_data['time_slots'] = ["утренние", "дневные", "вечерние"]
-    return TIME_SLOTS
+    await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
-# Брендированные рубрики
-async def branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    keyboard = [
-        [InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_contact")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(
-        "◀️ Назад     Брендированные рубрики\n\n"
-        "🎙️ ВЫБЕРИТЕ ТИП РУБРИКИ:\n\n"
-        "⚪ АВТОРУБРИКИ\n"
-        "Готовые сценарии для автосалонов\n+20% к стоимости\n\n"
-        "⚪ НЕДВИЖИМОСТЬ\n"
-        "Рубрики для агентств недвижимости\n+15% к стоимости\n\n"
-        "⚪ МЕДИЦИНСКИЕ РУБРИКИ\n"
-        "Экспертные форматы для клиник\n+25% к стоимости\n\n"
-        "⚪ ИНДИВИДУАЛЬНАЯ РУБРИКА\n"
-        "Разработка под ваш бизнес\n+30% к стоимости",
-        reply_markup=reply_markup
-    )
-    
-    context.user_data['branded_section'] = None
-    return BRANDED_SECTIONS
+# Главное меню — обработка текстовых кнопок
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = update.message.text.strip()
+    session = user_sessions.setdefault(user_id, {
+        'selected_stations': [], 'selected_slots': [], 'selected_rubric': None,
+        'audio_file_id': None, 'audio_info': None, 'text_for_spot': None,
+        'campaign_days': 30, 'spots_per_day': 5, 'step': 'main', 'awaiting': None
+    })
 
-# Контактная информация
-async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    await query.edit_message_text(
-        "◀️ Назад     Контактные данные\n\n"
-        "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
-        "📞 ВАШ ТЕЛЕФОН:\n"
-        "┌─────────────────────────────────────┐\n"
-        "│ +7 ___ ___ __ __                    │\n"
-        "└─────────────────────────────────────┘\n\n"
-        "Пожалуйста, введите ваше имя:"
-    )
-    
-    return CONTACT_INFO
+    # Если ожидаем последовательный ввод (контактные данные или текст ролика)
+    if session.get('awaiting'):
+        await handle_sequential_input(update, context, session)
+        return
 
-# Обработка контактной информации
-async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    
-    if 'contact_name' not in context.user_data:
-        context.user_data['contact_name'] = text
-        await update.message.reply_text(
-            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
-            "✅ Имя сохранено\n\n"
-            "📞 Введите ваш телефон:"
-        )
-        return CONTACT_INFO
-    
-    elif 'phone' not in context.user_data:
-        context.user_data['phone'] = text
-        await update.message.reply_text(
-            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
-            "✅ Телефон сохранен\n\n"
-            "📧 Введите ваш email:"
-        )
-        return CONTACT_INFO
-    
-    elif 'email' not in context.user_data:
-        context.user_data['email'] = text
-        await update.message.reply_text(
-            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
-            "✅ Email сохранен\n\n"
-            "🏢 Введите название компании:"
-        )
-        return CONTACT_INFO
-    
-    elif 'company' not in context.user_data:
-        context.user_data['company'] = text
-        
-        # Сохраняем заявку в БД
-        campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
-        conn = sqlite3.connect('campaigns.db')
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO campaigns 
-            (user_id, campaign_number, radio_stations, time_slots, branded_section, campaign_text, contact_name, company, phone, email)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            update.message.from_user.id,
-            campaign_number,
-            ','.join(context.user_data.get('selected_radios', [])),
-            ','.join(context.user_data.get('time_slots', [])),
-            context.user_data.get('branded_section', ''),
-            context.user_data.get('campaign_text', ''),
-            context.user_data.get('contact_name', ''),
-            context.user_data.get('company', ''),
-            context.user_data.get('phone', ''),
-            context.user_data.get('email', '')
-        ))
-        
-        conn.commit()
-        conn.close()
-        
-        # Отправляем подтверждение
-        keyboard = [
-            [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            f"✅ ЗАЯВКА ПРИНЯТА!\n\n"
-            f"📋 № заявки: {campaign_number}\n"
-            f"📅 Старт: 01.01.2025\n"
-            f"💰 Сумма: 14,515₽\n\n"
-            f"📧 PDF-предложение отправлено на:\n"
-            f"aa@ya-radio.ru\n\n"
-            f"👤 Ваш менеджер Надежда свяжется\n"
-            f"в течение 1 часа для уточнения деталей\n\n"
-            f"📞 +7 (34535) 5-01-51\n"
-            f"✉️ aa@ya-radio.ru\n\n"
-            f"🚀 ЧТО ДАЛЬШЕ:\n"
-            f"• Сегодня: согласование деталей\n"
-            f"• Завтра: подготовка роликов\n"
-            f"• 01.01.2025: запуск рекламы",
-            reply_markup=reply_markup
-        )
-        
-        # Очищаем данные пользователя
-        context.user_data.clear()
-        
-        return ConversationHandler.END
-
-# Обработка других кнопок главного меню
-async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "statistics":
-        await query.edit_message_text(
-            "📊 СТАТИСТИКА ОХВАТА\n\n"
-            "• Ежедневный охват: 18,500+\n"
-            "• Месячный охват: 156,000+\n"
-            "• Доля рынка: 52%\n"
-            "• Базовая цена: 4₽/сек"
-        )
-    elif query.data == "my_orders":
-        await query.edit_message_text(
-            "📋 МОИ ЗАКАЗЫ\n\n"
-            "Здесь будут отображаться ваши заказы"
-        )
-    elif query.data == "about":
-        await query.edit_message_text(
-            "ℹ️ О НАС\n\n"
-            "РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
-            "📍 Ялуторовск • Заводоуковск\n\n"
-            "Ведущий радиовещатель в регионе"
-        )
-    elif query.data == "new_order":
-        return await create_campaign(update, context)
-    
-    return MAIN_MENU
-
-# Обработка перехода к выбору радиостанций
-async def to_radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    return await radio_selection(update, context)
-
-# Обработка перехода к временным слотам
-async def to_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    return await time_slots(update, context)
-
-# Обработка перехода к брендированным рубрикам
-async def to_branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    return await branded_sections(update, context)
-
-# Главная функция
-def main():
-    # Инициализация БД
-    init_db()
-    
-    # Создаем приложение
-    application = Application.builder().token(TOKEN).build()
-    
-    # Обработчики разговоров
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
-        states={
-            MAIN_MENU: [
-                CallbackQueryHandler(create_campaign, pattern='^create_campaign$'),
-                CallbackQueryHandler(handle_main_menu, pattern='^statistics$|^my_orders$|^about$|^new_order$')
-            ],
-            CREATE_CAMPAIGN: [
-                CallbackQueryHandler(enter_campaign_text, pattern='^enter_text$'),
-                CallbackQueryHandler(to_radio_selection, pattern='^to_radio_selection$')
-            ],
-            CAMPAIGN_TEXT: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text)
-            ],
-            RADIO_SELECTION: [
-                CallbackQueryHandler(handle_radio_selection, pattern='^radio_'),
-                CallbackQueryHandler(to_time_slots, pattern='^continue_time$')
-            ],
-            TIME_SLOTS: [
-                CallbackQueryHandler(to_branded_sections, pattern='^continue_branded$')
-            ],
-            BRANDED_SECTIONS: [
-                CallbackQueryHandler(contact_info, pattern='^continue_contact$')
-            ],
-            CONTACT_INFO: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info)
-            ]
-        },
-        fallbacks=[CommandHandler('start', start)]
-    )
-    
-    application.add_handler(conv_handler)
-    
-    # Запускаем бота
-    if 'RENDER' in os.environ:
-        # На Render.com используем вебхук
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=int(os.environ.get('PORT', 8443)),
-            url_path=TOKEN,
-            webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
-        )
+    if text == '🚀 Создать кампанию':
+        await show_stations_selection(update, context)
+    elif text == '📊 Статистика охвата':
+        await show_statistics(update, context)
+    elif text == '📋 Мои заказы':
+        await show_my_orders(update, context)
+    elif text == 'ℹ️ О нас':
+        await show_about(update, context)
+    elif text == '🔙 Назад' or text == 'Назад':
+        await start(update, context)
     else:
-        # Локально используем polling
-        application.run_polling()
+        # default help
+        await update.message.reply_text(
+            "Используйте кнопки меню:\n"
+            "🚀 Создать кампанию\n📊 Статистика охвата\n📋 Мои заказы\nℹ️ О нас"
+        )
 
-if __name__ == '__main__':
+# ========== СТЕНЫ (ЭКРАНЫ) ==========
+
+# 2. Выбор радиостанций
+async def show_stations_selection(update_or_ctx, context):
+    """Можно передавать либо update, либо callback context; унифицируем."""
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        # callback context passed (when called from other handlers)
+        update = None
+        callback_query = update_or_ctx
+
+    # получаем user_id и session
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+
+    session = user_sessions.setdefault(user_id, {
+        'selected_stations': [], 'selected_slots': [], 'selected_rubric': None,
+        'audio_file_id': None, 'audio_info': None, 'text_for_spot': None,
+        'campaign_days': 30, 'spots_per_day': 5, 'step': 'main', 'awaiting': None
+    })
+    session['step'] = 'selecting_stations'
+
+    keyboard = []
+    for s in stations:
+        selected = '✅ ' if s['id'] in session['selected_stations'] else ''
+        keyboard.append([InlineKeyboardButton(f"{selected}{s['emoji']} {s['name']}", callback_data=f"station_{s['id']}")])
+    keyboard.append([InlineKeyboardButton("🚀 Далее к расписанию", callback_data="next_to_slots"),
+                     InlineKeyboardButton("🔄 Сбросить выбор", callback_data="reset_stations")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    stations_text = "\n".join([format_station_line(s) for s in stations])
+    message = f"*YA-RADIO — Выбор радиостанций*\n\n{stations_text}\n\n*Выбрано:* {len(session['selected_stations'])}"
+    if update:
+        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_station_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    data = query.data
+    if data == "reset_stations":
+        session['selected_stations'] = []
+        await show_stations_selection(query, context)
+        return
+    if data.startswith("station_"):
+        st_id = int(data.split("_", 1)[1])
+        if st_id in session.get('selected_stations', []):
+            session['selected_stations'].remove(st_id)
+        else:
+            session['selected_stations'].append(st_id)
+        await show_stations_selection(query, context)
+    elif data == "next_to_slots":
+        await show_time_slots(query, context)
+
+# 3. Временные слоты
+async def show_time_slots(update_or_ctx, context):
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        update = None
+        callback_query = update_or_ctx
+
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+
+    session = user_sessions.get(user_id, {})
+    if not session.get('selected_stations'):
+        if update:
+            await update.message.reply_text("❌ Сначала выберите хотя бы одну радиостанцию!")
+        else:
+            await callback_query.message.reply_text("❌ Сначала выберите хотя бы одну радиостанцию!")
+        return
+
+    session['step'] = 'selecting_slots'
+    keyboard = []
+    for i in range(0, len(time_slots), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(time_slots):
+                slot = time_slots[i + j]
+                sel = '✅ ' if slot in session.get('selected_slots', []) else ''
+                row.append(InlineKeyboardButton(f"{sel}{slot}", callback_data=f"slot_{i+j}"))
+        keyboard.append(row)
+    keyboard.append([InlineKeyboardButton("🗂 Выбрать рубрику", callback_data="to_rubrics"),
+                     InlineKeyboardButton("🔄 Сбросить выбор", callback_data="reset_slots")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    msg = (
+        "*YA-RADIO — Выбор временных слотов*\n\n"
+        "🌅 Утренние слоты (+25%): 06:00-10:00\n"
+        "☀️ Дневные слоты: 10:00-16:00\n"
+        "🌇 Вечерние слоты (+20%): 16:00-21:00\n\n"
+        f"✅ Выбрано слотов: {len(session.get('selected_slots', []))}"
+    )
+    if update:
+        await update.message.reply_text(msg, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(msg, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_slot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    data = query.data
+    if data == "reset_slots":
+        session['selected_slots'] = []
+        await show_time_slots(query, context)
+        return
+    if data == "to_rubrics":
+        await show_rubrics(query, context)
+        return
+    if data.startswith("slot_"):
+        idx = int(data.split("_", 1)[1])
+        slot = time_slots[idx]
+        if slot in session.get('selected_slots', []):
+            session['selected_slots'].remove(slot)
+        else:
+            session['selected_slots'].append(slot)
+        await show_time_slots(query, context)
+
+# 4. Рубрики
+async def show_rubrics(update_or_ctx, context):
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        update = None
+        callback_query = update_or_ctx
+
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+
+    session = user_sessions.setdefault(user_id, {})
+    session['step'] = 'selecting_rubric'
+
+    keyboard = []
+    for r in rubrics:
+        sel = '✅ ' if session.get('selected_rubric') == r['key'] else ''
+        keyboard.append([InlineKeyboardButton(f"{sel}{r['title']} (+{int(r['delta']*100)}%)", callback_data=f"rubric_{r['key']}")])
+    keyboard.append([InlineKeyboardButton("▶️ Далее — Конструктор ролика", callback_data="to_constructor")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    text = "*YA-RADIO — Брендированные рубрики*\n\nВыберите тип рубрики (надбавки указаны):"
+    if update:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_rubric_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    data = query.data
+    if data.startswith("rubric_"):
+        key = data.split("_", 1)[1]
+        session['selected_rubric'] = key
+        await show_rubrics(query, context)
+    elif data == "to_constructor":
+        await show_constructor(query, context)
+
+# 5. Конструктор ролика (upload audio или ввести текст)
+async def show_constructor(update_or_ctx, context):
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        update = None
+        callback_query = update_or_ctx
+
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    session['step'] = 'constructor'
+    session['awaiting'] = None
+
+    text = (
+        "📎 *Прикрепите готовый ролик (MP3/WAV, до 10 МБ)*\n\n"
+        "ИЛИ\n\n"
+        "📝 *Вставьте текст для ролика (до 500 знаков)*\n\n"
+        "Отправьте аудиофайл или текст. Можно сначала текст, потом заменить файлом."
+    )
+    keyboard = [
+        [InlineKeyboardButton("▶️ Ввести текст вручную", callback_data="enter_text")],
+        [InlineKeyboardButton("📝 Продолжить к предпросмотру", callback_data="to_preview")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    if update:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_constructor_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    data = query.data
+    if data == "enter_text":
+        session['awaiting'] = 'text_for_spot'
+        await query.message.reply_text("Отправьте текст ролика (до 500 знаков):")
+    elif data == "to_preview":
+        await show_preview(query, context)
+
+# Обработка загруженных аудио/файлов и текстовых сообщений, когда мы в constructor шаге
+async def handle_incoming_file_or_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    session = user_sessions.setdefault(user_id, {})
+    # Если ожидаем конкретное поле
+    if session.get('awaiting'):
+        await handle_sequential_input(update, context, session)
+        return
+
+    # Если отправили аудио или документ
+    if update.message.audio:
+        f = await update.message.audio.get_file()
+        session['audio_file_id'] = f.file_id
+        session['audio_info'] = {'file_size': update.message.audio.file_size, 'duration': update.message.audio.duration}
+        await update.message.reply_text("Аудиофайл получен ✅. Можно прослушать в Telegram или продолжить.")
+        return
+    if update.message.document:
+        # поддерживаем mp3/wav
+        doc = update.message.document
+        mime = doc.mime_type or ''
+        if 'audio' in mime or doc.file_name.lower().endswith(('.mp3', '.wav')):
+            f = await doc.get_file()
+            session['audio_file_id'] = f.file_id
+            session['audio_info'] = {'file_name': doc.file_name, 'file_size': doc.file_size}
+            await update.message.reply_text("Файл-ролик получен ✅.")
+            return
+        else:
+            await update.message.reply_text("Файл должен быть аудиофайлом (MP3/WAV).")
+            return
+    # Если текст и мы не в ожидании - возможно обычное сообщение
+    # Пробуем интерпретировать как текст ролика (если длина < 500)
+    text = update.message.text or ''
+    if len(text) <= 500 and len(text) > 0:
+        session['text_for_spot'] = text
+        await update.message.reply_text(f"Текст для ролика сохранён (длина {len(text)} знаков).")
+        return
+    # Иначе общая реакция
+    await update.message.reply_text("Отправьте аудиофайл (MP3/WAV) или текст до 500 знаков.")
+
+# 6. Предпросмотр / итог заказа
+async def show_preview(update_or_ctx, context):
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        update = None
+        callback_query = update_or_ctx
+
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    # Проверки
+    if not session.get('selected_stations') or not session.get('selected_slots'):
+        if update:
+            await update.message.reply_text("❌ Для предпросмотра выберите станции и слоты.")
+        else:
+            await callback_query.message.reply_text("❌ Для предпросмотра выберите станции и слоты.")
+        return
+
+    stations_names = [s['name'] for s in stations if s['id'] in session['selected_stations']]
+    slots_text = ", ".join(session.get('selected_slots', []))
+    rubric = next((r['title'] for r in rubrics if r['key'] == session.get('selected_rubric')), "—")
+    text_preview = session.get('text_for_spot') or "Аудиофайл загружен" if session.get('audio_file_id') else "—"
+
+    total_cost = calc_total_cost(session)
+    msg = (
+        "🎯 *ВАШ ЗАКАЗ (предпросмотр)*\n\n"
+        f"📻 Станции: {', '.join(stations_names)}\n"
+        f"🕒 Слоты: {slots_text}\n"
+        f"🎙 Рубрика: {rubric}\n"
+        f"⏱ Текст/Аудио: {text_preview[:180]}\n\n"
+        f"📅 Период: {session.get('campaign_days')} дней\n"
+        f"📊 Роликов в день: {session.get('spots_per_day')}\n"
+        f"💰 Предварительная стоимость: {round(total_cost):,}₽"
+    )
+    keyboard = [
+        [InlineKeyboardButton("📞 Связаться с менеджером", callback_data="contact_manager")],
+        [InlineKeyboardButton("📇 Ввести контактные данные", callback_data="to_contacts")],
+        [InlineKeyboardButton("🔄 Новый расчёт", callback_data="new_calculation")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    if update:
+        await update.message.reply_text(msg, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(msg, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_preview_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    user_id = query.from_user.id
+    session = user_sessions.setdefault(user_id, {})
+    if data == "contact_manager":
+        manager_contact = "Наш менеджер свяжется с вами в ближайшее время."
+        await query.message.reply_text(manager_contact)
+    elif data == "to_contacts":
+        await show_contact_form(query, context)
+    elif data == "new_calculation":
+        # сброс сессии
+        user_sessions[user_id] = {
+            'selected_stations': [], 'selected_slots': [], 'selected_rubric': None,
+            'audio_file_id': None, 'audio_info': None, 'text_for_spot': None,
+            'campaign_days': 30, 'spots_per_day': 5, 'step': 'main', 'awaiting': None
+        }
+        await show_stations_selection(query, context)
+
+# 7. Контактная форма
+async def show_contact_form(update_or_ctx, context):
+    if isinstance(update_or_ctx, Update):
+        update = update_or_ctx
+        callback_query = None
+    else:
+        update = None
+        callback_query = update_or_ctx
+
+    if update:
+        user_id = update.effective_user.id
+    else:
+        user_id = callback_query.from_user.id
+
+    session = user_sessions.setdefault(user_id, {})
+    session['step'] = 'contact_form'
+    session['awaiting'] = 'phone'
+
+    text = (
+        "👤 *КОНТАКТЫ ДЛЯ СВЯЗИ*\n\n"
+        "Отправьте ваш телефон в формате +7..."
+    )
+    keyboard = [[InlineKeyboardButton("Отмена", callback_data="cancel_contact_form")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    if update:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_sequential_input(update: Update, context: ContextTypes.DEFAULT_TYPE, session=None):
+    """Универсальная обработка для полей: phone, email, company, contact_name, position, requisites"""
+    user_id = update.effective_user.id
+    if session is None:
+        session = user_sessions.setdefault(user_id, {})
+    awaiting = session.get('awaiting')
+    text = (update.message.text or "").strip()
+    # Обработка специальных типов: файлы, документы
+    if awaiting == 'phone':
+        session['phone'] = text
+        session['awaiting'] = 'email'
+        await update.message.reply_text("Отлично. Теперь введите Email:")
+    elif awaiting == 'email':
+        session['email'] = text
+        session['awaiting'] = 'company'
+        await update.message.reply_text("Название компании:")
+    elif awaiting == 'company':
+        session['company'] = text
+        session['awaiting'] = 'contact_name'
+        await update.message.reply_text("Имя контактного лица:")
+    elif awaiting == 'contact_name':
+        session['contact_name'] = text
+        session['awaiting'] = 'position'
+        await update.message.reply_text("Должность контактного лица:")
+    elif awaiting == 'position':
+        session['position'] = text
+        session['awaiting'] = 'requisites'
+        await update.message.reply_text("Прикрепите файл с реквизитами (PDF/JPG/PNG до 5 МБ) или отправьте 'нет':")
+    elif awaiting == 'requisites':
+        # если прислали 'нет' — пропускаем
+        if text.lower() == 'нет':
+            session['requisites_file_id'] = None
+            session['awaiting'] = None
+            await finalize_and_submit_order(update, context, session)
+            return
+        # если документ
+        if update.message.document:
+            doc = update.message.document
+            session['requisites_file_id'] = (doc.file_id, doc.file_name)
+            session['awaiting'] = None
+            await update.message.reply_text("Реквизиты получены. Отправляю заявку...")
+            await finalize_and_submit_order(update, context, session)
+            return
+        else:
+            await update.message.reply_text("Отправьте файл документом или напишите 'нет' если не хотите прикреплять.")
+    elif awaiting == 'text_for_spot':
+        if len(text) > 500:
+            await update.message.reply_text("Текст слишком длинный, ограничение 500 знаков. Попробуйте снова:")
+            return
+        session['text_for_spot'] = text
+        session['awaiting'] = None
+        await update.message.reply_text("Текст сохранён. Нажмите 'Далее' для предпросмотра или отправьте аудиофайл.")
+    else:
+        # неожиданный ввод
+        await update.message.reply_text("Обрабатываю ввод...")
+
+# 8. Финализация и отправка заявки
+async def finalize_and_submit_order(update: Update, context: ContextTypes.DEFAULT_TYPE, session=None):
+    user_id = update.effective_user.id
+    if session is None:
+        session = user_sessions.get(user_id, {})
+    # Формирование данных заявки
+    order_id = gen_order_id()
+    order_info = {
+        "order_id": order_id,
+        "client_name": session.get('contact_name'),
+        "phone": session.get('phone'),
+        "email": session.get('email'),
+        "company": session.get('company'),
+        "stations": [s['name'] for s in stations if s['id'] in session.get('selected_stations', [])],
+        "slots": session.get('selected_slots', []),
+        "rubric": next((r['title'] for r in rubrics if r['key'] == session.get('selected_rubric')), None),
+        "days": session.get('campaign_days'),
+        "spots_per_day": session.get('spots_per_day'),
+        "total_cost": calc_total_cost(session)
+    }
+    # Сохраняем
+    orders_store.setdefault(user_id, []).append(order_info)
+
+    # Генерация PDF и отправка
+    pdf_bio = generate_order_pdf(order_info)
+    pdf_name = f"{order_id}_proposal.pdf"
+    input_file = InputFile(pdf_bio, filename=pdf_name)
+
+    # Отправляем PDF пользователю
+    await update.message.reply_document(input_file, caption=f"📋 Предварительное предложение — {order_id}")
+
+    # Если есть менеджерский чат, отправляем туда тоже
+    if MANAGER_CHAT_ID:
+        try:
+            await context.bot.send_document(int(MANAGER_CHAT_ID), input_file, caption=f"Новая заявка {order_id} от {order_info.get('client_name')}")
+        except Exception as e:
+            logger.exception("Не удалось отправить PDF менеджеру: %s", e)
+
+    # Показ экрана "Заявка принята"
+    start_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+    msg = (
+        "✅ ЗАЯВКА ПРИНЯТА!\n\n"
+        f"📋 № заявки: {order_id}\n"
+        f"📅 Старт: {start_date}\n"
+        f"💰 Сумма: {round(order_info['total_cost']):,}₽\n\n"
+        f"📧 PDF-предложение отправлено вам в Telegram\n\n"
+        f"👤 Ваш менеджер свяжется в течение 1 часа для уточнения деталей\n\n"
+        "📞 +7 (34535) 5-01-51\n"
+        "✉️ aa@ya-radio.ru\n\n"
+        "🚀 ЧТО ДАЛЬШЕ:\n"
+        "• Сегодня: согласование деталей\n"
+        "• Завтра: подготовка роликов\n"
+        f"• {start_date}: запуск рекламы"
+    )
+    keyboard = [
+        [KeyboardButton("В ЛИЧНЫЙ КАБИНЕТ"), KeyboardButton("НОВЫЙ ЗАКАЗ")]
+    ]
+    await update.message.reply_text(msg, reply_markup=ReplyKeyboardMarkup([['В ЛИЧНЫЙ КАБИНЕТ', 'НОВЫЙ ЗАКАЗ']], resize_keyboard=True))
+
+# Мои заказы
+async def show_my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    arr = orders_store.get(user_id, [])
+    if not arr:
+        await update.message.reply_text("У вас пока нет заказов.")
+        return
+    text = "Ваши заявки:\n\n"
+    for o in arr:
+        text += f"• {o['order_id']} — {round(o['total_cost']):,}₽ — старт { (datetime.date.today()+datetime.timedelta(days=1)).strftime('%d.%m.%Y') }\n"
+    await update.message.reply_text(text)
+
+async def show_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "📊 *YA-RADIO — Статистика охвата*\n\n"
+        "🏙️ Ялуторовск и район — население ~52 000, охват ~11 700/день\n"
+        "🏘️ Заводоуковск и район — население ~46 500, охват ~6 800/день\n\n"
+        "📈 Суточный охват: 18 500+ чел.\n"
+        "👥 Месячный охват: 156 000+ контактов\n"
+        "🎯 Доля рынка: 52%\n"
+    )
+    await update.message.reply_text(text, parse_mode='Markdown')
+
+async def show_about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "ℹ️ *YA-RADIO — О нас*\n\n"
+        "Радио Тюменской области — ведущий региональный вещатель.\n"
+        "Мы помогаем делать рекламные кампании с учётом форматов и аудитории."
+    )
+    await update.message.reply_text(text, parse_mode='Markdown')
+
+# Обработчики отмены/прочее
+async def cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer("Операция отменена")
+    await start(update, context)
+
+# ========== РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ ==========
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    # Команды
+    app.add_handler(CommandHandler("start", start))
+    # Текст
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    # Files & text when in constructor/contact flow
+    app.add_handler(MessageHandler(filters.Document.ALL | filters.AUDIO | filters.VOICE | filters.TEXT & ~filters.COMMAND, handle_incoming_file_or_text))
+    # CallbackQuery
+    app.add_handler(CallbackQueryHandler(handle_station_callback, pattern=r"^station_"))
+    app.add_handler(CallbackQueryHandler(handle_station_callback, pattern=r"^reset_stations$"))
+    app.add_handler(CallbackQueryHandler(handle_station_callback, pattern=r"^next_to_slots$"))
+
+    app.add_handler(CallbackQueryHandler(handle_slot_callback, pattern=r"^slot_"))
+    app.add_handler(CallbackQueryHandler(handle_slot_callback, pattern=r"^reset_slots$"))
+    app.add_handler(CallbackQueryHandler(handle_slot_callback, pattern=r"^to_rubrics$"))
+
+    app.add_handler(CallbackQueryHandler(handle_rubric_callback, pattern=r"^rubric_"))
+    app.add_handler(CallbackQueryHandler(handle_rubric_callback, pattern=r"^to_constructor$"))
+
+    app.add_handler(CallbackQueryHandler(handle_constructor_callbacks, pattern=r"^enter_text$"))
+    app.add_handler(CallbackQueryHandler(handle_constructor_callbacks, pattern=r"^to_preview$"))
+
+    app.add_handler(CallbackQueryHandler(handle_preview_callbacks, pattern=r"^(contact_manager|to_contacts|new_calculation)$"))
+
+    app.add_handler(CallbackQueryHandler(cancel_callback, pattern=r"^cancel_contact_form$"))
+
+    # Прочие
+    app.add_handler(CommandHandler("myorders", show_my_orders))
+
+    logger.info("🤖 YA-RADIO bot starting...")
+    app.run_polling()
+
+if __name__ == "__main__":
     main()
