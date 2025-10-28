@@ -1,18 +1,5 @@
 import os
 import logging
-from telegram.ext import Application
-
-def main():
-    # Получаем токен из переменных окружения
-    TOKEN = os.getenv('8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
-    
-    if not TOKEN:
-        print("❌ Ошибка: TELEGRAM_BOT_TOKEN не установлен!")
-        return
-    
-    application = Application.builder().token(TOKEN).build()
-    
-    # ... остальной код
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import sqlite3
@@ -27,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 # Состояния разговора
 MAIN_MENU, CREATE_CAMPAIGN, RADIO_SELECTION, TIME_SLOTS, BRANDED_SECTIONS, CONTACT_INFO, CAMPAIGN_TEXT = range(7)
+
+# Токен бота
+TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 
 # Инициализация базы данных
 def init_db():
@@ -83,6 +73,7 @@ async def create_campaign(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await query.edit_message_text(
+        "◀️ Назад     Конструктор ролика\n\n"
         "📎 ПРИКРЕПИТЕ ГОТОВЫЙ РОЛИК ИЛИ ВВЕДИТЕ ТЕКСТ\n\n"
         "ИЛИ\n\n"
         "📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
@@ -98,6 +89,7 @@ async def enter_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
     
     await query.edit_message_text(
+        "◀️ Назад     Конструктор ролика\n\n"
         "📝 Введите текст для радиоролика (до 500 знаков):\n\n"
         "Пример:\n"
         "Автомобили в Тюмени! Новые модели в наличии. Выгодный трейд-ин и кредит 0%. "
@@ -116,16 +108,28 @@ async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['campaign_text'] = text
     char_count = len(text)
     
+    keyboard = [[InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_radio_selection")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     await update.message.reply_text(
+        f"◀️ Назад     Конструктор ролика\n\n"
         f"✅ Текст принят: {char_count} знаков из 500\n"
         f"⏱️ Примерная длительность: {max(15, char_count // 7)} секунд\n\n"
-        "Переходим к выбору радиостанций..."
+        f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА:\n"
+        f"┌─────────────────────────────────────┐\n"
+        f"│ {text:<37} │\n"
+        f"└─────────────────────────────────────┘\n\n"
+        f"○ {char_count} знаков из 500",
+        reply_markup=reply_markup
     )
     
-    return await radio_selection(update, context)
+    return CREATE_CAMPAIGN
 
 # Выбор радиостанций
 async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
     keyboard = [
         [InlineKeyboardButton("🔘 LOVE RADIO", callback_data="radio_love")],
         [InlineKeyboardButton("🔘 АВТОРАДИО", callback_data="radio_auto")],
@@ -133,31 +137,33 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🔘 РАДИО ШАНСОН", callback_data="radio_chanson")],
         [InlineKeyboardButton("🔘 РЕТРО FM", callback_data="radio_retro")],
         [InlineKeyboardButton("🔘 ЮМОР FM", callback_data="radio_humor")],
-        [InlineKeyboardButton("✅ ПРОДОЛЖИТЬ", callback_data="continue_time")]
+        [InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_time")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    if update.callback_query:
-        query = update.callback_query
-        await query.answer()
-        await query.edit_message_text(
-            "📻 ВЫБЕРИТЕ РАДИОСТАНЦИИ:\n\n"
-            "🔘 LOVE RADIO - 3,200 слушателей/день\n👩 Молодёжь 18-35 лет\n\n"
-            "🔘 АВТОРАДИО - 2,800 слушателей/день\n👨 Автомобилисты 25-50 лет\n\n"
-            "🔘 РАДИО ДАЧА - 3,500 слушателей/день\n👨👩 Семья 35-65 лет\n\n"
-            "🔘 РАДИО ШАНСОН - 2,600 слушателей/день\n👨 Мужчины 30-60 лет\n\n"
-            "🔘 РЕТРО FM - 2,900 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
-            "🔘 ЮМОР FM - 2,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
-            "Выбрано: 0 станций • 0 слушателей",
-            reply_markup=reply_markup
-        )
-    else:
-        await update.message.reply_text(
-            "📻 ВЫБЕРИТЕ РАДИОСТАНЦИИ:",
-            reply_markup=reply_markup
-        )
+    selected_radios = context.user_data.get('selected_radios', [])
+    total_listeners = sum({
+        'LOVE RADIO': 3200,
+        'АВТОРАДИО': 2800,
+        'РАДИО ДАЧА': 3500,
+        'РАДИО ШАНСОН': 2600,
+        'РЕТРО FM': 2900,
+        'ЮМОР FM': 2100
+    }[radio] for radio in selected_radios)
     
-    context.user_data['selected_radios'] = []
+    await query.edit_message_text(
+        "◀️ Назад     Выбор радиостанций\n\n"
+        "📻 ВЫБЕРИТЕ РАДИОСТАНЦИИ:\n\n"
+        "🔘 LOVE RADIO - 3,200 слушателей/день\n👩 Молодёжь 18-35 лет\n\n"
+        "🔘 АВТОРАДИО - 2,800 слушателей/день\n👨 Автомобилисты 25-50 лет\n\n"
+        "🔘 РАДИО ДАЧА - 3,500 слушателей/день\n👨👩 Семья 35-65 лет\n\n"
+        "🔘 РАДИО ШАНСОН - 2,600 слушателей/день\n👨 Мужчины 30-60 лет\n\n"
+        "🔘 РЕТРО FM - 2,900 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
+        "🔘 ЮМОР FM - 2,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
+        f"Выбрано: {len(selected_radios)} станций • {total_listeners} слушателей",
+        reply_markup=reply_markup
+    )
+    
     return RADIO_SELECTION
 
 # Обработка выбора радиостанций
@@ -166,47 +172,25 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
     await query.answer()
     
     radio_data = {
-        'radio_love': {'name': 'LOVE RADIO', 'listeners': 3200},
-        'radio_auto': {'name': 'АВТОРАДИО', 'listeners': 2800},
-        'radio_dacha': {'name': 'РАДИО ДАЧА', 'listeners': 3500},
-        'radio_chanson': {'name': 'РАДИО ШАНСОН', 'listeners': 2600},
-        'radio_retro': {'name': 'РЕТРО FM', 'listeners': 2900},
-        'radio_humor': {'name': 'ЮМОР FM', 'listeners': 2100}
+        'radio_love': 'LOVE RADIO',
+        'radio_auto': 'АВТОРАДИО', 
+        'radio_dacha': 'РАДИО ДАЧА',
+        'radio_chanson': 'РАДИО ШАНСОН',
+        'radio_retro': 'РЕТРО FM',
+        'radio_humor': 'ЮМОР FM'
     }
     
     if query.data in radio_data:
-        radio = radio_data[query.data]
+        radio_name = radio_data[query.data]
         selected_radios = context.user_data.get('selected_radios', [])
         
-        if radio['name'] in selected_radios:
-            selected_radios.remove(radio['name'])
+        if radio_name in selected_radios:
+            selected_radios.remove(radio_name)
         else:
-            selected_radios.append(radio['name'])
+            selected_radios.append(radio_name)
         
         context.user_data['selected_radios'] = selected_radios
-        
-        total_listeners = sum(radio_data[key]['listeners'] for key in radio_data if radio_data[key]['name'] in selected_radios)
-        
-        # Обновляем клавиатуру
-        keyboard = []
-        for radio_key, radio_info in radio_data.items():
-            emoji = "🔘" if radio_info['name'] in selected_radios else "⚪"
-            keyboard.append([InlineKeyboardButton(f"{emoji} {radio_info['name']}", callback_data=radio_key)])
-        
-        keyboard.append([InlineKeyboardButton("✅ ПРОДОЛЖИТЬ", callback_data="continue_time")])
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            f"📻 ВЫБЕРИТЕ РАДИОСТАНЦИИ:\n\n"
-            f"🔘 LOVE RADIO - 3,200 слушателей/день\n👩 Молодёжь 18-35 лет\n\n"
-            f"🔘 АВТОРАДИО - 2,800 слушателей/день\n👨 Автомобилисты 25-50 лет\n\n"
-            f"🔘 РАДИО ДАЧА - 3,500 слушателей/день\n👨👩 Семья 35-65 лет\n\n"
-            f"🔘 РАДИО ШАНСОН - 2,600 слушателей/день\n👨 Мужчины 30-60 лет\n\n"
-            f"🔘 РЕТРО FM - 2,900 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
-            f"🔘 ЮМОР FM - 2,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
-            f"Выбрано: {len(selected_radios)} станций • {total_listeners} слушателей",
-            reply_markup=reply_markup
-        )
+        return await radio_selection(update, context)
     
     elif query.data == "continue_time":
         if not context.user_data.get('selected_radios'):
@@ -225,11 +209,12 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🌅 УТРЕННИЕ СЛОТЫ", callback_data="morning_slots")],
         [InlineKeyboardButton("☀️ ДНЕВНЫЕ СЛОТЫ", callback_data="day_slots")],
         [InlineKeyboardButton("🌇 ВЕЧЕРНИЕ СЛОТЫ", callback_data="evening_slots")],
-        [InlineKeyboardButton("✅ ПРОДОЛЖИТЬ", callback_data="continue_branded")]
+        [InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_branded")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await query.edit_message_text(
+        "◀️ Назад     Временные слоты\n\n"
         "🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
         "🌅 УТРЕННИЕ СЛОТЫ (+25%)\n"
         "• 06:00-07:00 • Подъем, сборы\n"
@@ -241,13 +226,13 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🌇 ВЕЧЕРНИЕ СЛОТЫ (+20%)\n"
         "• 16:00-21:00 • Вечерние поездки и отдых\n\n"
         "📊 Статистика выбора:\n"
-        "• Выбрано слотов: 0\n"
-        "• Роликов в день: 0\n"
-        "• Доплата за премиум-время: 0₽",
+        "• Выбрано слотов: 4\n"
+        "• Роликов в день: 5\n"
+        "• Доплата за премиум-время: 680₽",
         reply_markup=reply_markup
     )
     
-    context.user_data['time_slots'] = []
+    context.user_data['time_slots'] = ["утренние", "дневные", "вечерние"]
     return TIME_SLOTS
 
 # Брендированные рубрики
@@ -261,11 +246,12 @@ async def branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⚪ МЕДИЦИНСКИЕ РУБРИКИ (+25%)", callback_data="branded_medical")],
         [InlineKeyboardButton("⚪ ИНДИВИДУАЛЬНАЯ РУБРИКА (+30%)", callback_data="branded_custom")],
         [InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_branded")],
-        [InlineKeyboardButton("✅ ПРОДОЛЖИТЬ", callback_data="continue_contact")]
+        [InlineKeyboardButton("✅ ДАЛЕЕ", callback_data="continue_contact")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await query.edit_message_text(
+        "◀️ Назад     Брендированные рубрики\n\n"
         "🎙️ ВЫБЕРИТЕ ТИП РУБРИКИ:\n\n"
         "⚪ АВТОРУБРИКИ\n"
         "Готовые сценарии для автосалонов\n+20% к стоимости\n\n"
@@ -281,13 +267,44 @@ async def branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['branded_section'] = None
     return BRANDED_SECTIONS
 
+# Обработка брендированных рубрик
+async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    branded_data = {
+        'branded_auto': 'АВТОРУБРИКИ',
+        'branded_realty': 'НЕДВИЖИМОСТЬ',
+        'branded_medical': 'МЕДИЦИНСКИЕ РУБРИКИ', 
+        'branded_custom': 'ИНДИВИДУАЛЬНАЯ РУБРИКА'
+    }
+    
+    if query.data in branded_data:
+        context.user_data['branded_section'] = branded_data[query.data]
+        await query.answer(f"✅ Выбрано: {branded_data[query.data]}")
+        return await branded_sections(update, context)
+    
+    elif query.data == "skip_branded":
+        context.user_data['branded_section'] = None
+        return await contact_info(update, context)
+    
+    elif query.data == "continue_contact":
+        return await contact_info(update, context)
+    
+    return BRANDED_SECTIONS
+
 # Контактная информация
 async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     await query.edit_message_text(
-        "👤 ВВЕДИТЕ КОНТАКТНЫЕ ДАННЫЕ\n\n"
+        "◀️ Назад     Контактные данные\n\n"
+        "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
+        "📞 ВАШ ТЕЛЕФОН:\n"
+        "┌─────────────────────────────────────┐\n"
+        "│ +7 ___ ___ __ __                    │\n"
+        "└─────────────────────────────────────┘\n\n"
         "Пожалуйста, введите ваше имя:"
     )
     
@@ -299,17 +316,29 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if 'contact_name' not in context.user_data:
         context.user_data['contact_name'] = text
-        await update.message.reply_text("📞 Введите ваш телефон:")
+        await update.message.reply_text(
+            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
+            "✅ Имя сохранено\n\n"
+            "📞 Введите ваш телефон:"
+        )
         return CONTACT_INFO
     
     elif 'phone' not in context.user_data:
         context.user_data['phone'] = text
-        await update.message.reply_text("📧 Введите ваш email:")
+        await update.message.reply_text(
+            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
+            "✅ Телефон сохранен\n\n"
+            "📧 Введите ваш email:"
+        )
         return CONTACT_INFO
     
     elif 'email' not in context.user_data:
         context.user_data['email'] = text
-        await update.message.reply_text("🏢 Введите название компании:")
+        await update.message.reply_text(
+            "👤 КОНТАКТЫ ДЛЯ СВЯЗИ\n\n"
+            "✅ Email сохранен\n\n"
+            "🏢 Введите название компании:"
+        )
         return CONTACT_INFO
     
     elif 'company' not in context.user_data:
@@ -343,7 +372,7 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
         # Отправляем подтверждение
         keyboard = [
             [InlineKeyboardButton("📋 В ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
-            [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="create_campaign")]
+            [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -370,13 +399,49 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
         
         return ConversationHandler.END
 
+# Обработка кнопки "Назад"
+async def back_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    await start(update, context)
+    return MAIN_MENU
+
+# Обработка других кнопок главного меню
+async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "statistics":
+        await query.edit_message_text(
+            "📊 СТАТИСТИКА ОХВАТА\n\n"
+            "• Ежедневный охват: 18,500+\n"
+            "• Месячный охват: 156,000+\n"
+            "• Доля рынка: 52%\n"
+            "• Базовая цена: 4₽/сек"
+        )
+    elif query.data == "my_orders":
+        await query.edit_message_text(
+            "📋 МОИ ЗАКАЗЫ\n\n"
+            "Здесь будут отображаться ваши заказы"
+        )
+    elif query.data == "about":
+        await query.edit_message_text(
+            "ℹ️ О НАС\n\n"
+            "РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
+            "📍 Ялуторовск • Заводоуковск\n\n"
+            "Ведущий радиовещатель в регионе"
+        )
+    
+    return MAIN_MENU
+
 # Главная функция
 def main():
     # Инициализация БД
     init_db()
     
     # Создаем приложение
-    application = Application.builder().token(os.getenv('TELEGRAM_BOT_TOKEN')).build()
+    application = Application.builder().token(TOKEN).build()
     
     # Обработчики разговоров
     conv_handler = ConversationHandler(
@@ -384,10 +449,11 @@ def main():
         states={
             MAIN_MENU: [
                 CallbackQueryHandler(create_campaign, pattern='^create_campaign$'),
-                CallbackQueryHandler(start, pattern='^statistics$|^my_orders$|^about$')
+                CallbackQueryHandler(handle_main_menu, pattern='^statistics$|^my_orders$|^about$')
             ],
             CREATE_CAMPAIGN: [
-                CallbackQueryHandler(enter_campaign_text, pattern='^enter_text$')
+                CallbackQueryHandler(enter_campaign_text, pattern='^enter_text$'),
+                CallbackQueryHandler(radio_selection, pattern='^to_radio_selection$')
             ],
             CAMPAIGN_TEXT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text)
@@ -400,8 +466,7 @@ def main():
                 CallbackQueryHandler(time_slots, pattern='^morning_slots$|^day_slots$|^evening_slots$')
             ],
             BRANDED_SECTIONS: [
-                CallbackQueryHandler(contact_info, pattern='^continue_contact$'),
-                CallbackQueryHandler(branded_sections, pattern='^branded_|^skip_branded$')
+                CallbackQueryHandler(handle_branded_sections, pattern='^branded_|^skip_branded$|^continue_contact$')
             ],
             CONTACT_INFO: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info)
@@ -412,14 +477,19 @@ def main():
     
     application.add_handler(conv_handler)
     
-    # Запускаем бота
-    port = int(os.environ.get('PORT', 8443))
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        url_path=os.getenv('TELEGRAM_BOT_TOKEN'),
-        webhook_url=f"https://{os.getenv('RENDER_SERVICE_NAME')}.onrender.com/{os.getenv('TELEGRAM_BOT_TOKEN')}"
-    )
+    # Запускаем бота на Render.com
+    if 'RENDER' in os.environ:
+        # На Render.com используем вебхук
+        port = int(os.environ.get('PORT', 8443))
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=TOKEN,
+            webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'your-app-name')}.onrender.com/{TOKEN}"
+        )
+    else:
+        # Локально используем polling
+        application.run_polling()
 
 if __name__ == '__main__':
     main()
