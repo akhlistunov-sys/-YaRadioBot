@@ -1,5 +1,18 @@
 import os
 import logging
+from telegram.ext import Application
+
+def main():
+    # Получаем токен из переменных окружения
+    TOKEN = os.getenv('8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
+    
+    if not TOKEN:
+        print("❌ Ошибка: TELEGRAM_BOT_TOKEN не установлен!")
+        return
+    
+    application = Application.builder().token(TOKEN).build()
+    
+    # ... остальной код
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import sqlite3
