@@ -1,36 +1,22 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from flask import Flask
 import os
-import asyncio
-import threading
 
 # 🔐 Твой токен от BotFather
 BOT_TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
-# Веб-сервер для Render
-web_app = Flask(__name__)
-
-@web_app.route('/')
-def home():
-    return "🎧 YA-RADIO Bot is running!"
-
-@web_app.route('/health')
-def health():
-    return "✅ OK"
-
-def run_web_server():
-    port = int(os.environ.get('PORT', 5000))
-    web_app.run(host='0.0.0.0', port=port, debug=False)
-
-# Данные бота
+# Списки станций и временных слотов
 stations = ["Радио Тюмень", "Радио Ишим", "Радио Ялуторовск"]
+time_slots = ["Утро (7–10)", "День (10–17)", "Вечер (17–21)"]
+
 user_sessions = {}
 
-# Функции бота (остаются без изменений)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📻 Выбрать станции", callback_data="stations")],
@@ -76,21 +62,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Используйте меню через /start 😊")
 
-def run_bot():
-    """Запускает Telegram бота"""
-    app = Application.builder().token(BOT_TOKEN).build()
+def main():
+    # Создаем приложение
+    application = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_callback))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    # Добавляем обработчики
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(handle_callback))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     print("✅ Бот YA-RADIO запущен...")
-    app.run_polling()
+    
+    # Запускаем бота
+    application.run_polling()
 
 if __name__ == "__main__":
-    # Запускаем веб-сервер в отдельном потоке
-    web_thread = threading.Thread(target=run_web_server, daemon=True)
-    web_thread.start()
-    
-    # Запускаем бота в основном потоке
-    run_bot()
+    main()
