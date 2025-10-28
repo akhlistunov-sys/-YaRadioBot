@@ -18,7 +18,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 # ---------- Настройки ----------
-BOT_TOKEN = os.environ.get(8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU)  # Установите в Render
+BOT_TOKEN = os.environ.get("BOT_TOKEN")   # Установите в Render
 MANAGER_CHAT_ID = os.environ.get("MANAGER_CHAT_ID")  # опционально: куда отправлять заявки (chat id)
 # Если MANAGER_CHAT_ID не задан, бот будет отправлять PDF только пользователю.
 
