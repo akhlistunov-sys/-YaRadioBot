@@ -1,6 +1,9 @@
+import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from flask import Flask
+import threading
 
 # Настройка логирования
 logging.basicConfig(
@@ -8,8 +11,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# ⚠️ ВАЖНО: ЗАМЕНИТЕ ЭТОТ ТОКЕН НА ВАШ РЕАЛЬНЫЙ ТОКЕН
-BOT_TOKEN = '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU'
+# Получаем токен из переменных окружения (безопаснее)
+BOT_TOKEN = os.getenv('BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
 
 # Данные радиостанций
 stations = [
@@ -32,6 +35,17 @@ time_slots = [
 
 # Хранилище пользовательских данных
 user_sessions = {}
+
+# Создаем Flask приложение для здоровья
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "🤖 YA-RADIO Telegram Bot is running!"
+
+@app.route('/health')
+def health():
+    return "✅ OK"
 
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -576,8 +590,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             parse_mode='MarkdownV2'
         )
 
-# Основная функция
-def main() -> None:
+# Функция для запуска Flask сервера
+def run_flask():
+    port = int(os.getenv('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
+# Функция для запуска Telegram бота
+def run_bot():
     # Создаем Application
     application = Application.builder().token(BOT_TOKEN).build()
     
@@ -601,6 +620,16 @@ def main() -> None:
     print("📧 Email: a.khlistunov@gmail.com")
     
     application.run_polling()
+
+# Основная функция
+def main():
+    # Запускаем Flask в отдельном потоке
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    # Запускаем бота в основном потоке
+    run_bot()
 
 if __name__ == '__main__':
     main()
