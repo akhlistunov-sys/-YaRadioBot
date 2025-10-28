@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 # 🔐 Твой токен от BotFather
-BOT_TOKEN = "ТОКЕН_ОТ_BOTFATHER"
+BOT_TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 
 logging.basicConfig(level=logging.INFO)
 
