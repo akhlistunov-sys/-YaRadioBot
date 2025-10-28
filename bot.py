@@ -13,9 +13,7 @@ logging.basicConfig(
 # Получаем токен из переменных окружения Render
 BOT_TOKEN = os.getenv('8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
 
-if not BOT_TOKEN:
-    logging.error("❌ BOT_TOKEN не установлен. Убедитесь, что вы добавили переменную BOT_TOKEN в настройки Render.")
-    exit(1)
+
 
 # Данные радиостанций
 stations = [
