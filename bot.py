@@ -725,7 +725,7 @@ async def cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ========== РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ ==========
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU).build()
 
     # Команды
     app.add_handler(CommandHandler("start", start))
