@@ -1,2 +1,1 @@
-python-telegram-bot==21.1
-reportlab==3.6.12
+python-telegram-bot[webhooks]==21.0
