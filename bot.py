@@ -794,7 +794,7 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⚪ СТАНДАРТНЫЙ РОЛИК - от 2,000₽\n"
         "• Профессиональная озвучка\n• Музыкальное оформление\n• 2 правки\n• Срок: 2-3 дня\n\n"
         "⚪ ПРЕМИУМ РОЛИК - от 4,000₽\n"
-        "• Озвучка 2-мя голосами\n• Индивидуальная музыка\n• 5 правок\n• Срочное производство 1 день\n\n"
+        "• Озвучка 2-мя голосами\n• Индивидуальная музыка\n• 5 правки\n• Срочное производство 1 день\n\n"
         "💰 Влияние на итоговую стоимость"
     )
     
@@ -970,7 +970,7 @@ async def send_application_to_telegram(update: Update, context: ContextTypes.DEF
     pdf_content = generate_pdf_content(context.user_data, campaign_number)
     await query.message.reply_text(f"📋 ВАША ЗАЯВКА #{campaign_number}\n\n{pdf_content}")
     
-    # 2. Отправляем копию вам в Telegram
+    # 2. Отправляем уведомление админу
     await send_admin_notification(context, context.user_data, campaign_number)
     
     # 3. Подтверждаем клиенту
@@ -979,11 +979,12 @@ async def send_application_to_telegram(update: Update, context: ContextTypes.DEF
         "📞 Мы свяжемся с вами в течение 1 часа"
     )
 
-# Обработка главного меню и навигации
+# Улучшенный обработчик главного меню
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
+    # Обработка основных действий
     if query.data == "create_campaign":
         context.user_data.clear()
         return await radio_selection(update, context)
@@ -1043,6 +1044,30 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return MAIN_MENU
     
+    # ОБРАБОТКА КНОПОК PDF И ТЕЛЕГРАМ - ИСПРАВЛЕННЫЕ
+    elif query.data == "generate_pdf":
+        campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
+        pdf_content = generate_pdf_content(context.user_data, campaign_number)
+        await query.message.reply_text(f"📄 ВАШ PDF МЕДИАПЛАН\n\n{pdf_content}")
+        return ConversationHandler.END
+    
+    elif query.data.startswith("send_to_telegram_"):
+        campaign_number = query.data.replace("send_to_telegram_", "")
+        
+        # 1. Показываем клиенту его медиаплан
+        pdf_content = generate_pdf_content(context.user_data, campaign_number)
+        await query.message.reply_text(f"📋 ВАША ЗАЯВКА #{campaign_number}\n\n{pdf_content}")
+        
+        # 2. Отправляем уведомление админу
+        await send_admin_notification(context, context.user_data, campaign_number)
+        
+        # 3. Подтверждаем клиенту
+        await query.message.reply_text(
+            "✅ Ваша заявка отправлена менеджеру!\n"
+            "📞 Мы свяжемся с вами в течение 1 часа"
+        )
+        return ConversationHandler.END
+    
     elif query.data == "new_order":
         context.user_data.clear()
         return await radio_selection(update, context)
@@ -1050,12 +1075,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "personal_cabinet":
         return await personal_cabinet(update, context)
     
-    elif query.data == "generate_pdf":
-        return await generate_client_pdf(update, context)
-    
-    elif query.data.startswith("send_to_telegram_"):
-        return await send_application_to_telegram(update, context)
-    
+    # ОБРАБОТКА АДМИНСКИХ КНОПОК
     elif query.data.startswith("generate_pdf_"):
         campaign_number = query.data.replace("generate_pdf_", "")
         pdf_content = generate_pdf_content(context.user_data, campaign_number)
@@ -1074,6 +1094,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         email = query.data.replace("email_", "")
         await query.answer(f"✉️ Email: {email}")
     
+    # НАВИГАЦИЯ
     elif query.data == "back_to_main":
         return await start(update, context)
     
@@ -1140,23 +1161,33 @@ def main():
                 CallbackQueryHandler(handle_branded_sections, pattern='^.*$')
             ],
             CAMPAIGN_CREATOR: [
-                CallbackQueryHandler(handle_main_menu, pattern='^back_to_|^skip_text$|^cancel_text$|^to_production_option$|^provide_own_audio$'),
+                CallbackQueryHandler(handle_main_menu, pattern='^(back_to_|skip_text|cancel_text|to_production_option|provide_own_audio|enter_text)'),
                 CallbackQueryHandler(enter_campaign_text, pattern='^enter_text$')
             ],
             "WAITING_TEXT": [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text),
+                CallbackQueryHandler(handle_main_menu, pattern='^back_to_creator$'),
+                CallbackQueryHandler(handle_main_menu, pattern='^cancel_text$')
             ],
             PRODUCTION_OPTION: [
                 CallbackQueryHandler(handle_production_option, pattern='^.*$')
             ],
             CONTACT_INFO: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
+                CallbackQueryHandler(handle_main_menu, pattern='^back_to_production$')
             ]
         },
-        fallbacks=[CommandHandler('start', start)]
+        fallbacks=[CommandHandler('start', start)],
+        allow_reentry=True
     )
     
     application.add_handler(conv_handler)
+    
+    # Добавляем отдельный обработчик для кнопок после завершения разговора
+    application.add_handler(CallbackQueryHandler(
+        handle_main_menu, 
+        pattern='^(generate_pdf|send_to_telegram_|personal_cabinet|new_order|back_to_main)'
+    ))
     
     # Запускаем бота
     if 'RENDER' in os.environ:
