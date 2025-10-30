@@ -27,7 +27,7 @@ MAIN_MENU, RADIO_SELECTION, CAMPAIGN_PERIOD, TIME_SLOTS, BRANDED_SECTIONS, CAMPA
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 
 # Ваш Telegram ID для уведомлений
-ADMIN_TELEGRAM_ID = "AlexeyKhlistunov"  # Без @
+ADMIN_TELEGRAM_ID = "AlexeyKhlistunov"
 
 # Цены и параметры
 BASE_PRICE_PER_SECOND = 4
@@ -53,10 +53,10 @@ TIME_SLOTS_DATA = [
 ]
 
 BRANDED_SECTION_PRICES = {
-    'auto': 1.2,      # +20%
-    'realty': 1.15,   # +15%
-    'medical': 1.25,  # +25%
-    'custom': 1.3     # +30%
+    'auto': 1.2,
+    'realty': 1.15,
+    'medical': 1.25,
+    'custom': 1.3
 }
 
 PRODUCTION_OPTIONS = {
@@ -73,46 +73,56 @@ PERIOD_OPTIONS = {
 
 # Инициализация базы данных
 def init_db():
-    conn = sqlite3.connect('campaigns.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS campaigns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            campaign_number TEXT,
-            radio_stations TEXT,
-            campaign_period TEXT,
-            time_slots TEXT,
-            branded_section TEXT,
-            campaign_text TEXT,
-            production_option TEXT,
-            contact_name TEXT,
-            company TEXT,
-            phone TEXT,
-            email TEXT,
-            base_price INTEGER,
-            discount INTEGER,
-            final_price INTEGER,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect('campaigns.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                campaign_number TEXT,
+                radio_stations TEXT,
+                campaign_period TEXT,
+                time_slots TEXT,
+                branded_section TEXT,
+                campaign_text TEXT,
+                production_option TEXT,
+                contact_name TEXT,
+                company TEXT,
+                phone TEXT,
+                email TEXT,
+                base_price INTEGER,
+                discount INTEGER,
+                final_price INTEGER,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        logger.info("Таблица campaigns создана/проверена")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка создания таблицы: {e}")
+        return False
 
 # Валидация телефона
 def validate_phone(phone: str) -> bool:
     pattern = r'^(\+7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$'
     return bool(re.match(pattern, phone))
 
+# Форматирование чисел
+def format_number(num):
+    return f"{num:,}".replace(',', ' ')
+
 # Расчет стоимости кампании и охвата
 def calculate_campaign_price_and_reach(context):
     user_data = context.user_data
     
     # Базовые параметры
-    base_duration = 30  # секунд
+    base_duration = 30
     spots_per_day = 5
     
     # Период кампании
@@ -120,9 +130,6 @@ def calculate_campaign_price_and_reach(context):
     
     # Количество радиостанций
     num_stations = len(user_data.get('selected_radios', []))
-    
-    # Количество временных слотов
-    num_slots = len(user_data.get('selected_time_slots', []))
     
     # Базовая стоимость эфира
     base_air_cost = base_duration * BASE_PRICE_PER_SECOND * spots_per_day * period_days * num_stations
@@ -135,7 +142,7 @@ def calculate_campaign_price_and_reach(context):
         if 0 <= slot_index < len(TIME_SLOTS_DATA):
             slot = TIME_SLOTS_DATA[slot_index]
             if slot['premium']:
-                time_multiplier = max(time_multiplier, 1.1)  # 10% наценка
+                time_multiplier = max(time_multiplier, 1.1)
     
     # Надбавка за рубрику
     branded_multiplier = 1.0
@@ -167,7 +174,7 @@ def calculate_campaign_price_and_reach(context):
         'ЮМОР FM': 1100
     }.get(radio, 0) for radio in user_data.get('selected_radios', []))
     
-    # Учитываем пересечение аудитории (примерно 30% уникальности)
+    # Учитываем пересечение аудитории
     unique_daily_reach = int(daily_listeners * 0.7)
     total_reach = unique_daily_reach * period_days
     
@@ -224,8 +231,8 @@ def create_pdf_file(user_data, campaign_number):
     
     # Охват кампании
     story.append(Paragraph("🎯 РАСЧЕТНЫЙ ОХВАТ:", heading_style))
-    story.append(Paragraph(f"• Ежедневный охват: ~{daily_listeners:,} человек".replace(',', ' '), normal_style))
-    story.append(Paragraph(f"• Общий охват за период: ~{total_reach:,} человек".replace(',', ' '), normal_style))
+    story.append(Paragraph(f"• Ежедневный охват: ~{format_number(daily_listeners)} человек", normal_style))
+    story.append(Paragraph(f"• Общий охват за период: ~{format_number(total_reach)} человек", normal_style))
     story.append(Spacer(1, 20))
     
     # Финансовая информация
@@ -234,13 +241,13 @@ def create_pdf_file(user_data, campaign_number):
     # Таблица стоимости
     financial_data = [
         ['Позиция', 'Сумма (₽)'],
-        ['Эфирное время', f"{base_price - user_data.get('production_cost', 0):,}".replace(',', ' ')],
-        ['Производство ролика', f"{user_data.get('production_cost', 0):,}".replace(',', ' ')],
+        ['Эфирное время', format_number(base_price - user_data.get('production_cost', 0))],
+        ['Производство ролика', format_number(user_data.get('production_cost', 0))],
         ['', ''],
-        ['Базовая стоимость', f"{base_price:,}".replace(',', ' ')],
-        ['Скидка 50%', f"-{discount:,}".replace(',', ' ')],
+        ['Базовая стоимость', format_number(base_price)],
+        ['Скидка 50%', f"-{format_number(discount)}"],
         ['', ''],
-        ['ИТОГО', f"{final_price:,}".replace(',', ' ')]
+        ['ИТОГО', format_number(final_price)]
     ]
     
     financial_table = Table(financial_data, colWidths=[3*inch, 1.5*inch])
@@ -293,10 +300,8 @@ def create_pdf_file(user_data, campaign_number):
 # Отправка реального PDF файла
 async def send_pdf_file(update: Update, context: ContextTypes.DEFAULT_TYPE, campaign_number: str):
     try:
-        # Создаем PDF файл
         pdf_data = create_pdf_file(context.user_data, campaign_number)
         
-        # Отправляем PDF файл
         if hasattr(update, 'message') and update.message:
             await update.message.reply_document(
                 document=io.BytesIO(pdf_data),
@@ -304,7 +309,6 @@ async def send_pdf_file(update: Update, context: ContextTypes.DEFAULT_TYPE, camp
                 caption=f"📄 Ваш медиаплан кампании #{campaign_number}"
             )
         else:
-            # Если это callback query
             await update.callback_query.message.reply_document(
                 document=io.BytesIO(pdf_data),
                 filename=f"mediaplan_{campaign_number}.pdf",
@@ -317,8 +321,6 @@ async def send_pdf_file(update: Update, context: ContextTypes.DEFAULT_TYPE, camp
 
 # Отправка уведомления админу
 async def send_admin_notification(context, user_data, campaign_number):
-    """Отправка уведомления админу о новой заявке"""
-    
     base_price, discount, final_price, total_reach, daily_listeners = calculate_campaign_price_and_reach({'user_data': user_data})
     
     notification_text = f"""
@@ -331,9 +333,9 @@ Email: {user_data.get('email', 'Не указан')}
 Компания: {user_data.get('company', 'Не указана')}
 
 💰 СТОИМОСТЬ:
-Базовая: {base_price:,}₽
-Скидка 50%: -{discount:,}₽
-Итоговая: {final_price:,}₽
+Базовая: {format_number(base_price)}₽
+Скидка 50%: -{format_number(discount)}₽
+Итоговая: {format_number(final_price)}₽
 
 🎯 ПАРАМЕТРЫ:
 • Радиостанции: {', '.join(user_data.get('selected_radios', []))}
@@ -343,27 +345,22 @@ Email: {user_data.get('email', 'Не указан')}
 • Ролик: {PRODUCTION_OPTIONS[user_data.get('production_option', 'ready')]['name']}
 
 📊 ОХВАТ:
-• Ежедневно: ~{daily_listeners:,} чел.
-• За период: ~{total_reach:,} чел.
-""".replace(',', ' ')
+• Ежедневно: ~{format_number(daily_listeners)} чел.
+• За период: ~{format_number(total_reach)} чел.
+"""
     
-    # Создаем клавиатуру с кнопками действий
     keyboard = [
         [
-            InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF", 
-                               callback_data=f"generate_pdf_{campaign_number}"),
+            InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF", callback_data=f"generate_pdf_{campaign_number}"),
         ],
         [
-            InlineKeyboardButton(f"📞 {user_data.get('phone', 'Телефон')}", 
-                               callback_data=f"call_{user_data.get('phone', '')}"),
-            InlineKeyboardButton(f"✉️ Написать", 
-                               callback_data=f"email_{user_data.get('email', '')}")
+            InlineKeyboardButton(f"📞 {user_data.get('phone', 'Телефон')}", callback_data=f"call_{user_data.get('phone', '')}"),
+            InlineKeyboardButton(f"✉️ Написать", callback_data=f"email_{user_data.get('email', '')}")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        # Отправляем уведомление админу
         await context.bot.send_message(
             chat_id=ADMIN_TELEGRAM_ID,
             text=notification_text,
@@ -425,7 +422,6 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'ЮМОР FM': 1100
     }.get(radio, 0) for radio in selected_radios)
     
-    # Создаем клавиатуру с выбранными станциями
     keyboard = []
     radio_stations = [
         ("LOVE RADIO", "radio_love", 1600),
@@ -438,7 +434,7 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     for name, callback, listeners in radio_stations:
         emoji = "✅" if name in selected_radios else "⚪"
-        button_text = f"{emoji} {name} ({listeners:,}/день)".replace(',', ' ')
+        button_text = f"{emoji} {name} ({format_number(listeners)} ч/день)"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=callback)])
         keyboard.append([InlineKeyboardButton("📖 Подробнее", callback_data=f"details_{callback}")])
     
@@ -461,7 +457,7 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👥 1,500 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
         f"{'✅' if 'ЮМОР FM' in selected_radios else '⚪'} ЮМОР FM\n"
         f"👥 1,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
-        f"Выбрано: {len(selected_radios)} станции • {total_listeners} слушателей\n"
+        f"Выбрано: {len(selected_radios)} станции • {format_number(total_listeners)} слушателей\n"
         f"[ ДАЛЕЕ ]"
     )
     
@@ -533,7 +529,6 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_period = context.user_data.get('campaign_period')
     selected_radios = context.user_data.get('selected_radios', [])
     
-    # Информация о выбранных станциях
     stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
     station_listeners = {
         'LOVE RADIO': 1600,
@@ -546,17 +541,16 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     for radio in selected_radios:
         listeners = station_listeners.get(radio, 0)
-        stations_info += f"• {radio} ({listeners:,}/день)\n".replace(',', ' ')
+        stations_info += f"• {radio} ({format_number(listeners)} ч/день)\n"
     
     keyboard = []
     for key, option in PERIOD_OPTIONS.items():
         is_selected = "✅" if selected_period == key else "⚪"
-        # Расчет стоимости для каждого периода
         base_cost = 750 * option['days'] * len(selected_radios)
         discounted_cost = base_cost * 0.5
         keyboard.append([
             InlineKeyboardButton(
-                f"{is_selected} {option['name']} - {int(discounted_cost):,}₽".replace(',', ' '), 
+                f"{is_selected} {option['name']} - {format_number(int(discounted_cost))}₽", 
                 callback_data=f"period_{key}"
             )
         ])
@@ -610,7 +604,6 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_radios = context.user_data.get('selected_radios', [])
     period_days = context.user_data.get('campaign_period_days', 30)
     
-    # Создаем клавиатуру с временными слотами
     keyboard = []
     
     # Кнопка "Выбрать все"
@@ -649,7 +642,6 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_outputs_per_day = total_slots * 5 * len(selected_radios)
     total_outputs_period = total_outputs_per_day * period_days
     
-    # Информация о выбранных параметрах
     stations_text = "📻 ВЫБРАНЫ СТАНЦИИ:\n" + "\n".join([f"• {radio}" for radio in selected_radios])
     
     text = (
@@ -660,10 +652,10 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📊 Статистика выбора:\n"
         f"• Выбрано слотов: {total_slots}\n"
         f"• Выходов в день на всех радио: {total_outputs_per_day}\n"
-        f"• Всего выходов за период: {total_outputs_period:,}\n\n"
+        f"• Всего выходов за период: {format_number(total_outputs_period)}\n\n"
         f"🎯 Выберите подходящие временные интервалы\n"
         f"[ ДАЛЕЕ ]"
-    ).replace(',', ' ')
+    )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
     return TIME_SLOTS
@@ -677,7 +669,6 @@ async def handle_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await campaign_period(update, context)
     
     elif query.data == "select_all_slots":
-        # Выбираем все 15 слотов
         context.user_data['selected_time_slots'] = list(range(15))
         return await time_slots(update, context)
     
@@ -798,7 +789,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    # Рассчитываем предварительную стоимость и охват
     base_price, discount, final_price, total_reach, daily_listeners = calculate_campaign_price_and_reach(context)
     context.user_data['base_price'] = base_price
     context.user_data['discount'] = discount
@@ -824,13 +814,13 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"○ {char_count} знаков из 500\n\n"
         f"⏱️ Примерная длительность: {max(15, char_count // 7) if char_count > 0 else 0} секунд\n\n"
         f"💰 Предварительная стоимость:\n"
-        f"   Базовая: {base_price:,}₽\n"
-        f"   Скидка 50%: -{discount:,}₽\n"
-        f"   Итоговая: {final_price:,}₽\n\n"
+        f"   Базовая: {format_number(base_price)}₽\n"
+        f"   Скидка 50%: -{format_number(discount)}₽\n"
+        f"   Итоговая: {format_number(final_price)}₽\n\n"
         f"📊 Примерный охват кампании:\n"
-        f"   ~{total_reach:,} человек за период\n\n"
+        f"   ~{format_number(total_reach)} человек за период\n\n"
         f"{'✅' if provide_own else '⚪'} Пришлю свой ролик"
-    ).replace(',', ' ')
+    )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
     return CAMPAIGN_CREATOR
@@ -880,13 +870,13 @@ async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TY
         f"○ {char_count} знаков из 500\n\n"
         f"⏱️ Примерная длительность: {max(15, char_count // 7)} секунд\n\n"
         f"💰 Предварительная стоимость:\n"
-        f"   Базовая: {base_price:,}₽\n"
-        f"   Скидка 50%: -{discount:,}₽\n"
-        f"   Итоговая: {final_price:,}₽\n\n"
+        f"   Базовая: {format_number(base_price)}₽\n"
+        f"   Скидка 50%: -{format_number(discount)}₽\n"
+        f"   Итоговая: {format_number(final_price)}₽\n\n"
         f"📊 Примерный охват кампании:\n"
-        f"   ~{total_reach:,} человек за период\n\n"
+        f"   ~{format_number(total_reach)} человек за период\n\n"
         f"⚪ Пришлю свой ролик"
-    ).replace(',', ' ')
+    )
     
     await update.message.reply_text(text_display, reply_markup=reply_markup)
     return CAMPAIGN_CREATOR
@@ -896,7 +886,6 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    # Если клиент выбрал "Пришлю свой ролик", пропускаем этот шаг
     if context.user_data.get('provide_own_audio'):
         context.user_data['production_option'] = 'ready'
         context.user_data['production_cost'] = 0
@@ -909,7 +898,7 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_selected = "✅" if selected_production == key else "⚪"
         keyboard.append([
             InlineKeyboardButton(
-                f"{is_selected} {option['name']} - от {option['price']:,}₽".replace(',', ' '), 
+                f"{is_selected} {option['name']} - от {format_number(option['price'])}₽", 
                 callback_data=f"production_{key}"
             )
         ])
@@ -968,15 +957,15 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"Контактные данные\n\n"
         f"💰 Стоимость кампании:\n"
-        f"   Базовая: {base_price:,}₽\n"
-        f"   Скидка 50%: -{discount:,}₽\n"
-        f"   Итоговая: {final_price:,}₽\n\n"
-        f"📊 Примерный охват: ~{total_reach:,} человек\n\n"
+        f"   Базовая: {format_number(base_price)}₽\n"
+        f"   Скидка 50%: -{format_number(discount)}₽\n"
+        f"   Итоговая: {format_number(final_price)}₽\n\n"
+        f"📊 Примерный охват: ~{format_number(total_reach)} человек\n\n"
         f"─────────────────\n"
         f"📝 ВВЕДИТЕ ВАШЕ ИМЯ\n"
         f"─────────────────\n"
         f"(нажмите Enter для отправки)"
-    ).replace(',', ' ')
+    )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
     return CONTACT_INFO
@@ -1011,13 +1000,11 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
         elif 'company' not in context.user_data:
             context.user_data['company'] = text
             
-            # Рассчитываем финальную стоимость и охват
             base_price, discount, final_price, total_reach, daily_listeners = calculate_campaign_price_and_reach(context)
             context.user_data['base_price'] = base_price
             context.user_data['discount'] = discount
             context.user_data['final_price'] = final_price
             
-            # Сохраняем заявку в БД
             campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
             conn = sqlite3.connect('campaigns.db')
             cursor = conn.cursor()
@@ -1047,7 +1034,6 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
             conn.commit()
             conn.close()
             
-            # Отправляем подтверждение с финальными кнопками
             keyboard = [
                 [InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF МЕДИАПЛАН", callback_data="generate_pdf")],
                 [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ МНЕ В ТЕЛЕГРАММ", callback_data=f"send_to_telegram_{campaign_number}")],
@@ -1056,22 +1042,24 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            await update.message.reply_text(
+            message_text = (
                 f"✅ ЗАЯВКА ПРИНЯТА!\n\n"
                 f"Спасибо за доверие! 😊\n"
                 f"Наш менеджер свяжется с вами в ближайшее время.\n\n"
                 f"📋 № заявки: {campaign_number}\n"
                 f"📅 Старт: в течение 3 дней\n"
-                f"💰 Сумма со скидкой 50%: {final_price:,}₽\n"
-                f"📊 Примерный охват: ~{total_reach:,} человек\n\n"
-                f"Выберите дальнейшее действие:",
-                reply_markup=reply_markup
-            ).replace(',', ' ')
+                f"💰 Сумма со скидкой 50%: {format_number(final_price)}₽\n"
+                f"📊 Примерный охват: ~{format_number(total_reach)} человек\n\n"
+                f"Выберите дальнейшее действие:"
+            )
+            
+            await update.message.reply_text(message_text, reply_markup=reply_markup)
             
             return FINAL_ACTIONS
             
     except Exception as e:
         logger.error(f"КРИТИЧЕСКАЯ ОШИБКА в process_contact_info: {e}")
+        logger.error(f"Данные user_data: {context.user_data}")
         await update.message.reply_text(
             "❌ Произошла ошибка при сохранении заявки.\n"
             "Пожалуйста, начните заново: /start\n"
@@ -1088,7 +1076,6 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
         if query.data == "generate_pdf":
             campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
             try:
-                # Создаем и отправляем реальный PDF
                 pdf_data = create_pdf_file(context.user_data, campaign_number)
                 await query.message.reply_document(
                     document=io.BytesIO(pdf_data),
@@ -1104,7 +1091,6 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
             campaign_number = query.data.replace("send_to_telegram_", "")
             
             try:
-                # Пытаемся отправить реальный PDF
                 pdf_data = create_pdf_file(context.user_data, campaign_number)
                 await query.message.reply_document(
                     document=io.BytesIO(pdf_data),
@@ -1115,7 +1101,6 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
                 logger.error(f"Ошибка PDF: {e}")
                 await query.message.reply_text("❌ Ошибка при создании PDF, но заявка отправлена.")
             
-            # Отправляем уведомление админу
             try:
                 success = await send_admin_notification(context, context.user_data, campaign_number)
                 if success:
@@ -1167,7 +1152,7 @@ async def personal_cabinet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if orders:
         orders_text = "📋 ПОСЛЕДНИЕ ЗАКАЗЫ:\n\n"
         for order in orders:
-            orders_text += f"📋 {order[0]} | {order[1]} | {order[2]:,}₽ | {order[3][:10]}\n".replace(',', ' ')
+            orders_text += f"📋 {order[0]} | {order[1]} | {format_number(order[2])}₽ | {order[3][:10]}\n"
     else:
         orders_text = "📋 У вас пока нет заказов"
     
@@ -1251,7 +1236,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    # Обработка основных действий
     if query.data == "create_campaign":
         context.user_data.clear()
         return await radio_selection(update, context)
@@ -1265,7 +1249,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "about":
         return await about(update, context)
     
-    # ОБРАБОТКА АДМИНСКИХ КНОПОК
     elif query.data.startswith("generate_pdf_"):
         campaign_number = query.data.replace("generate_pdf_", "")
         try:
@@ -1298,7 +1281,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         email = query.data.replace("email_", "")
         await query.answer(f"✉️ Email: {email}")
     
-    # НАВИГАЦИЯ
     elif query.data == "back_to_main":
         return await start(update, context)
     
@@ -1321,7 +1303,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await production_option(update, context)
     
     elif query.data == "back_to_final":
-        # Возврат к финальным действиям после личного кабинета
         keyboard = [
             [InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF МЕДИАПЛАН", callback_data="generate_pdf")],
             [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ МНЕ В ТЕЛЕГРАММ", callback_data=f"send_to_telegram_{context.user_data.get('campaign_number', 'R-000000')}")],
@@ -1330,10 +1311,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
-            "Выберите дальнейшее действие:",
-            reply_markup=reply_markup
-        )
+        await query.edit_message_text("Выберите дальнейшее действие:", reply_markup=reply_markup)
         return FINAL_ACTIONS
     
     elif query.data == "skip_text":
@@ -1344,7 +1322,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await campaign_creator(update, context)
     
     elif query.data == "provide_own_audio":
-        # Переключатель "Пришлю свой ролик"
         current_state = context.user_data.get('provide_own_audio', False)
         context.user_data['provide_own_audio'] = not current_state
         return await campaign_creator(update, context)
@@ -1357,7 +1334,10 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Главная функция
 def main():
     # Инициализация БД
-    init_db()
+    if init_db():
+        logger.info("Бот запущен успешно")
+    else:
+        logger.error("Ошибка инициализации БД")
     
     # Создаем приложение
     application = Application.builder().token(TOKEN).build()
@@ -1366,63 +1346,6 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            MAIN_MENU: [
-                CallbackQueryHandler(handle_main_menu, pattern='^.*$')
-            ],
-            RADIO_SELECTION: [
-                CallbackQueryHandler(handle_radio_selection, pattern='^.*$')
-            ],
-            CAMPAIGN_PERIOD: [
-                CallbackQueryHandler(handle_campaign_period, pattern='^.*$')
-            ],
-            TIME_SLOTS: [
-                CallbackQueryHandler(handle_time_slots, pattern='^.*$')
-            ],
-            BRANDED_SECTIONS: [
-                CallbackQueryHandler(handle_branded_sections, pattern='^.*$')
-            ],
-            CAMPAIGN_CREATOR: [
-                CallbackQueryHandler(handle_main_menu, pattern='^(back_to_|skip_text|cancel_text|to_production_option|provide_own_audio|enter_text)'),
-                CallbackQueryHandler(enter_campaign_text, pattern='^enter_text$')
-            ],
-            "WAITING_TEXT": [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text),
-                CallbackQueryHandler(handle_main_menu, pattern='^back_to_creator$'),
-                CallbackQueryHandler(handle_main_menu, pattern='^cancel_text$')
-            ],
-            PRODUCTION_OPTION: [
-                CallbackQueryHandler(handle_production_option, pattern='^.*$')
-            ],
-            CONTACT_INFO: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
-                CallbackQueryHandler(handle_main_menu, pattern='^back_to_production$')
-            ],
-            FINAL_ACTIONS: [
-                CallbackQueryHandler(handle_final_actions, pattern='^.*$')
-            ]
-        },
-        fallbacks=[CommandHandler('start', start)],
-        allow_reentry=True
-    )
-    
-    application.add_handler(conv_handler)
-    
-    # Добавляем отдельный обработчик для админских кнопок
-    application.add_handler(CallbackQueryHandler(
-        handle_main_menu, 
-        pattern='^(generate_pdf_|get_pdf_|call_|email_)'
-    ))
-    
-    # Запускаем бота
-    if 'RENDER' in os.environ:
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=int(os.environ.get('PORT', 8443)),
-            url_path=TOKEN,
-            webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
-        )
-    else:
-        application.run_polling()
-
-if __name__ == '__main__':
-    main()
+            MAIN_MENU: [CallbackQueryHandler(handle_main_menu, pattern='^.*$')],
+            RADIO_SELECTION: [CallbackQueryHandler(handle_radio_selection, pattern='^.*$')],
+            CAMPAIGN_PERIOD: [CallbackQueryHandler(handle_campaign_period, pattern='
