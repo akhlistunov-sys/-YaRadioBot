@@ -428,17 +428,17 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Создаем клавиатуру с выбранными станциями
     keyboard = []
     radio_stations = [
-        ("LOVE RADIO", "radio_love"),
-        ("АВТОРАДИО", "radio_auto"),
-        ("РАДИО ДАЧА", "radio_dacha"), 
-        ("РАДИО ШАНСОН", "radio_chanson"),
-        ("РЕТРО FM", "radio_retro"),
-        ("ЮМОР FM", "radio_humor")
+        ("LOVE RADIO", "radio_love", 1600),
+        ("АВТОРАДИО", "radio_auto", 1400),
+        ("РАДИО ДАЧА", "radio_dacha", 1800), 
+        ("РАДИО ШАНСОН", "radio_chanson", 1200),
+        ("РЕТРО FM", "radio_retro", 1500),
+        ("ЮМОР FM", "radio_humor", 1100)
     ]
     
-    for name, callback in radio_stations:
+    for name, callback, listeners in radio_stations:
         emoji = "✅" if name in selected_radios else "⚪"
-        button_text = f"{emoji} {name}"
+        button_text = f"{emoji} {name} ({listeners:,}/день)".replace(',', ' ')
         keyboard.append([InlineKeyboardButton(button_text, callback_data=callback)])
         keyboard.append([InlineKeyboardButton("📖 Подробнее", callback_data=f"details_{callback}")])
     
@@ -531,12 +531,28 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     selected_period = context.user_data.get('campaign_period')
+    selected_radios = context.user_data.get('selected_radios', [])
+    
+    # Информация о выбранных станциях
+    stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
+    station_listeners = {
+        'LOVE RADIO': 1600,
+        'АВТОРАДИО': 1400,
+        'РАДИО ДАЧА': 1800,
+        'РАДИО ШАНСОН': 1200,
+        'РЕТРО FM': 1500,
+        'ЮМОР FM': 1100
+    }
+    
+    for radio in selected_radios:
+        listeners = station_listeners.get(radio, 0)
+        stations_info += f"• {radio} ({listeners:,}/день)\n".replace(',', ' ')
     
     keyboard = []
     for key, option in PERIOD_OPTIONS.items():
         is_selected = "✅" if selected_period == key else "⚪"
         # Расчет стоимости для каждого периода
-        base_cost = 750 * option['days']  # примерная базовая стоимость
+        base_cost = 750 * option['days'] * len(selected_radios)
         discounted_cost = base_cost * 0.5
         keyboard.append([
             InlineKeyboardButton(
@@ -551,11 +567,12 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     text = (
-        "Период кампании\n\n"
-        "📅 ВЫБЕРИТЕ ПЕРИОД КАМПАНИИ:\n\n"
-        "🎯 Старт кампании: в течение 3 дней после подтверждения\n"
-        "⏱️ Минимальный период: 15 дней\n\n"
-        "Цены указаны со скидкой 50%"
+        f"Период кампании\n\n"
+        f"{stations_info}\n"
+        f"📅 ВЫБЕРИТЕ ПЕРИОД КАМПАНИИ:\n\n"
+        f"🎯 Старт кампании: в течение 3 дней после подтверждения\n"
+        f"⏱️ Минимальный период: 15 дней\n\n"
+        f"Цены указаны со скидкой 50%"
     )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
@@ -590,9 +607,14 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     selected_slots = context.user_data.get('selected_time_slots', [])
+    selected_radios = context.user_data.get('selected_radios', [])
+    period_days = context.user_data.get('campaign_period_days', 30)
     
     # Создаем клавиатуру с временными слотами
     keyboard = []
+    
+    # Кнопка "Выбрать все"
+    keyboard.append([InlineKeyboardButton("✅ ВЫБРАТЬ ВСЕ СЛОТЫ", callback_data="select_all_slots")])
     
     # Утренние слоты
     keyboard.append([InlineKeyboardButton("🌅 УТРЕННИЕ СЛОТЫ (+10%)", callback_data="header_morning")])
@@ -624,17 +646,24 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     total_slots = len(selected_slots)
-    total_outputs = total_slots * 5  # 5 выходов в день на каждой станции
+    total_outputs_per_day = total_slots * 5 * len(selected_radios)
+    total_outputs_period = total_outputs_per_day * period_days
+    
+    # Информация о выбранных параметрах
+    stations_text = "📻 ВЫБРАНЫ СТАНЦИИ:\n" + "\n".join([f"• {radio}" for radio in selected_radios])
     
     text = (
-        "Временные слоты\n\n"
-        "🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
+        f"Временные слоты\n\n"
+        f"{stations_text}\n"
+        f"📅 ПЕРИОД КАМПАНИИ: {period_days} дней\n\n"
+        f"🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
         f"📊 Статистика выбора:\n"
         f"• Выбрано слотов: {total_slots}\n"
-        f"• Выходов в день на всех радио: {total_outputs}\n\n"
-        "🎯 Выберите подходящие временные интервалы\n"
-        "[ ДАЛЕЕ ]"
-    )
+        f"• Выходов в день на всех радио: {total_outputs_per_day}\n"
+        f"• Всего выходов за период: {total_outputs_period:,}\n\n"
+        f"🎯 Выберите подходящие временные интервалы\n"
+        f"[ ДАЛЕЕ ]"
+    ).replace(',', ' ')
     
     await query.edit_message_text(text, reply_markup=reply_markup)
     return TIME_SLOTS
@@ -646,6 +675,11 @@ async def handle_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data == "back_to_period":
         return await campaign_period(update, context)
+    
+    elif query.data == "select_all_slots":
+        # Выбираем все 15 слотов
+        context.user_data['selected_time_slots'] = list(range(15))
+        return await time_slots(update, context)
     
     elif query.data.startswith("time_"):
         slot_index = int(query.data.split("_")[1])
@@ -949,150 +983,173 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Обработка контактной информации
 async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    
-    if 'contact_name' not in context.user_data:
-        context.user_data['contact_name'] = text
-        await update.message.reply_text(
-            "📞 Введите ваш телефон:\n\n"
-            "Формат: +79XXXXXXXXX\n"
-            "Пример: +79123456789"
-        )
-        return CONTACT_INFO
-    
-    elif 'phone' not in context.user_data:
-        if not validate_phone(text):
-            await update.message.reply_text("❌ Неверный формат телефона. Используйте формат: +79XXXXXXXXX")
+    try:
+        text = update.message.text
+        
+        if 'contact_name' not in context.user_data:
+            context.user_data['contact_name'] = text
+            await update.message.reply_text(
+                "📞 Введите ваш телефон:\n\n"
+                "Формат: +79XXXXXXXXX\n"
+                "Пример: +79123456789"
+            )
             return CONTACT_INFO
-        context.user_data['phone'] = text
-        await update.message.reply_text("📧 Введите ваш email:")
-        return CONTACT_INFO
-    
-    elif 'email' not in context.user_data:
-        context.user_data['email'] = text
-        await update.message.reply_text("🏢 Введите название компании:")
-        return CONTACT_INFO
-    
-    elif 'company' not in context.user_data:
-        context.user_data['company'] = text
         
-        # Рассчитываем финальную стоимость и охват
-        base_price, discount, final_price, total_reach, daily_listeners = calculate_campaign_price_and_reach(context)
-        context.user_data['base_price'] = base_price
-        context.user_data['discount'] = discount
-        context.user_data['final_price'] = final_price
+        elif 'phone' not in context.user_data:
+            if not validate_phone(text):
+                await update.message.reply_text("❌ Неверный формат телефона. Используйте формат: +79XXXXXXXXX")
+                return CONTACT_INFO
+            context.user_data['phone'] = text
+            await update.message.reply_text("📧 Введите ваш email:")
+            return CONTACT_INFO
         
-        # Сохраняем заявку в БД
-        campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
-        conn = sqlite3.connect('campaigns.db')
-        cursor = conn.cursor()
+        elif 'email' not in context.user_data:
+            context.user_data['email'] = text
+            await update.message.reply_text("🏢 Введите название компании:")
+            return CONTACT_INFO
         
-        cursor.execute('''
-            INSERT INTO campaigns 
-            (user_id, campaign_number, radio_stations, campaign_period, time_slots, branded_section, campaign_text, production_option, contact_name, company, phone, email, base_price, discount, final_price)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            update.message.from_user.id,
-            campaign_number,
-            ','.join(context.user_data.get('selected_radios', [])),
-            context.user_data.get('campaign_period', ''),
-            ','.join(map(str, context.user_data.get('selected_time_slots', []))),
-            context.user_data.get('branded_section', ''),
-            context.user_data.get('campaign_text', ''),
-            context.user_data.get('production_option', ''),
-            context.user_data.get('contact_name', ''),
-            context.user_data.get('company', ''),
-            context.user_data.get('phone', ''),
-            context.user_data.get('email', ''),
-            base_price,
-            discount,
-            final_price
-        ))
-        
-        conn.commit()
-        conn.close()
-        
-        # Отправляем подтверждение с финальными кнопками
-        keyboard = [
-            [InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF МЕДИАПЛАН", callback_data="generate_pdf")],
-            [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ МНЕ В ТЕЛЕГРАММ", callback_data=f"send_to_telegram_{campaign_number}")],
-            [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
-            [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
+        elif 'company' not in context.user_data:
+            context.user_data['company'] = text
+            
+            # Рассчитываем финальную стоимость и охват
+            base_price, discount, final_price, total_reach, daily_listeners = calculate_campaign_price_and_reach(context)
+            context.user_data['base_price'] = base_price
+            context.user_data['discount'] = discount
+            context.user_data['final_price'] = final_price
+            
+            # Сохраняем заявку в БД
+            campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
+            conn = sqlite3.connect('campaigns.db')
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO campaigns 
+                (user_id, campaign_number, radio_stations, campaign_period, time_slots, branded_section, campaign_text, production_option, contact_name, company, phone, email, base_price, discount, final_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                update.message.from_user.id,
+                campaign_number,
+                ','.join(context.user_data.get('selected_radios', [])),
+                context.user_data.get('campaign_period', ''),
+                ','.join(map(str, context.user_data.get('selected_time_slots', []))),
+                context.user_data.get('branded_section', ''),
+                context.user_data.get('campaign_text', ''),
+                context.user_data.get('production_option', ''),
+                context.user_data.get('contact_name', ''),
+                context.user_data.get('company', ''),
+                context.user_data.get('phone', ''),
+                context.user_data.get('email', ''),
+                base_price,
+                discount,
+                final_price
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+            # Отправляем подтверждение с финальными кнопками
+            keyboard = [
+                [InlineKeyboardButton("📄 СФОРМИРОВАТЬ PDF МЕДИАПЛАН", callback_data="generate_pdf")],
+                [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ МНЕ В ТЕЛЕГРАММ", callback_data=f"send_to_telegram_{campaign_number}")],
+                [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
+                [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                f"✅ ЗАЯВКА ПРИНЯТА!\n\n"
+                f"Спасибо за доверие! 😊\n"
+                f"Наш менеджер свяжется с вами в ближайшее время.\n\n"
+                f"📋 № заявки: {campaign_number}\n"
+                f"📅 Старт: в течение 3 дней\n"
+                f"💰 Сумма со скидкой 50%: {final_price:,}₽\n"
+                f"📊 Примерный охват: ~{total_reach:,} человек\n\n"
+                f"Выберите дальнейшее действие:",
+                reply_markup=reply_markup
+            ).replace(',', ' ')
+            
+            return FINAL_ACTIONS
+            
+    except Exception as e:
+        logger.error(f"КРИТИЧЕСКАЯ ОШИБКА в process_contact_info: {e}")
         await update.message.reply_text(
-            f"✅ ЗАЯВКА ПРИНЯТА!\n\n"
-            f"Спасибо за доверие! 😊\n"
-            f"Наш менеджер свяжется с вами в ближайшее время.\n\n"
-            f"📋 № заявки: {campaign_number}\n"
-            f"📅 Старт: в течение 3 дней\n"
-            f"💰 Сумма со скидкой 50%: {final_price:,}₽\n"
-            f"📊 Примерный охват: ~{total_reach:,} человек\n\n"
-            f"Выберите дальнейшее действие:",
-            reply_markup=reply_markup
-        ).replace(',', ' ')
-        
-        return FINAL_ACTIONS
+            "❌ Произошла ошибка при сохранении заявки.\n"
+            "Пожалуйста, начните заново: /start\n"
+            "Или свяжитесь с поддержкой: t.me/AlexeyKhlistunov"
+        )
+        return ConversationHandler.END
 
 # Обработка финальных действий
 async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "generate_pdf":
-        campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
-        try:
-            # Создаем и отправляем реальный PDF
-            pdf_data = create_pdf_file(context.user_data, campaign_number)
-            await query.message.reply_document(
-                document=io.BytesIO(pdf_data),
-                filename=f"mediaplan_{campaign_number}.pdf",
-                caption=f"📄 Ваш медиаплан кампании #{campaign_number}"
-            )
-        except Exception as e:
-            logger.error(f"Ошибка PDF: {e}")
-            await query.message.reply_text("❌ Ошибка при создании PDF. Попробуйте еще раз.")
-        return FINAL_ACTIONS
-    
-    elif query.data.startswith("send_to_telegram_"):
-        campaign_number = query.data.replace("send_to_telegram_", "")
+    try:
+        query = update.callback_query
+        await query.answer()
         
-        try:
-            # Пытаемся отправить реальный PDF
-            pdf_data = create_pdf_file(context.user_data, campaign_number)
-            await query.message.reply_document(
-                document=io.BytesIO(pdf_data),
-                filename=f"mediaplan_{campaign_number}.pdf",
-                caption=f"📄 Ваш медиаплан кампании #{campaign_number}"
-            )
-        except Exception as e:
-            logger.error(f"Ошибка PDF: {e}")
-            await query.message.reply_text("❌ Ошибка при создании PDF, но заявка отправлена.")
+        if query.data == "generate_pdf":
+            campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
+            try:
+                # Создаем и отправляем реальный PDF
+                pdf_data = create_pdf_file(context.user_data, campaign_number)
+                await query.message.reply_document(
+                    document=io.BytesIO(pdf_data),
+                    filename=f"mediaplan_{campaign_number}.pdf",
+                    caption=f"📄 Ваш медиаплан кампании #{campaign_number}"
+                )
+            except Exception as e:
+                logger.error(f"Ошибка PDF: {e}")
+                await query.message.reply_text("❌ Ошибка при создании PDF. Попробуйте еще раз.")
+            return FINAL_ACTIONS
         
-        # Отправляем уведомление админу
-        success = await send_admin_notification(context, context.user_data, campaign_number)
-        if success:
-            await query.message.reply_text(
-                "✅ Ваша заявка отправлена менеджеру!\n"
-                "📞 Мы свяжемся с вами в течение 1 часа"
-            )
-        else:
-            await query.message.reply_text(
-                "⚠️ Заявка сохранена, но возникла проблема с уведомлением менеджера.\n"
-                "Свяжитесь с нами напрямую: t.me/AlexeyKhlistunov"
-            )
+        elif query.data.startswith("send_to_telegram_"):
+            campaign_number = query.data.replace("send_to_telegram_", "")
+            
+            try:
+                # Пытаемся отправить реальный PDF
+                pdf_data = create_pdf_file(context.user_data, campaign_number)
+                await query.message.reply_document(
+                    document=io.BytesIO(pdf_data),
+                    filename=f"mediaplan_{campaign_number}.pdf",
+                    caption=f"📄 Ваш медиаплан кампании #{campaign_number}"
+                )
+            except Exception as e:
+                logger.error(f"Ошибка PDF: {e}")
+                await query.message.reply_text("❌ Ошибка при создании PDF, но заявка отправлена.")
+            
+            # Отправляем уведомление админу
+            try:
+                success = await send_admin_notification(context, context.user_data, campaign_number)
+                if success:
+                    await query.message.reply_text(
+                        "✅ Ваша заявка отправлена менеджеру!\n"
+                        "📞 Мы свяжемся с вами в течение 1 часа"
+                    )
+                else:
+                    await query.message.reply_text(
+                        "⚠️ Заявка сохранена, но возникла проблема с уведомлением менеджера.\n"
+                        "Свяжитесь с нами напрямую: t.me/AlexeyKhlistunov"
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка отправки админу: {e}")
+                await query.message.reply_text(
+                    "⚠️ Заявка сохранена, но не отправлена менеджеру.\n"
+                    "Свяжитесь с нами: t.me/AlexeyKhlistunov"
+                )
+            return FINAL_ACTIONS
+        
+        elif query.data == "personal_cabinet":
+            return await personal_cabinet(update, context)
+        
+        elif query.data == "new_order":
+            context.user_data.clear()
+            await query.message.reply_text("🚀 Начинаем новую кампанию!")
+            return await radio_selection(update, context)
+        
         return FINAL_ACTIONS
-    
-    elif query.data == "personal_cabinet":
-        return await personal_cabinet(update, context)
-    
-    elif query.data == "new_order":
-        context.user_data.clear()
-        await query.message.reply_text("🚀 Начинаем новую кампанию!")
-        return await radio_selection(update, context)
-    
-    return FINAL_ACTIONS
+        
+    except Exception as e:
+        logger.error(f"Ошибка в handle_final_actions: {e}")
+        await query.message.reply_text("❌ Ошибка. Начните заново: /start")
+        return ConversationHandler.END
 
 # Личный кабинет
 async def personal_cabinet(update: Update, context: ContextTypes.DEFAULT_TYPE):
