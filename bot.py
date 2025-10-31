@@ -1,5 +1,3 @@
-[file name]: bot (1).py
-[file content begin]
 import os
 import logging
 import sqlite3
@@ -1730,4 +1728,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-[file content end]
