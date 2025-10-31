@@ -1,17 +1,17 @@
 import os
 import logging
 import sqlite3
+import io
+import re
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-from reportlab.lib.pagesizes import A4 # Оставлено, но не используется в новой логике
-from reportlab.pdfgen import canvas # Оставлено, но не используется в новой логике
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle # Оставлено, но не используется в новой логике
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle # Оставлено, но не используется в новой логике
-from reportlab.lib.units import inch # Оставлено, но не используется в новой логике
-from reportlab.lib import colors # Оставлено, но не используется в новой логике
-import io
-import re
+from reportlab.lib.pagesizes import A4 
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
 
 # Настройка логирования
 logging.basicConfig(
@@ -20,10 +20,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# --- ВОССТАНОВЛЕННЫЕ СОСТОЯНИЯ РАЗГОВОРА (с добавлением CAMPAIGN_REVIEW) ---
-# CAMPAIGN_REVIEW (индекс 8) добавлен перед FINAL_ACTIONS
+# --- ВОССТАНОВЛЕННЫЕ ОРИГИНАЛЬНЫЕ СОСТОЯНИЯ ---
 MAIN_MENU, RADIO_SELECTION, CAMPAIGN_PERIOD, TIME_SLOTS, BRANDED_SECTIONS, \
-PRODUCTION_OPTION, CONTACT_INFO, CAMPAIGN_CREATOR, CAMPAIGN_REVIEW, FINAL_ACTIONS = range(10)
+CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, FINAL_ACTIONS = range(9)
 
 # Токен бота
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
@@ -80,17 +79,15 @@ def init_db():
 
 init_db()
 
-# --- UTILITIES (Оставлено без изменений) ---
-
 def get_db_connection():
     return sqlite3.connect('campaigns.db')
 
 def calculate_budget(context):
     # Логика расчета бюджета (упрощенная)
     data = context.user_data
-    radio_station = next((r for r in RADIO_STATIONS if r['id'] == data['radio_id']), None)
+    radio_station = next((r for r in RADIO_STATIONS if r['id'] == data.get('radio_id')), None)
     
-    if not radio_station:
+    if not radio_station or 'start_date' not in data or 'end_date' not in data:
         return 0, 0
 
     total_budget = 0
@@ -135,7 +132,7 @@ def calculate_budget(context):
 def generate_excel_compatible_csv_report(context):
     # Генерируем отчет в формате CSV, который легко открывается в Excel
     data = context.user_data
-    radio_name = data['radio_name']
+    radio_name = data.get('radio_name', 'Неизвестно')
     total_budget, total_slots = calculate_budget(context)
     
     output = io.StringIO()
@@ -145,13 +142,14 @@ def generate_excel_compatible_csv_report(context):
     output.write("\n")
     
     # Основные данные кампании
+    # Важно: используем запятую как разделитель
     output.write("Параметр,Значение\n")
     output.write(f"Название компании (Заказчик),{data.get('company_name', 'Не указано')}\n")
     output.write(f"Радиостанция,{radio_name}\n")
     output.write(f"Начало кампании,{data.get('start_date', 'Не указано')}\n")
     output.write(f"Конец кампании,{data.get('end_date', 'Не указано')}\n")
-    output.write(f"Дни недели,{', '.join(data.get('days_of_week', ['Не указано']))}\n")
-    output.write(f"Время выхода (Слоты),{', '.join(data.get('selected_time_slots', ['Не выбрано']))}\n")
+    output.write(f"Дни недели,\"{', '.join(data.get('days_of_week', ['Не указано']))}\"\n") # Кавычки для сложных полей
+    output.write(f"Время выхода (Слоты),\n{', '.join(data.get('selected_time_slots', ['Не выбрано']))}\"\n")
     output.write(f"Брендированные секции,{('Да' if data.get('is_branded') else 'Нет')}\n")
     output.write(f"Необходимо производство,{('Да' if data.get('production_needed') else 'Нет')}\n")
     output.write("\n")
@@ -170,7 +168,7 @@ def generate_excel_compatible_csv_report(context):
 
     return output.getvalue(), total_budget, total_slots
 
-# --- HANDLERS (ВОССТАНОВЛЕННАЯ ЛОГИКА) ---
+# --- HANDLERS (Восстановленная логика) ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
@@ -182,11 +180,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(
-        "Здравствуйте! Я бот для оформления заявки на размещение рекламы. "
-        "Выберите радиостанцию:",
-        reply_markup=reply_markup
-    )
+    if update.message:
+        await update.message.reply_text(
+            "Здравствуйте! Я бот для оформления заявки на размещение рекламы. "
+            "Выберите радиостанцию:",
+            reply_markup=reply_markup
+        )
+    elif update.callback_query:
+        await update.callback_query.edit_message_text(
+            "Выберите радиостанцию:",
+            reply_markup=reply_markup
+        )
     return RADIO_SELECTION
 
 async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -202,7 +206,7 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
         
         await query.edit_message_text(
             f"Выбрана радиостанция: <b>{radio_station['name']}</b>. "
-            "Теперь введите начальную дату кампании (формат ГГГГ-ММ-ДД):",
+            "Теперь введите **начальную дату** кампании (формат ГГГГ-ММ-ДД):",
             parse_mode='HTML'
         )
         return CAMPAIGN_PERIOD
@@ -216,38 +220,52 @@ async def process_campaign_period(update: Update, context: ContextTypes.DEFAULT_
         start_date = datetime.strptime(date_str, '%Y-%m-%d')
         context.user_data['start_date'] = date_str
         
+        # Переходим к ожиданию конечной даты
+        context.user_data['awaiting_end_date'] = True 
+
         await update.message.reply_text(
             f"Начальная дата: <b>{date_str}</b>. "
-            "Теперь введите конечную дату кампании (формат ГГГГ-ММ-ДД):",
+            "Теперь введите **конечную дату** кампании (формат ГГГГ-ММ-ДД):",
             parse_mode='HTML'
         )
-        return CAMPAIGN_PERIOD # Ожидаем вторую дату
+        return CAMPAIGN_PERIOD # Остаемся в CAMPAIGN_PERIOD, ожидая второе сообщение
     except ValueError:
         await update.message.reply_text("Неверный формат даты. Пожалуйста, используйте ГГГГ-ММ-ДД.")
         return CAMPAIGN_PERIOD
 
 async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 2: Ввод конечной даты
+    # Шаг 2 (продолжение): Ввод конечной даты
     date_str = update.message.text.strip()
     try:
         end_date = datetime.strptime(date_str, '%Y-%m-%d')
         start_date = datetime.strptime(context.user_data['start_date'], '%Y-%m-%d')
         
         if end_date < start_date:
-            await update.message.reply_text("Конечная дата не может быть раньше начальной даты.")
-            # Просим ввести конечную дату снова
-            await update.message.reply_text("Пожалуйста, введите конечную дату кампании (формат ГГГГ-ММ-ДД):")
+            await update.message.reply_text("Конечная дата не может быть раньше начальной даты. Введите корректную конечную дату:")
             return CAMPAIGN_PERIOD
 
         context.user_data['end_date'] = date_str
         context.user_data['total_days'] = (end_date - start_date).days + 1
         
+        # Сбрасываем флаг и переходим к выбору слотов
+        del context.user_data['awaiting_end_date']
         return await prompt_time_slots(update, context)
         
     except ValueError:
-        # Если здесь ошибка, значит пользователь ввел вторую дату неверно
         await update.message.reply_text("Неверный формат конечной даты. Пожалуйста, используйте ГГГГ-ММ-ДД.")
         return CAMPAIGN_PERIOD
+    except KeyError:
+        # Если сюда попали без start_date, просим начать сначала
+        await update.message.reply_text("Произошла ошибка (не найдена начальная дата). Пожалуйста, начните заново, введя /start.")
+        return ConversationHandler.END
+
+
+async def handle_campaign_period_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Обработчик для CAMPAIGN_PERIOD, который различает ввод первой и второй даты."""
+    if context.user_data.get('awaiting_end_date'):
+        return await process_end_date(update, context)
+    else:
+        return await process_campaign_period(update, context)
 
 async def prompt_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Шаг 3: Выбор слотов и дней недели
@@ -298,38 +316,42 @@ async def handle_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     if query.data == 'slots_done':
         if not data.get('selected_time_slots'):
-            await query.edit_message_text("Пожалуйста, выберите хотя бы один временной слот.")
-            # Не меняем состояние, просто обновляем текст
+            await query.answer("Пожалуйста, выберите хотя бы один временной слот.", show_alert=True)
             return TIME_SLOTS
 
         # Переход к следующему шагу: BRANDED_SECTIONS
         return await prompt_branded_sections(update, context)
 
-    # Обработка выбора слота
-    if query.data.startswith('slot_'):
-        slot_time = query.data.split('_')[1]
-        slots = data.get('selected_time_slots', [])
-        if slot_time in slots:
-            slots.remove(slot_time)
-        else:
-            slots.append(slot_time)
-        data['selected_time_slots'] = slots
-    
-    # Обработка выбора дня недели
-    elif query.data.startswith('day_'):
-        day = query.data.split('_')[1]
-        days = data.get('days_of_week', ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"])
-        if day in days:
-            if len(days) > 1:
-                days.remove(day)
-        else:
-            days.append(day)
-            days.sort(key=lambda d: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].index(d))
-        data['days_of_week'] = days
+    # Обработка выбора слота или дня
+    if query.data.startswith('slot_') or query.data.startswith('day_'):
         
-    # Обновление клавиатуры и текста
-    return await prompt_time_slots(query, context)
-
+        if query.data.startswith('slot_'):
+            slot_time = query.data.split('_')[1]
+            slots = data.get('selected_time_slots', [])
+            if slot_time in slots:
+                slots.remove(slot_time)
+            else:
+                slots.append(slot_time)
+            data['selected_time_slots'] = slots
+        
+        elif query.data.startswith('day_'):
+            day = query.data.split('_')[1]
+            days = data.get('days_of_week', ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"])
+            if day in days:
+                if len(days) > 1:
+                    days.remove(day)
+                else:
+                    await query.answer("Нельзя отменить единственный выбранный день.", show_alert=True)
+                    return TIME_SLOTS
+            else:
+                days.append(day)
+                days.sort(key=lambda d: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].index(d))
+            data['days_of_week'] = days
+        
+        # Обновление клавиатуры и текста
+        return await prompt_time_slots(query, context)
+        
+    return TIME_SLOTS # Остаемся, если нажата какая-то другая кнопка
 
 async def prompt_branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Шаг 4: Выбор брендированных секций
@@ -343,10 +365,7 @@ async def prompt_branded_sections(update: Update, context: ContextTypes.DEFAULT_
 
     text = "Требуется ли размещение в брендированных секциях (повышает бюджет на 15%)?"
     
-    if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=reply_markup)
-    else:
-        await update.message.reply_text(text, reply_markup=reply_markup)
+    await update.callback_query.edit_message_text(text, reply_markup=reply_markup)
 
     return BRANDED_SECTIONS
 
@@ -359,11 +378,28 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
     elif query.data == 'branded_no':
         context.user_data['is_branded'] = False
         
+    # Переход к CAMPAIGN_CREATOR (ввод названия компании)
+    await query.edit_message_text(
+        "Спасибо! Теперь введите **полное название компании (Заказчика)**:"
+    )
+    return CAMPAIGN_CREATOR # <-- ВОССТАНОВЛЕНО МЕСТО
+
+async def process_campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # Шаг 5: Ввод названия компании
+    company_name = update.message.text.strip()
+    
+    if len(company_name) < 2 or len(company_name) > 100:
+        await update.message.reply_text("Пожалуйста, введите корректное название компании (от 2 до 100 символов).")
+        return CAMPAIGN_CREATOR
+
+    context.user_data['company_name'] = company_name
+
     # Переход к PRODUCTION_OPTION
     return await prompt_production_option(update, context)
 
+
 async def prompt_production_option(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 5: Выбор производства
+    # Шаг 6: Выбор производства
     context.user_data['production_needed'] = context.user_data.get('production_needed', False)
     
     keyboard = [
@@ -377,9 +413,10 @@ async def prompt_production_option(update: Update, context: ContextTypes.DEFAULT
     if update.callback_query:
         await update.callback_query.edit_message_text(text, reply_markup=reply_markup)
     else:
+        # Переход с CAMPAIGN_CREATOR
         await update.message.reply_text(text, reply_markup=reply_markup)
         
-    return PRODUCTION_OPTION
+    return PRODUCTION_OPTION # <-- ВОССТАНОВЛЕНО МЕСТО
 
 async def handle_production_option(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -393,12 +430,13 @@ async def handle_production_option(update: Update, context: ContextTypes.DEFAULT
     # Переход к сбору контактных данных
     return await prompt_contact_info(update, context)
 
+
 async def prompt_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 6: Запрос контактной информации
+    # Шаг 7: Запрос контактной информации
     
     text = (
         "Теперь введите ваши контактные данные, чтобы мы могли отправить вам медиаплан:\n"
-        "Отправьте одним сообщением в формате:\n\n"
+        "Отправьте **ОДНИМ** сообщением в формате:\n\n"
         "Иван Иванов\n"
         "+79123456789\n"
         "ivan.ivanov@example.com"
@@ -409,10 +447,10 @@ async def prompt_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text(text)
         
-    return CONTACT_INFO
+    return CONTACT_INFO # <-- ВОССТАНОВЛЕНО МЕСТО
 
 async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 7: Обработка контактной информации и переход к CAMPAIGN_CREATOR (ввод названия компании)
+    # Шаг 7 (продолжение): Обработка контактной информации
     
     contact_text = update.message.text.strip()
     lines = [line.strip() for line in contact_text.split('\n') if line.strip()]
@@ -427,29 +465,12 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
     context.user_data['contact_phone'] = lines[1]
     context.user_data['contact_email'] = lines[2]
     
-    # Переход к вводу названия компании
-    await update.message.reply_text(
-        "Спасибо! Теперь введите полное название компании (Заказчика):"
-    )
-    
-    return CAMPAIGN_CREATOR
-
-async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 8: Ввод названия компании и переход на REVIEW
-    company_name = update.message.text.strip()
-    
-    if len(company_name) < 2 or len(company_name) > 100:
-        await update.message.reply_text("Пожалуйста, введите корректное название компании (от 2 до 100 символов).")
-        return CAMPAIGN_CREATOR
-
-    context.user_data['company_name'] = company_name
-
-    # Переходим на новый экран обзора заявки
+    # Переход к финальному обзору
     return await review_campaign_details(update, context)
 
 
 async def review_campaign_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 9: Обзор и подтверждение заявки (CAMPAIGN_REVIEW)
+    # Шаг 8: Обзор и подтверждение заявки (FINAL_ACTIONS)
     
     # Генерируем отчет в памяти для отображения сводки
     report_csv, total_budget, total_slots = generate_excel_compatible_csv_report(context)
@@ -475,8 +496,7 @@ async def review_campaign_details(update: Update, context: ContextTypes.DEFAULT_
     
     keyboard = [
         [InlineKeyboardButton("✅ Отправить заявку", callback_data='send_final_request')],
-        # Кнопка назад возвращает на шаг ввода компании
-        [InlineKeyboardButton("✏️ Назад (Изменить компанию)", callback_data='back_to_campaign_creator')]
+        [InlineKeyboardButton("❌ Отмена (Начать заново)", callback_data='cancel_text')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -487,18 +507,34 @@ async def review_campaign_details(update: Update, context: ContextTypes.DEFAULT_
             parse_mode='HTML'
         )
     else:
-        # При первом переходе из process_campaign_text
+        # При первом переходе из process_contact_info
         await update.message.reply_text(
             review_text,
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
         
-    return CAMPAIGN_REVIEW
+    return FINAL_ACTIONS
 
 
-async def send_final_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Шаг 10: Окончательная отправка после подтверждения
+async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Обработка финальных действий (Отправить или Отменить)."""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == 'send_final_request':
+        return await finalize_and_send(update, context)
+        
+    elif query.data == 'cancel_text':
+        await query.edit_message_text("Заявка отменена. Начните снова, используя команду /start.")
+        context.user_data.clear()
+        return ConversationHandler.END
+        
+    return FINAL_ACTIONS
+
+
+async def finalize_and_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # Финализация заявки, сохранение в БД и отправка админу
     query = update.callback_query
     await query.answer()
 
@@ -554,11 +590,12 @@ async def send_final_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         f"✅ ЗАЯВКА ПРИНЯТА! №{campaign_id}\n\n"
         f"Ваша заявка на размещение рекламы для компании <b>{data.get('company_name', 'Неизвестно')}</b> успешно принята.\n"
         f"Оценочный бюджет: <b>{total_budget:,.0f} руб.</b>\n\n"
-        "Мы уже формируем медиаплан в формате Excel для вас и свяжемся в ближайшее время!",
+        "Мы уже формируем медиаплан и свяжемся в ближайшее время!",
         parse_mode='HTML'
     )
     
     # 4. Автоматическая отправка заявки АДМИНУ (в Excel-совместимом CSV)
+    # Используем 'utf-8' для корректного отображения кириллицы в Telegram, а затем в Excel
     report_file = io.BytesIO(report_csv_content.encode('utf-8'))
     report_file.name = f"Заявка_№{campaign_id}_{data['company_name']}.csv" # Имя файла для админа
 
@@ -582,33 +619,17 @@ async def send_final_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return ConversationHandler.END
 
 
-async def handle_campaign_review_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Обработка кнопок на экране обзора заявки."""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == 'send_final_request':
-        return await send_final_request(update, context)
-        
-    elif query.data == 'back_to_campaign_creator':
-        # Переход назад для редактирования названия компании
-        await query.edit_message_text(
-            "Введите полное название компании (Заказчика) для редактирования:"
-        )
-        return CAMPAIGN_CREATOR
-        
-    return CAMPAIGN_REVIEW
-
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Упрощенная функция для отмен и выхода
+    # Обработчик для отмен и админских кнопок
     query = update.callback_query
     await query.answer()
 
     if query.data == 'cancel_text':
-        await query.edit_message_text("Заявка отменена. Возврат в главное меню.")
-        return await start(update, context)
+        await query.edit_message_text("Заявка отменена. Начните снова, используя команду /start.")
+        context.user_data.clear()
+        return ConversationHandler.END
         
-    # Обработка админских кнопок (для простоты - просто ответ)
+    # Обработка админских кнопок (для полноты, хотя в этом сценарии они не видны)
     if query.data.startswith('generate_pdf_') or query.data.startswith('get_pdf_') or \
        query.data.startswith('call_') or query.data.startswith('email_'):
         await query.edit_message_text(f"Админское действие: {query.data} обработано.")
@@ -624,7 +645,7 @@ def main() -> None:
     
     application = Application.builder().token(TOKEN).build()
 
-    # Восстановленный порядок состояний в ConversationHandler
+    # Восстановленный оригинальный порядок состояний в ConversationHandler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -633,9 +654,8 @@ def main() -> None:
                 CallbackQueryHandler(handle_main_menu, pattern='^cancel_text$')
             ],
             CAMPAIGN_PERIOD: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_period),
-                # Этот обработчик ловит второе сообщение с датой
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_end_date), 
+                # Ловит оба сообщения с датами
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_campaign_period_message), 
             ],
             TIME_SLOTS: [
                 CallbackQueryHandler(handle_time_slots, pattern='^slot_.*$|^day_.*$|^slots_done$')
@@ -643,22 +663,21 @@ def main() -> None:
             BRANDED_SECTIONS: [
                 CallbackQueryHandler(handle_branded_sections, pattern='^branded_.*$')
             ],
+            # Шаг 5
+            CAMPAIGN_CREATOR: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_creator),
+            ],
+            # Шаг 6
             PRODUCTION_OPTION: [
                 CallbackQueryHandler(handle_production_option, pattern='^prod_.*$')
             ],
+            # Шаг 7
             CONTACT_INFO: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
             ],
-            # CAMPAIGN_CREATOR теперь запрашивает Название компании
-            CAMPAIGN_CREATOR: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text),
-            ],
-            # НОВОЕ СОСТОЯНИЕ: Обзор перед финальной отправкой
-            CAMPAIGN_REVIEW: [
-                CallbackQueryHandler(handle_campaign_review_callback, pattern='^send_final_request$|^back_to_campaign_creator$'),
-            ],
+            # Шаг 8: Обзор и финальные действия
             FINAL_ACTIONS: [
-                CallbackQueryHandler(handle_main_menu, pattern='^.*$') 
+                CallbackQueryHandler(handle_final_actions, pattern='^send_final_request$|^cancel_text$'),
             ]
         },
         fallbacks=[CommandHandler('start', start)],
