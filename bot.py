@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# --- ВОССТАНОВЛЕННЫЕ ОРИГИНАЛЬНЫЕ СОСТОЯНИЯ ---
+# --- СОСТОЯНИЯ РАЗГОВОРА ---
 MAIN_MENU, RADIO_SELECTION, CAMPAIGN_PERIOD, TIME_SLOTS, BRANDED_SECTIONS, \
 CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, FINAL_ACTIONS = range(9)
 
@@ -30,22 +30,28 @@ TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 # Ваш Telegram ID для уведомлений
 ADMIN_TELEGRAM_ID = 174046571  # Твой числовой ID
 
-# Цены и параметры
+# --- ЦЕНЫ И ПАРАМЕТРЫ ---
 BASE_PRICE_PER_SECOND = 4
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
-TIME_SLOTS_DATA = [
-    {"time": "06:00-09:00", "multipliers": {"Пн": 1.2, "Вт": 1.2, "Ср": 1.2, "Чт": 1.2, "Пт": 1.5, "Сб": 0.8, "Вс": 0.8}, "base_rate": 20},
-    {"time": "09:00-14:00", "multipliers": {"Пн": 1.0, "Вт": 1.0, "Ср": 1.0, "Чт": 1.0, "Пт": 1.2, "Сб": 0.9, "Вс": 0.9}, "base_rate": 20},
-    {"time": "14:00-19:00", "multipliers": {"Пн": 1.1, "Вт": 1.1, "Ср": 1.1, "Чт": 1.1, "Пт": 1.3, "Сб": 0.8, "Вс": 0.8}, "base_rate": 20},
-    {"time": "19:00-24:00", "multipliers": {"Пн": 0.9, "Вт": 0.9, "Ср": 0.9, "Чт": 0.9, "Пт": 1.1, "Сб": 1.0, "Вс": 1.0}, "base_rate": 20},
-    {"time": "24:00-06:00", "multipliers": {"Пн": 0.7, "Вт": 0.7, "Ср": 0.7, "Чт": 0.7, "Пт": 0.8, "Сб": 0.7, "Вс": 0.7}, "base_rate": 20},
+# Восстановленный полный список 6 радиостанций
+RADIO_STATIONS = [
+    {"id": "CITY", "name": "Радио СИТИ 105,9 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 1.0},
+    {"id": "DACHA", "name": "Радио ДАЧА 105,9 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 0.95},
+    {"id": "SHANSON", "name": "Радио Шансон 103,4 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 1.1},
+    {"id": "EUROPA", "name": "Европа Плюс 103,8 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 1.2},
+    {"id": "AVTORADIO", "name": "Авторадио 104,8 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 1.05},
+    {"id": "RADIO7", "name": "Радио 7 104,2 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 0.9},
 ]
 
-RADIO_STATIONS = [
-    {"id": "CITY", "name": "Радио СИТИ 105,9 FM", "base_price": BASE_PRICE_PER_SECOND},
-    {"id": "DACHA", "name": "Радио ДАЧА 105,9 FM", "base_price": BASE_PRICE_PER_SECOND},
+# Восстановленная детализированная структура слотов
+TIME_SLOTS_DATA = [
+    {"time": "06:00-09:00", "description": "Утренний Пик", "multipliers": {"Пн": 1.2, "Вт": 1.2, "Ср": 1.2, "Чт": 1.2, "Пт": 1.5, "Сб": 0.8, "Вс": 0.8}, "base_rate": 20},
+    {"time": "09:00-14:00", "description": "Дневной Эфир", "multipliers": {"Пн": 1.0, "Вт": 1.0, "Ср": 1.0, "Чт": 1.0, "Пт": 1.2, "Сб": 0.9, "Вс": 0.9}, "base_rate": 20},
+    {"time": "14:00-19:00", "description": "Вечерний Пик", "multipliers": {"Пн": 1.1, "Вт": 1.1, "Ср": 1.1, "Чт": 1.1, "Пт": 1.3, "Сб": 0.8, "Вс": 0.8}, "base_rate": 20},
+    {"time": "19:00-24:00", "description": "Поздний Эфир", "multipliers": {"Пн": 0.9, "Вт": 0.9, "Ср": 0.9, "Чт": 0.9, "Пт": 1.1, "Сб": 1.0, "Вс": 1.0}, "base_rate": 20},
+    {"time": "24:00-06:00", "description": "Ночной Эфир", "multipliers": {"Пн": 0.7, "Вт": 0.7, "Ср": 0.7, "Чт": 0.7, "Пт": 0.8, "Сб": 0.7, "Вс": 0.7}, "base_rate": 20},
 ]
 
 # --- DB SETUP (Оставлено без изменений) ---
@@ -83,8 +89,9 @@ def get_db_connection():
     return sqlite3.connect('campaigns.db')
 
 def calculate_budget(context):
-    # Логика расчета бюджета (упрощенная)
+    # Логика расчета бюджета
     data = context.user_data
+    # Используем множитель, привязанный к радиостанции
     radio_station = next((r for r in RADIO_STATIONS if r['id'] == data.get('radio_id')), None)
     
     if not radio_station or 'start_date' not in data or 'end_date' not in data:
@@ -92,6 +99,7 @@ def calculate_budget(context):
 
     total_budget = 0
     total_slots = 0
+    radio_multiplier = radio_station.get('multiplier', 1.0)
     
     try:
         start_date = datetime.strptime(data['start_date'], '%Y-%m-%d')
@@ -107,19 +115,29 @@ def calculate_budget(context):
                 for slot_time in selected_slots:
                     slot_data = next((s for s in TIME_SLOTS_DATA if s['time'] == slot_time), None)
                     if slot_data:
-                        multiplier = slot_data['multipliers'].get(day_of_week_rus, 1.0)
+                        # Множитель дня недели
+                        day_multiplier = slot_data['multipliers'].get(day_of_week_rus, 1.0)
                         
                         duration_seconds = slot_data['base_rate'] 
                         
-                        # Применяем мультипликатор брендинга, если выбран
+                        # Применяем мультипликатор брендинга (1.15)
                         branded_multiplier = 1.15 if data.get('is_branded') else 1.0
-
-                        price_per_slot = radio_station['base_price'] * duration_seconds * multiplier * branded_multiplier
+                        
+                        # Расчет: Базовая цена * Длительность * Множитель Дня * Множитель Радио * Множитель Брендинга
+                        price_per_slot = (
+                            radio_station['base_price'] 
+                            * duration_seconds 
+                            * day_multiplier 
+                            * radio_multiplier
+                            * branded_multiplier
+                        )
+                        
                         total_budget += price_per_slot
                         total_slots += 1
                         
             current_date = current_date + timedelta(days=1)
             
+        # Добавление стоимости производства
         if data.get('production_needed'):
             total_budget += MIN_PRODUCTION_COST
             
@@ -149,7 +167,7 @@ def generate_excel_compatible_csv_report(context):
     output.write(f"Начало кампании,{data.get('start_date', 'Не указано')}\n")
     output.write(f"Конец кампании,{data.get('end_date', 'Не указано')}\n")
     output.write(f"Дни недели,\"{', '.join(data.get('days_of_week', ['Не указано']))}\"\n") # Кавычки для сложных полей
-    output.write(f"Время выхода (Слоты),\n{', '.join(data.get('selected_time_slots', ['Не выбрано']))}\"\n")
+    output.write(f"Время выхода (Слоты),\"{', '.join(data.get('selected_time_slots', ['Не выбрано']))}\"\n")
     output.write(f"Брендированные секции,{('Да' if data.get('is_branded') else 'Нет')}\n")
     output.write(f"Необходимо производство,{('Да' if data.get('production_needed') else 'Нет')}\n")
     output.write("\n")
@@ -168,14 +186,16 @@ def generate_excel_compatible_csv_report(context):
 
     return output.getvalue(), total_budget, total_slots
 
-# --- HANDLERS (Восстановленная логика) ---
+# --- HANDLERS ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
     
+    # Восстановленная клавиатура с 6 радиостанциями
     keyboard = [
-        [InlineKeyboardButton("Радио СИТИ 105,9 FM", callback_data='radio_CITY')],
-        [InlineKeyboardButton("Радио ДАЧА 105,9 FM", callback_data='radio_DACHA')],
+        [InlineKeyboardButton(r['name'], callback_data=f'radio_{r["id"]}')]
+        for r in RADIO_STATIONS
+    ] + [
         [InlineKeyboardButton("Отмена", callback_data='cancel_text')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -217,7 +237,7 @@ async def process_campaign_period(update: Update, context: ContextTypes.DEFAULT_
     # Шаг 2: Ввод начальной даты
     date_str = update.message.text.strip()
     try:
-        start_date = datetime.strptime(date_str, '%Y-%m-%d')
+        datetime.strptime(date_str, '%Y-%m-%d')
         context.user_data['start_date'] = date_str
         
         # Переходим к ожиданию конечной даты
@@ -271,11 +291,12 @@ async def prompt_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Шаг 3: Выбор слотов и дней недели
     
     context.user_data['selected_time_slots'] = context.user_data.get('selected_time_slots', [])
+    # Убедимся, что дни недели всегда массив
     context.user_data['days_of_week'] = context.user_data.get('days_of_week', ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"])
 
     slot_buttons = [
         [InlineKeyboardButton(
-            f"{'✅ ' if slot['time'] in context.user_data['selected_time_slots'] else ''}{slot['time']}", 
+            f"{'✅ ' if slot['time'] in context.user_data['selected_time_slots'] else ''}{slot['time']} ({slot['description']})", 
             callback_data=f'slot_{slot["time"]}'
         )] 
         for slot in TIME_SLOTS_DATA
@@ -351,7 +372,7 @@ async def handle_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         # Обновление клавиатуры и текста
         return await prompt_time_slots(query, context)
         
-    return TIME_SLOTS # Остаемся, если нажата какая-то другая кнопка
+    return TIME_SLOTS 
 
 async def prompt_branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Шаг 4: Выбор брендированных секций
@@ -382,7 +403,7 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(
         "Спасибо! Теперь введите **полное название компании (Заказчика)**:"
     )
-    return CAMPAIGN_CREATOR # <-- ВОССТАНОВЛЕНО МЕСТО
+    return CAMPAIGN_CREATOR 
 
 async def process_campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Шаг 5: Ввод названия компании
@@ -416,7 +437,7 @@ async def prompt_production_option(update: Update, context: ContextTypes.DEFAULT
         # Переход с CAMPAIGN_CREATOR
         await update.message.reply_text(text, reply_markup=reply_markup)
         
-    return PRODUCTION_OPTION # <-- ВОССТАНОВЛЕНО МЕСТО
+    return PRODUCTION_OPTION
 
 async def handle_production_option(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -447,7 +468,7 @@ async def prompt_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text(text)
         
-    return CONTACT_INFO # <-- ВОССТАНОВЛЕНО МЕСТО
+    return CONTACT_INFO
 
 async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Шаг 7 (продолжение): Обработка контактной информации
@@ -595,7 +616,6 @@ async def finalize_and_send(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     )
     
     # 4. Автоматическая отправка заявки АДМИНУ (в Excel-совместимом CSV)
-    # Используем 'utf-8' для корректного отображения кириллицы в Telegram, а затем в Excel
     report_file = io.BytesIO(report_csv_content.encode('utf-8'))
     report_file.name = f"Заявка_№{campaign_id}_{data['company_name']}.csv" # Имя файла для админа
 
@@ -629,9 +649,10 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         context.user_data.clear()
         return ConversationHandler.END
         
-    # Обработка админских кнопок (для полноты, хотя в этом сценарии они не видны)
+    # Обработка админских кнопок (для полноты)
     if query.data.startswith('generate_pdf_') or query.data.startswith('get_pdf_') or \
        query.data.startswith('call_') or query.data.startswith('email_'):
+        # Здесь должна быть логика для админских действий, но для клиента это просто подтверждение
         await query.edit_message_text(f"Админское действие: {query.data} обработано.")
         return ConversationHandler.END 
         
@@ -645,7 +666,6 @@ def main() -> None:
     
     application = Application.builder().token(TOKEN).build()
 
-    # Восстановленный оригинальный порядок состояний в ConversationHandler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -654,7 +674,6 @@ def main() -> None:
                 CallbackQueryHandler(handle_main_menu, pattern='^cancel_text$')
             ],
             CAMPAIGN_PERIOD: [
-                # Ловит оба сообщения с датами
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_campaign_period_message), 
             ],
             TIME_SLOTS: [
@@ -663,19 +682,15 @@ def main() -> None:
             BRANDED_SECTIONS: [
                 CallbackQueryHandler(handle_branded_sections, pattern='^branded_.*$')
             ],
-            # Шаг 5
             CAMPAIGN_CREATOR: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_creator),
             ],
-            # Шаг 6
             PRODUCTION_OPTION: [
                 CallbackQueryHandler(handle_production_option, pattern='^prod_.*$')
             ],
-            # Шаг 7
             CONTACT_INFO: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
             ],
-            # Шаг 8: Обзор и финальные действия
             FINAL_ACTIONS: [
                 CallbackQueryHandler(handle_final_actions, pattern='^send_final_request$|^cancel_text$'),
             ]
@@ -686,7 +701,6 @@ def main() -> None:
     
     application.add_handler(conv_handler)
     
-    # Добавляем отдельный обработчик для админских кнопок
     application.add_handler(CallbackQueryHandler(\
         handle_main_menu, \
         pattern='^(generate_pdf_|get_pdf_|call_|email_)'\
