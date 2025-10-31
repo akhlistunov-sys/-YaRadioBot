@@ -1,8 +1,10 @@
+[file name]: bot (1).py
+[file content begin]
 import os
 import logging
 import sqlite3
 from datetime import datetime, timedelta
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import io
 import re
@@ -443,8 +445,6 @@ Email: {user_data.get('email', 'Не указан')}
         return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    LOGO_URL = "https://github.com/akhlistunov-sys/-YaRadioBot/blob/main/logo-2.png?raw=true"
-    
     keyboard = [
         [InlineKeyboardButton("🚀 СОЗДАТЬ КАМПАНИЮ", callback_data="create_campaign")],
         [InlineKeyboardButton("📊 СТАТИСТИКА ОХВАТА", callback_data="statistics")],
@@ -456,17 +456,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     caption = (
         "📍 Ялуторовск • Заводоуковск\n"
         "📍 Территория +35 км вокруг городов\n\n"
-        "📊 Потенциальных контактов: до 3,000+ в день\n"
-        "👥 Уникальных слушателей: до 35,000+ в месяц\n\n"
+        "📊 Потенциальных контактов: от 3,000+ в день\n"
+        "👥 Уникальных слушателей: от 35,000+ в месяц\n\n"
         "🎯 52% доля местного радиорынка\n"
         "💰 2₽/сек базовая цена"
     )
     
     # Если это сообщение от команды /start
     if update.message:
-        await update.message.reply_photo(
-            photo=LOGO_URL,
-            caption=caption,
+        await update.message.reply_text(
+            caption,
             reply_markup=reply_markup
         )
     else:
@@ -475,11 +474,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
         
         # Редактируем существующее сообщение вместо создания нового
-        await query.message.edit_media(
-            media=InputMediaPhoto(
-                media=LOGO_URL,
-                caption=caption
-            ),
+        await query.edit_message_text(
+            caption,
             reply_markup=reply_markup
         )
     
@@ -1474,7 +1470,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "o Потеря молодёжного сегмента (12–19 лет) снижает охват на 20–30 %.\n"
         "o Базовый охват = 1 120–1 400 чел./день \n\n"
         "3. Авторадио (25–55 лет)\n"
-        "o Ядро совпадает с наиболее многочисленной возрастной группой в малых городах.\n"
+        "o Ядро совпадает с наиболее многочисленной возрастной группой в малых городаы.\n"
         "o Базовый охват = 2 900–3 600 чел./день \n\n"
         "4. Ретро FM (35–65 лет)\n"
         "o Идеально попадает в возрастную структуру: высокая доля 45–65-летних.\n"
@@ -1495,7 +1491,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Радио Шансон	2 600–3 200\n\n"
         "4. Ключевые выводы\n"
         "1. Самые эффективные станции для Ялуторовска/Заводоуковска:\n"
-        "o Ретро FM, Радио Дача, Радио Шансон — их охват выше среднего за счёт совпадения с возрастной структурой.\n"
+        "o Ретро FM, Радио Дача, Радио Шансон — их охват выше среднего за счёт совпадения с возрастной структуры.\n"
         "o Авторадио — стабильно высокий охват благодаря универсальности.\n"
         "2. Слабые форматы:\n"
         "o Love Radio — низкий охват из за дефицита молодёжи.\n"
@@ -1516,34 +1512,28 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    LOGO_URL = "https://github.com/akhlistunov-sys/-YaRadioBot/blob/main/logo-2.png?raw=true"
-    
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await context.bot.send_photo(
-        chat_id=query.message.chat_id,
-        photo=LOGO_URL,
-        caption=(
-            "📍 Ялуторовск • Заводоуковск\n\n"
-            "ℹ️ О НАС\n\n"
-            "✅ Опыт работы на местном рынке: 10 лет\n\n"
-            "📻 ВЕЩАЕМ НА 6 РАДИОСТАНЦИЯХ:\n"
-            "• LOVE RADIO\n"
-            "• АВТОРАДИО\n"
-            "• РАДИО ДАЧА\n"
-            "• РАДИО ШАНСОН\n"
-            "• РЕТРО FM\n"
-            "• ЮМОР FM\n\n"
-            "Ведущий радиовещатель в регионе\n"
-            "Охватываем 52% радиорынка\n\n"
-            "Юридическая информация:\n"
-            "Индивидуальный предприниматель\n"
-            "Хлыстунов Алексей Александрович\n"
-            "ОГРНИП 315723200067362\n\n"
-            "📧 a.khlistunov@gmail.com\n"
-            "📱 Telegram: t.me/AlexeyKhlistunov"
-        ),
+    await query.edit_message_text(
+        "📍 Ялуторовск • Заводоуковск\n\n"
+        "ℹ️ О НАС\n\n"
+        "✅ Опыт работы на местном рынке: 10 лет\n\n"
+        "📻 ВЕЩАЕМ НА 6 РАДИОСТАНЦИЯХ:\n"
+        "• LOVE RADIO\n"
+        "• АВТОРАДИО\n"
+        "• РАДИО ДАЧА\n"
+        "• РАДИО ШАНСОН\n"
+        "• РЕТРО FM\n"
+        "• ЮМОР FM\n\n"
+        "Ведущий радиовещатель в регионе\n"
+        "Охватываем 52% радиорынка\n\n"
+        "Юридическая информация:\n"
+        "Индивидуальный предприниматель\n"
+        "Хлыстунов Алексей Александрович\n"
+        "ОГРНИП 315723200067362\n\n"
+        "📧 a.khlistunov@gmail.com\n"
+        "📱 Telegram: t.me/AlexeyKhlistunov",
         reply_markup=reply_markup
     )
     return MAIN_MENU
@@ -1740,3 +1730,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+[file content end]
