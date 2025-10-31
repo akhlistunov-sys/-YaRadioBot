@@ -890,7 +890,7 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
     
     return BRANDED_SECTIONS
 
-# Шаг 5: Конструктор ролика
+# Шаг 5: Конструктор ролика - ИСПРАВЛЕННАЯ ВЕРСИЯ
 async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -906,14 +906,23 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     char_count = len(campaign_text) if campaign_text else 0
     duration = context.user_data.get('duration', 20)
     
-    keyboard = [
-        [InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")],
-        [InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")],
-        [InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")],
-        [InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")],
-        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")],
-        [InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")]
-    ]
+    # Формируем клавиатуру в зависимости от выбора "Пришлю свой ролик"
+    keyboard = []
+    
+    if provide_own:
+        # Если выбран "Пришлю свой ролик" - показываем кнопку указания хронометража
+        keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+        keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+    else:
+        # Если НЕ выбран "Пришлю свой ролик" - показываем кнопку ввода текста
+        keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
+        keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+        keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+    
+    keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
+    keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
+    keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     text = (
@@ -935,7 +944,7 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text, reply_markup=reply_markup)
     return CAMPAIGN_CREATOR
 
-# Ввод текста ролика
+# Ввод текста ролика - ИСПРАВЛЕННАЯ ВЕРСИЯ
 async def enter_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -949,13 +958,72 @@ async def enter_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_text(
         "📝 Введите текст для радиоролика (до 500 знаков):\n\n"
         "Пример:\n"
-        "Автомобили в Тюмени! Новые модели в наличии. Выгодный трейд-ин и кредит 0%. "
-        "Тест-драйв в день обращения!\n\n"
+        "\"Автомобили в Тюмени! Новые модели в наличии. Выгодный трейд-ин и кредит 0%. "
+        "Тест-драйв в день обращения!\"\n\n"
         "Отправьте текст сообщением:",
         reply_markup=reply_markup
     )
     
     return "WAITING_TEXT"
+
+# Обработка текста ролика - ИСПРАВЛЕННАЯ ВЕРСИЯ
+async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        text = update.message.text.strip()
+        if len(text) > 500:
+            await update.message.reply_text("❌ Текст превышает 500 знаков. Сократите текст и отправьте снова:")
+            return "WAITING_TEXT"
+        
+        context.user_data['campaign_text'] = text
+        context.user_data['provide_own_audio'] = False
+        
+        # Автоматически возвращаем в конструктор ролика
+        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+        
+        char_count = len(text)
+        duration = context.user_data.get('duration', 20)
+        
+        # Формируем клавиатуру для конструктора
+        keyboard = []
+        provide_own = context.user_data.get('provide_own_audio', False)
+        
+        if provide_own:
+            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+        else:
+            keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
+            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+        
+        keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
+        keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
+        keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        text_display = (
+            f"Конструктор ролика\n\n"
+            f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
+            f"{text}\n\n"
+            f"○ {char_count} знаков из 500\n\n"
+            f"⏱️ Длительность ролика: {duration} секунд\n"
+            f"📊 Выходов в день: {spots_per_day}\n\n"
+            f"💰 Предварительная стоимость:\n"
+            f"   Базовая: {format_number(base_price)}₽\n"
+            f"   Скидка 50%: -{format_number(discount)}₽\n"
+            f"   Итоговая: {format_number(final_price)}₽\n\n"
+            f"📊 Примерный охват кампании:\n"
+            f"   ~{format_number(total_reach)} человек за период\n\n"
+            f"{'✅' if provide_own else '⚪'} Пришлю свой ролик"
+        )
+        
+        await update.message.reply_text(text_display, reply_markup=reply_markup)
+        return CAMPAIGN_CREATOR
+        
+    except Exception as e:
+        logger.error(f"Ошибка в process_campaign_text: {e}")
+        await update.message.reply_text("❌ Произошла ошибка. Попробуйте еще раз: /start")
+        return ConversationHandler.END
 
 # Ввод хронометража
 async def enter_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -980,10 +1048,10 @@ async def enter_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     return "WAITING_DURATION"
 
-# Обработка хронометража
+# Обработка хронометража - ИСПРАВЛЕННАЯ ВЕРСИЯ (автоматический возврат)
 async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        duration_text = update.message.text
+        duration_text = update.message.text.strip()
         duration = int(duration_text)
         
         if duration < 10 or duration > 30:
@@ -991,48 +1059,53 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return "WAITING_DURATION"
         
         context.user_data['duration'] = duration
-        await update.message.reply_text(f"✅ Длительность ролика установлена: {duration} секунд")
-        return await campaign_creator(update, context)
+        
+        # Автоматически возвращаем в конструктор ролика
+        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+        
+        campaign_text = context.user_data.get('campaign_text', '')
+        char_count = len(campaign_text) if campaign_text else 0
+        provide_own = context.user_data.get('provide_own_audio', False)
+        
+        # Формируем клавиатуру для конструктора
+        keyboard = []
+        
+        if provide_own:
+            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+        else:
+            keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
+            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
+            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
+        
+        keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
+        keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
+        keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        text_display = (
+            f"Конструктор ролика\n\n"
+            f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
+            f"{campaign_text if campaign_text else '[Ваш текст появится здесь]'}\n\n"
+            f"○ {char_count} знаков из 500\n\n"
+            f"⏱️ Длительность ролика: {duration} секунд\n"
+            f"📊 Выходов в день: {spots_per_day}\n\n"
+            f"💰 Предварительная стоимость:\n"
+            f"   Базовая: {format_number(base_price)}₽\n"
+            f"   Скидка 50%: -{format_number(discount)}₽\n"
+            f"   Итоговая: {format_number(final_price)}₽\n\n"
+            f"📊 Примерный охват кампании:\n"
+            f"   ~{format_number(total_reach)} человек за период\n\n"
+            f"{'✅' if provide_own else '⚪'} Пришлю свой ролик"
+        )
+        
+        await update.message.reply_text(text_display, reply_markup=reply_markup)
+        return CAMPAIGN_CREATOR
         
     except ValueError:
         await update.message.reply_text("❌ Пожалуйста, введите число от 10 до 30:")
         return "WAITING_DURATION"
-
-# Обработка текста ролика
-async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if len(text) > 500:
-        await update.message.reply_text("❌ Текст превышает 500 знаков. Сократите текст.")
-        return "WAITING_TEXT"
-    
-    context.user_data['campaign_text'] = text
-    context.user_data['provide_own_audio'] = False
-    
-    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
-    
-    keyboard = [[InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    char_count = len(text)
-    duration = context.user_data.get('duration', 20)
-    text_display = (
-        f"Конструктор ролика\n\n"
-        f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
-        f"{text}\n\n"
-        f"○ {char_count} знаков из 500\n\n"
-        f"⏱️ Длительность ролика: {duration} секунд\n"
-        f"📊 Выходов в день: {spots_per_day}\n\n"
-        f"💰 Предварительная стоимость:\n"
-        f"   Базовая: {format_number(base_price)}₽\n"
-        f"   Скидка 50%: -{format_number(discount)}₽\n"
-        f"   Итоговая: {format_number(final_price)}₽\n\n"
-        f"📊 Примерный охват кампании:\n"
-        f"   ~{format_number(total_reach)} человек за период\n\n"
-        f"⚪ Пришлю свой ролик"
-    )
-    
-    await update.message.reply_text(text_display, reply_markup=reply_markup)
-    return CAMPAIGN_CREATOR
 
 # Шаг 6: Производство ролика
 async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1162,7 +1235,7 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
         )
         return ConversationHandler.END
 
-# Показать подтверждение заявки
+# Показать подтверждение заявки - ИСПРАВЛЕННАЯ ВЕРСИЯ (новая кнопка)
 async def show_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
     
@@ -1223,21 +1296,21 @@ Email: {context.user_data.get('email', 'Не указан')}
     
     keyboard = [
         [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ", callback_data="submit_campaign")],
-        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_company")]
+        [InlineKeyboardButton("◀️ ВЕРНУТЬСЯ К ВЫБОРУ РАДИО", callback_data="back_to_radio_from_confirmation")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(confirmation_text, reply_markup=reply_markup)
     return CONFIRMATION
 
-# Обработка подтверждения заявки
+# Обработка подтверждения заявки - ИСПРАВЛЕННАЯ ВЕРСИЯ
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    if query.data == "back_to_company":
-        await query.message.reply_text("🏢 Введите название компании:")
-        return CONTACT_INFO
+    if query.data == "back_to_radio_from_confirmation":
+        # Возвращаем к выбору радиостанций, сохраняя все данные
+        return await radio_selection(update, context)
     
     elif query.data == "submit_campaign":
         try:
@@ -1409,7 +1482,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📈 Источники исследований:\n"
         "• RADIOPORTAL.RU - Радио в малых городах\n"
         "• Mediascope - Российский радиорынок\n"  
-        "• ВЦИОМ - Популярность радио в регионах\n\n"
+        "• ВЦИОМ - Популярность радио в региона\n\n"
         "🔗 radioportal.ru/radio-audience-research\n"
         "🔗 mediascope.net/services/media/radio/\n"
         "🔗 wciom.ru/analytical-reviews/radio-audience\n\n"
@@ -1444,7 +1517,7 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return MAIN_MENU
 
-# Улучшенный обработчик главного меню
+# Улучшенный обработчик главного меню - добавим обработку новой кнопки
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1509,6 +1582,9 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "back_to_radio":
         return await radio_selection(update, context)
     
+    elif query.data == "back_to_radio_from_confirmation":
+        return await radio_selection(update, context)
+    
     elif query.data == "back_to_period":
         return await campaign_period(update, context)
     
@@ -1564,6 +1640,9 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif query.data == "enter_duration":
         return await enter_duration(update, context)
+    
+    elif query.data == "enter_text":
+        return await enter_campaign_text(update, context)
     
     elif query.data == "submit_campaign":
         return await handle_confirmation(update, context)
