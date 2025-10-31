@@ -2,7 +2,7 @@ import os
 import logging
 import sqlite3
 from datetime import datetime, timedelta
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import io
 import re
@@ -453,29 +453,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    caption = (
+        "📍 Ялуторовск • Заводоуковск\n"
+        "📍 Территория +35 км вокруг городов\n\n"
+        "📊 Потенциальных контактов: до 3,000+ в день\n"
+        "👥 Уникальных слушателей: до 35,000+ в месяц\n\n"
+        "🎯 52% доля местного радиорынка\n"
+        "💰 2₽/сек базовая цена"
+    )
+    
+    # Если это сообщение от команды /start
     if update.message:
         await update.message.reply_photo(
             photo=LOGO_URL,
-            caption=(
-                "📍 Ялуторовск • Заводоуковск\n"
-                "📍 Территория +35 км вокруг городов\n\n"
-                "📊 Потенциальных контактов: до 3,000+ в день\n"
-                "👥 Уникальных слушателей: до 35,000+ в месяц\n\n"
-                "🎯 52% доля местного радиорынка\n"
-                "💰 2₽/сек базовая цена"
-            ),
+            caption=caption,
             reply_markup=reply_markup
         )
     else:
-        await update.callback_query.message.reply_photo(
-            photo=LOGO_URL,
-            caption=(
-                "📍 Ялуторовск • Заводоуковск\n"
-                "📍 Территория +35 км вокруг городов\n\n"
-                "📊 Потенциальных контактов: до 3,000+ в день\n"
-                "👥 Уникальных слушателей: до 35,000+ в месяц\n\n"
-                "🎯 52% доля местного радиорынка\n"
-                "💰 2₽/сек базовая цена"
+        # Если это callback query (возврат из другого раздела)
+        query = update.callback_query
+        await query.answer()
+        
+        # Редактируем существующее сообщение вместо создания нового
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=LOGO_URL,
+                caption=caption
             ),
             reply_markup=reply_markup
         )
@@ -490,6 +493,14 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
     
     keyboard = []
+    
+    # Новая кнопка - ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
+    all_selected = len(selected_radios) == 6
+    keyboard.append([InlineKeyboardButton(
+        "✅ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ" if all_selected else "⚪ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ", 
+        callback_data="select_all_radios"
+    )])
+    
     radio_stations = [
         ("LOVE RADIO", "radio_love", 540),
         ("АВТОРАДИО", "radio_auto", 3250),
@@ -537,6 +548,12 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
     
     if query.data == "back_to_main":
         return await start(update, context)
+    
+    elif query.data == "select_all_radios":
+        # Выбираем все 6 радиостанций
+        all_radios = ['LOVE RADIO', 'АВТОРАДИО', 'РАДИО ДАЧА', 'РАДИО ШАНСОН', 'РЕТРО FM', 'ЮМОР FM']
+        context.user_data['selected_radios'] = all_radios
+        return await radio_selection(update, context)
     
     elif query.data.startswith("details_"):
         station_data = {
