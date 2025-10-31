@@ -10,6 +10,7 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as XLImage
 
 # Настройка логирования
 logging.basicConfig(
@@ -25,12 +26,15 @@ MAIN_MENU, RADIO_SELECTION, CAMPAIGN_PERIOD, TIME_SLOTS, BRANDED_SECTIONS, CAMPA
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 
 # Ваш Telegram ID для уведомлений
-ADMIN_TELEGRAM_ID = 174046571  # Твой числовой ID
+ADMIN_TELEGRAM_ID = 174046571
 
 # Цены и параметры
 BASE_PRICE_PER_SECOND = 2
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
+
+# Логотип
+LOGO_URL = "https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/logo-2.png"
 
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True},
@@ -49,6 +53,28 @@ TIME_SLOTS_DATA = [
     {"time": "19:00-20:00", "label": "Домашний вечер", "premium": True},
     {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": True}
 ]
+
+# Обновленные данные по охвату с учетом возрастной структуры
+STATION_LISTENERS = {
+    'LOVE RADIO': 540,      # было 1600 - снижение на 66%
+    'АВТОРАДИО': 3250,      # было 1400 +132% рост
+    'РАДИО ДАЧА': 3250,     # было 1800 +80% рост
+    'РАДИО ШАНСОН': 2900,   # было 1200 +142% рост
+    'РЕТРО FM': 3600,       # было 1500 +140% рост
+    'ЮМОР FM': 1260         # было 1100 + небольшой рост
+}
+
+# Коэффициенты охвата за спот
+SPOT_COVERAGE_RATIOS = {
+    1: 0.15,  # 15% суточного охвата за 1 спот
+    2: 0.25,  # 25% за 2 спота
+    3: 0.30,  # 30% за 3 спота
+    4: 0.32,  # 32% за 4 спота
+    5: 0.34,  # 34% за 5 спота
+    6: 0.36,  # 36% за 6 спота
+    7: 0.38,  # 38% за 7 спотов
+    8: 0.40,  # 40% за 8+ спотов
+}
 
 BRANDED_SECTION_PRICES = {
     'auto': 1.2,      # +20%
@@ -115,17 +141,17 @@ def validate_phone(phone: str) -> bool:
 def format_number(num):
     return f"{num:,}".replace(',', ' ')
 
-# Расчет стоимости кампании и охвата
+# Расчет стоимости кампании и охвата с новой методикой
 def calculate_campaign_price_and_reach(user_data):
     try:
         # Базовые параметры
         base_duration = user_data.get('duration', 20)  # секунд
         period_days = user_data.get('campaign_period_days', 30)
-        num_stations = len(user_data.get('selected_radios', []))
+        selected_radios = user_data.get('selected_radios', [])
         selected_time_slots = user_data.get('selected_time_slots', [])
         
-        # Количество выходов в день
-        spots_per_day = len(selected_time_slots) * num_stations
+        # Количество выходов в день (спотов)
+        spots_per_day = len(selected_time_slots) * len(selected_radios)
         
         # Базовая стоимость эфира
         base_air_cost = base_duration * BASE_PRICE_PER_SECOND * spots_per_day * period_days
@@ -158,24 +184,26 @@ def calculate_campaign_price_and_reach(user_data):
         # Проверяем минимальный бюджет
         final_price = max(discounted_price, MIN_BUDGET)
         
-        # Расчет охвата
-        daily_listeners = sum({
-            'LOVE RADIO': 1600,
-            'АВТОРАДИО': 1400,
-            'РАДИО ДАЧА': 1800,
-            'РАДИО ШАНСОН': 1200,
-            'РЕТРО FM': 1500,
-            'ЮМОР FM': 1100
-        }.get(radio, 0) for radio in user_data.get('selected_radios', []))
+        # НОВЫЙ РАСЧЕТ ОХВАТА - согласно выбранным спотам
+        total_daily_coverage = 0
         
-        # Учитываем пересечение аудитории (примерно 30% уникальности)
-        unique_daily_reach = int(daily_listeners * 0.7)
-        total_reach = unique_daily_reach * period_days
+        for radio in selected_radios:
+            station_coverage = STATION_LISTENERS.get(radio, 0)
+            # Определяем коэффициент охвата в зависимости от количества спотов
+            num_spots = len(selected_time_slots)
+            coverage_ratio = SPOT_COVERAGE_RATIOS.get(num_spots, 0.4)  # по умолчанию 40% для 8+ спотов
+            
+            # Охват за спот для данной станции
+            spot_coverage = int(station_coverage * coverage_ratio)
+            total_daily_coverage += spot_coverage
         
-        return base_price, discount, final_price, total_reach, daily_listeners, spots_per_day
+        # Расчет общего охвата
+        total_reach = total_daily_coverage * period_days
+        
+        return base_price, discount, final_price, total_reach, total_daily_coverage, spots_per_day, total_daily_coverage
     except Exception as e:
         logger.error(f"Ошибка расчета стоимости: {e}")
-        return 0, 0, 0, 0, 0, 0
+        return 0, 0, 0, 0, 0, 0, 0
 
 def get_branded_section_name(section):
     names = {
@@ -189,7 +217,7 @@ def get_branded_section_name(section):
 # Создание Excel файла
 def create_excel_file(user_data, campaign_number):
     try:
-        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(user_data)
+        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(user_data)
         
         # Создаем новую книгу Excel
         wb = Workbook()
@@ -241,19 +269,10 @@ def create_excel_file(user_data, campaign_number):
         ws['A15'] = "📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ:"
         ws['A15'].font = title_font
         
-        station_listeners = {
-            'LOVE RADIO': 1600,
-            'АВТОРАДИО': 1400,
-            'РАДИО ДАЧА': 1800,
-            'РАДИО ШАНСОН': 1200,
-            'РЕТРО FM': 1500,
-            'ЮМОР FM': 1100
-        }
-        
         row = 16
         total_listeners = 0
         for radio in user_data.get('selected_radios', []):
-            listeners = station_listeners.get(radio, 0)
+            listeners = STATION_LISTENERS.get(radio, 0)
             total_listeners += listeners
             ws[f'A{row}'] = f"• {radio}: {format_number(listeners)} слушателей/день"
             row += 1
@@ -276,13 +295,13 @@ def create_excel_file(user_data, campaign_number):
         
         # Охват кампании
         row += 1
-        ws[f'A{row}'] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
+        ws[f'A{row}'] = "🎯 РАСЧЕТНЫЙ ОХВАТ (согласно выбранным спотам):"
         ws[f'A{row}'].font = title_font
         
         row += 1
-        ws[f'A{row}'] = f"• Ежедневный охват: ~{format_number(daily_listeners)} человек"
+        ws[f'A{row}'] = f"• Количество спотов в день: {spots_per_day}"
         row += 1
-        ws[f'A{row}'] = f"• Уникальный охват в день: ~{format_number(int(daily_listeners * 0.7))} человек"
+        ws[f'A{row}'] = f"• Ежедневный охват: ~{format_number(daily_coverage)} человек"
         row += 1
         ws[f'A{row}'] = f"• Общий охват за период: ~{format_number(total_reach)} человек"
         
@@ -401,21 +420,12 @@ async def send_excel_file(update: Update, context: ContextTypes.DEFAULT_TYPE, ca
 async def send_admin_notification(context, user_data, campaign_number):
     """Отправка уведомления админу о новой заявке"""
     try:
-        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(user_data)
+        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(user_data)
         
         # Детализация по радиостанциям
         stations_text = ""
-        station_listeners = {
-            'LOVE RADIO': 1600,
-            'АВТОРАДИО': 1400,
-            'РАДИО ДАЧА': 1800,
-            'РАДИО ШАНСОН': 1200,
-            'РЕТРО FM': 1500,
-            'ЮМОР FM': 1100
-        }
-        
         for radio in user_data.get('selected_radios', []):
-            listeners = station_listeners.get(radio, 0)
+            listeners = STATION_LISTENERS.get(radio, 0)
             stations_text += f"• {radio}: {format_number(listeners)}/день\n"
         
         # Детализация по слотам
@@ -449,11 +459,10 @@ Email: {user_data.get('email', 'Не указан')}
 Скидка 50%: -{format_number(discount)}₽
 Итоговая: {format_number(final_price)}₽
 
-🎯 ОХВАТ:
-• Выходов в день: {spots_per_day}
-• Всего выходов: {spots_per_day * user_data.get('campaign_period_days', 30)}
-• Ежедневно: ~{format_number(daily_listeners)} чел.
-• За период: ~{format_number(total_reach)} чел.
+🎯 ОХВАТ (согласно выбранным спотам):
+• Количество спотов в день: {spots_per_day}
+• Ежедневный охват: ~{format_number(daily_coverage)} чел.
+• Общий охват за период: ~{format_number(total_reach)} чел.
 """
         
         # Создаем клавиатуру с кнопками действий
@@ -480,7 +489,7 @@ Email: {user_data.get('email', 'Не указан')}
         logger.error(f"Ошибка отправки админу: {e}")
         return False
 
-# Главное меню
+# Главное меню с логотипом
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🚀 СОЗДАТЬ КАМПАНИЮ", callback_data="create_campaign")],
@@ -494,16 +503,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
         "📍 Ялуторовск • Заводоуковск\n"
         "📍 Территория +35 км вокруг городов\n\n"
-        "📊 Охват: 9,200+ в день\n"
-        "👥 Охват: 68,000+ в месяц\n\n"
+        "📊 Охват: 14,900+ в день\n"
+        "👥 Охват: 447,000+ в месяц\n\n"
         "🎯 52% доля местного радиорынка\n"
         "💰 2₽/сек базовая цена"
     )
     
+    # Отправляем логотип и текст
     if update.message:
-        await update.message.reply_text(text, reply_markup=reply_markup)
+        await update.message.reply_photo(
+            photo=LOGO_URL,
+            caption=text,
+            reply_markup=reply_markup
+        )
     else:
-        await update.callback_query.edit_message_text(text, reply_markup=reply_markup)
+        await update.callback_query.message.reply_photo(
+            photo=LOGO_URL,
+            caption=text,
+            reply_markup=reply_markup
+        )
     
     return MAIN_MENU
 
@@ -513,24 +531,17 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     selected_radios = context.user_data.get('selected_radios', [])
-    total_listeners = sum({
-        'LOVE RADIO': 1600,
-        'АВТОРАДИО': 1400,
-        'РАДИО ДАЧА': 1800,
-        'РАДИО ШАНСОН': 1200,
-        'РЕТРО FM': 1500,
-        'ЮМОР FM': 1100
-    }.get(radio, 0) for radio in selected_radios)
+    total_listeners = sum(STATION_LISTENERS.get(radio, 0) for radio in selected_radios)
     
     # Создаем клавиатуру с выбранными станциями
     keyboard = []
     radio_stations = [
-        ("LOVE RADIO", "radio_love", 1600),
-        ("АВТОРАДИО", "radio_auto", 1400),
-        ("РАДИО ДАЧА", "radio_dacha", 1800), 
-        ("РАДИО ШАНСОН", "radio_chanson", 1200),
-        ("РЕТРО FM", "radio_retro", 1500),
-        ("ЮМОР FM", "radio_humor", 1100)
+        ("LOVE RADIO", "radio_love", 540),
+        ("АВТОРАДИО", "radio_auto", 3250),
+        ("РАДИО ДАЧА", "radio_dacha", 3250), 
+        ("РАДИО ШАНСОН", "radio_chanson", 2900),
+        ("РЕТРО FM", "radio_retro", 3600),
+        ("ЮМОР FM", "radio_humor", 1260)
     ]
     
     for name, callback, listeners in radio_stations:
@@ -547,17 +558,17 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"Выбор радиостанций\n\n"
         f"{'✅' if 'LOVE RADIO' in selected_radios else '⚪'} LOVE RADIO\n"
-        f"👥 1,600 слушателей/день\n👩 Молодёжь 18-35 лет\n\n"
+        f"👥 540 слушателей/день\n👩 Молодёжь 16-35 лет\n\n"
         f"{'✅' if 'АВТОРАДИО' in selected_radios else '⚪'} АВТОРАДИО\n"
-        f"👥 1,400 слушателей/день\n👨 Автомобилисты 25-50 лет\n\n"
+        f"👥 3,250 слушателей/день\n👨 Автомобилисты 25-55 лет\n\n"
         f"{'✅' if 'РАДИО ДАЧА' in selected_radios else '⚪'} РАДИО ДАЧА\n"
-        f"👥 1,800 слушателей/день\n👨👩 Семья 35-65 лет\n\n"
+        f"👥 3,250 слушателей/день\n👨👩 Семья 35-60 лет\n\n"
         f"{'✅' if 'РАДИО ШАНСОН' in selected_radios else '⚪'} РАДИО ШАНСОН\n"
-        f"👥 1,200 слушателей/день\n👨 Мужчины 30-60 лет\n\n"
+        f"👥 2,900 слушателей/день\n👨 Мужчины 30-60+ лет\n\n"
         f"{'✅' if 'РЕТРО FM' in selected_radios else '⚪'} РЕТРО FM\n"
-        f"👥 1,500 слушателей/день\n👴👵 Ценители хитов 30-55 лет\n\n"
+        f"👥 3,600 слушателей/день\n👴👵 Ценители хитов 35-65 лет\n\n"
         f"{'✅' if 'ЮМОР FM' in selected_radios else '⚪'} ЮМОР FM\n"
-        f"👥 1,100 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
+        f"👥 1,260 слушателей/день\n👦👧 Слушатели 25-45 лет\n\n"
         f"Выбрано: {len(selected_radios)} станции • {format_number(total_listeners)} слушателей\n"
         f"[ ДАЛЕЕ ]"
     )
@@ -575,12 +586,12 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
     
     elif query.data.startswith("details_"):
         station_data = {
-            'details_radio_love': "LOVE RADIO - 1,600 слушателей/день\n• Молодёжь 18-35 лет (65%)\n• Активные, следят за трендами\n• Музыка: современные хиты\n• Особенности: интерактивные конкурсы",
-            'details_radio_auto': "АВТОРАДИО - 1,400 слушателей/день\n• Автомобилисты 25-50 лет (70%)\n• Дорожные новости, пробки\n• Музыка: российские и зарубежные хиты\n• Особенности: дорожная информация каждые 15 минут",
-            'details_radio_dacha': "РАДИО ДАЧА - 1,800 слушателей/день\n• Семья 35-65 лет (60% женщины)\n• Семейные ценности, дачные советы\n• Музыка: российская эстрада, ретро\n• Особенности: утренние шоу, полезные советы",
-            'details_radio_chanson': "РАДИО ШАНСОН - 1,200 слушателей/день\n• Мужчины 30-60 лет (75%)\n• Драйв и душевность\n• Музыка: шансон, авторская песня\n• Особенности: истории песен, гостевые эфиры",
-            'details_radio_retro': "РЕТРО FM - 1,500 слушателей/день\n• Ценители хитов 30-55 лет\n• Ностальгия по 80-90-м\n• Музыка: хиты 80-90-х годов\n• Особенности: тематические подборки",
-            'details_radio_humor': "ЮМОР FM - 1,100 слушателей/день\n• Слушатели 25-45 лет\n• Лёгкий юмор и позитив\n• Музыка: развлекательные шоу, комедии\n• Особенности: юмористические программы"
+            'details_radio_love': "LOVE RADIO - 540 слушателей/день\n• Молодёжь 16-35 лет\n• Активные, следят за трендами\n• Музыка: современные хиты\n• Особенности: интерактивные конкурсы",
+            'details_radio_auto': "АВТОРАДИО - 3,250 слушателей/день\n• Автомобилисты 25-55 лет\n• Дорожные новости, пробки\n• Музыка: российские и зарубежные хиты\n• Особенности: дорожная информация",
+            'details_radio_dacha': "РАДИО ДАЧА - 3,250 слушателей/день\n• Семья 35-60 лет\n• Семейные ценности, дачные советы\n• Музыка: российская эстрада, ретро\n• Особенности: утренние шоу, полезные советы",
+            'details_radio_chanson': "РАДИО ШАНСОН - 2,900 слушателей/день\n• Мужчины 30-60+ лет\n• Драйв и душевность\n• Музыка: шансон, авторская песня\n• Особенности: истории песен, гостевые эфиры",
+            'details_radio_retro': "РЕТРО FM - 3,600 слушателей/день\n• Ценители хитов 35-65 лет\n• Ностальгия по 80-90-м\n• Музыка: хиты 80-90-х годов\n• Особенности: тематические подборки",
+            'details_radio_humor': "ЮМОР FM - 1,260 слушателей/день\n• Слушатели 25-45 лет\n• Лёгкий юмор и позитив\n• Музыка: развлекательные шоу, комедии\n• Особенности: юмористические программы"
         }
         
         station_info = station_data.get(query.data, "Информация о станции")
@@ -632,28 +643,16 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Информация о выбранных станциях
     stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
-    station_listeners = {
-        'LOVE RADIO': 1600,
-        'АВТОРАДИО': 1400,
-        'РАДИО ДАЧА': 1800,
-        'РАДИО ШАНСОН': 1200,
-        'РЕТРО FM': 1500,
-        'ЮМОР FM': 1100
-    }
-    
     for radio in selected_radios:
-        listeners = station_listeners.get(radio, 0)
+        listeners = STATION_LISTENERS.get(radio, 0)
         stations_info += f"• {radio} ({format_number(listeners)} ч/день)\n"
     
     keyboard = []
     for key, option in PERIOD_OPTIONS.items():
         is_selected = "✅" if selected_period == key else "⚪"
-        # Расчет стоимости для каждого периода
-        base_cost = 750 * option['days'] * len(selected_radios)
-        discounted_cost = base_cost * 0.5
         keyboard.append([
             InlineKeyboardButton(
-                f"{is_selected} {option['name']} - {format_number(int(discounted_cost))}₽", 
+                f"{is_selected} {option['name']}", 
                 callback_data=f"period_{key}"
             )
         ])
@@ -669,7 +668,6 @@ async def campaign_period(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📅 ВЫБЕРИТЕ ПЕРИОД КАМПАНИИ:\n\n"
         f"🎯 Старт кампании: в течение 3 дней после подтверждения\n"
         f"⏱️ Минимальный период: 15 дней\n\n"
-        f"Цены указаны со скидкой 50%"
     )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
@@ -854,11 +852,22 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
     
     elif query.data == "show_example":
         example_text = (
-            "Комплексные рекламные решения для продвижения услуг Тюменского кардиологического научного центра на радиостанциях Тюмени.\n\n"
-            "Задача: Продвижение услуг кардиологического центра, информирование жителей региона о важности профилактики сердечно-сосудистых заболеваний.\n\n"
-            "Форматы размещения:\n• Рекламные ролики (15–30 сек.)\n• Брендированные рубрики — «Здоровое сердце», «Совет врача»\n\n"
-            "Пример рубрики (30 сек.):\n«❤️ Знаете ли вы, что регулярное обследование сердца помогает предупредить серьёзные заболевания? В Тюменском кардиологическом научном центре вы можете пройти диагностику и получить консультацию специалистов. Заботьтесь о себе и своих близких — здоровье сердца в надёжных руках!»\n\n"
-            "Преимущества:\n• Доступ к широкой аудитории\n• Высокий уровень доверия к радио\n• Интеграция бренда в полезный контент\n• Формирование имиджа экспертного медицинского центра"
+            "Рубрики «30 секунд об АвтоВАЗе»\n\n"
+            "Готовый комплект рубрик для АвтоВАЗа (понедельник–воскресенье).\n\n"
+            "Понедельник — Интересный факт\n"
+            "ВАЗ-2106, знаменитая «шестёрка», стала одной из самых массовых моделей АвтоВАЗа. За 30 лет выпуска было произведено более 4 миллионов автомобилей — рекорд для отечественного автопрома!\n\n"
+            "Вторник — Интересный факт\n"
+            "LADA Kalina, появившаяся в 2004 году, стала первой моделью АвтоВАЗа, оснащённой системой ABS и подушками безопасности. Именно с неё начался новый этап в развитии безопасности российских автомобилей.\n\n"
+            "Среда — Интересный факт\n"
+            "LADA Priora долгое время была выбором молодых водителей. За время выпуска с 2007 по 2018 год с конвейера сошло более 1 миллиона машин, а многие до сих пор на дорогах.\n\n"
+            "Четверг — Интересный факт\n"
+            "В 2018 году АвтоВАЗ начал экспорт LADA Vesta и LADA Largus в Европу. Эти модели хорошо зарекомендовали себя благодаря надёжности и доступной цене.\n\n"
+            "Пятница — Интересный факт\n"
+            "На заводе АвтоВАЗа в Тольятти работает более 30 тысяч сотрудников. Это один из крупнейших работодателей Самарской области, а сам завод называют «городом в городе».\n\n"
+            "Суббота — Интересный факт\n"
+            "LADA Niva не раз участвовала в ралли «Париж — Дакар». В 1980-х эта модель удивляла мир своей проходимостью и выносливостью, соревнуясь с лучшими внедорожниками мира.\n\n"
+            "Воскресенье — Интересный факт\n"
+            "В 2021 году LADA стала маркой №1 на российском рынке: её доля составила более 20% всех проданных автомобилей в стране. Это подтверждает доверие миллионов водителей."
         )
         
         keyboard = [[InlineKeyboardButton("◀️ НАЗАД К ВЫБОРУ РУБРИК", callback_data="back_to_branded")]]
@@ -896,7 +905,7 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     # Рассчитываем предварительную стоимость и охват
-    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(context.user_data)
     context.user_data['base_price'] = base_price
     context.user_data['discount'] = discount
     context.user_data['final_price'] = final_price
@@ -917,7 +926,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Если НЕ выбран "Пришлю свой ролик" - показываем кнопку ввода текста
         keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
         keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-        keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
     
     keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
     keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
@@ -966,7 +974,7 @@ async def enter_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     return "WAITING_TEXT"
 
-# Обработка текста ролика - ИСПРАВЛЕННАЯ ВЕРСИЯ
+# Обработка текста ролика - ИСПРАВЛЕННАЯ ВЕРСИЯ (сразу в производство)
 async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         text = update.message.text.strip()
@@ -977,48 +985,8 @@ async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['campaign_text'] = text
         context.user_data['provide_own_audio'] = False
         
-        # Автоматически возвращаем в конструктор ролика
-        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
-        
-        char_count = len(text)
-        duration = context.user_data.get('duration', 20)
-        
-        # Формируем клавиатуру для конструктора
-        keyboard = []
-        provide_own = context.user_data.get('provide_own_audio', False)
-        
-        if provide_own:
-            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-        else:
-            keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
-            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-        
-        keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
-        keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
-        keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        text_display = (
-            f"Конструктор ролика\n\n"
-            f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
-            f"{text}\n\n"
-            f"○ {char_count} знаков из 500\n\n"
-            f"⏱️ Длительность ролика: {duration} секунд\n"
-            f"📊 Выходов в день: {spots_per_day}\n\n"
-            f"💰 Предварительная стоимость:\n"
-            f"   Базовая: {format_number(base_price)}₽\n"
-            f"   Скидка 50%: -{format_number(discount)}₽\n"
-            f"   Итоговая: {format_number(final_price)}₽\n\n"
-            f"📊 Примерный охват кампании:\n"
-            f"   ~{format_number(total_reach)} человек за период\n\n"
-            f"{'✅' if provide_own else '⚪'} Пришлю свой ролик"
-        )
-        
-        await update.message.reply_text(text_display, reply_markup=reply_markup)
-        return CAMPAIGN_CREATOR
+        # Автоматически переходим в производство ролика
+        return await production_option(update, context)
         
     except Exception as e:
         logger.error(f"Ошибка в process_campaign_text: {e}")
@@ -1048,7 +1016,7 @@ async def enter_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     return "WAITING_DURATION"
 
-# Обработка хронометража - ИСПРАВЛЕННАЯ ВЕРСИЯ (автоматический возврат)
+# Обработка хронометража - ИСПРАВЛЕННАЯ ВЕРСИЯ (автоматический возврат в конструктор)
 async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         duration_text = update.message.text.strip()
@@ -1059,55 +1027,14 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return "WAITING_DURATION"
         
         context.user_data['duration'] = duration
-        
-        # Автоматически возвращаем в конструктор ролика
-        base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
-        
-        campaign_text = context.user_data.get('campaign_text', '')
-        char_count = len(campaign_text) if campaign_text else 0
-        provide_own = context.user_data.get('provide_own_audio', False)
-        
-        # Формируем клавиатуру для конструктора
-        keyboard = []
-        
-        if provide_own:
-            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-        else:
-            keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
-            keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-            keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-        
-        keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
-        keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
-        keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        text_display = (
-            f"Конструктор ролика\n\n"
-            f"📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
-            f"{campaign_text if campaign_text else '[Ваш текст появится здесь]'}\n\n"
-            f"○ {char_count} знаков из 500\n\n"
-            f"⏱️ Длительность ролика: {duration} секунд\n"
-            f"📊 Выходов в день: {spots_per_day}\n\n"
-            f"💰 Предварительная стоимость:\n"
-            f"   Базовая: {format_number(base_price)}₽\n"
-            f"   Скидка 50%: -{format_number(discount)}₽\n"
-            f"   Итоговая: {format_number(final_price)}₽\n\n"
-            f"📊 Примерный охват кампании:\n"
-            f"   ~{format_number(total_reach)} человек за период\n\n"
-            f"{'✅' if provide_own else '⚪'} Пришлю свой ролик"
-        )
-        
-        await update.message.reply_text(text_display, reply_markup=reply_markup)
-        return CAMPAIGN_CREATOR
+        await update.message.reply_text(f"✅ Длительность ролика установлена: {duration} секунд")
+        return await campaign_creator(update, context)
         
     except ValueError:
         await update.message.reply_text("❌ Пожалуйста, введите число от 10 до 30:")
         return "WAITING_DURATION"
 
-# Шаг 6: Производство ролика
+# Шаг 6: Производство ролика - ОБНОВЛЕННАЯ ВЕРСИЯ
 async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1119,6 +1046,17 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await contact_info(update, context)
     
     selected_production = context.user_data.get('production_option')
+    
+    # Рассчитываем стоимость с учетом текста ролика
+    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(context.user_data)
+    
+    # Получаем текст ролика и рассчитываем примерный хронометраж
+    campaign_text = context.user_data.get('campaign_text', '')
+    char_count = len(campaign_text)
+    
+    # Расчет примерного хронометража на основе текста (примерно 2-3 сек на 10 слов)
+    word_count = len(campaign_text.split())
+    estimated_duration = min(30, max(15, word_count * 2 // 10))
     
     keyboard = []
     for key, option in PRODUCTION_OPTIONS.items():
@@ -1137,12 +1075,15 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = (
         "Производство ролика\n\n"
+        f"📝 ВАШ ТЕКСТ РОЛИКА:\n{campaign_text[:200]}{'...' if len(campaign_text) > 200 else ''}\n\n"
+        f"⏱️ Примерная длительность: ~{estimated_duration} сек\n"
+        f"📊 Расчетный охват: ~{format_number(total_reach)} человек\n\n"
         "🎙️ ВЫБЕРИТЕ ВАРИАНТ РОЛИКА:\n\n"
         "⚪ СТАНДАРТНЫЙ РОЛИК - от 2,000₽\n"
         "• Профессиональная озвучка\n• Музыкальное оформление\n• 2 правки\n• Срок: 2-3 дня\n\n"
         "⚪ ПРЕМИУМ РОЛИК - от 4,000₽\n"
         "• Озвучка 2-мя голосами\n• Индивидуальная музыка\n• 5 правок\n• Срочное производство 1 день\n\n"
-        "💰 Влияние на итоговую стоимость"
+        f"💰 Влияние на итоговую стоимость: {format_number(final_price)}₽"
     )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
@@ -1176,7 +1117,7 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(context.user_data)
     
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_production")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1237,21 +1178,12 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
 
 # Показать подтверждение заявки - ИСПРАВЛЕННАЯ ВЕРСИЯ (новая кнопка)
 async def show_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+    base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(context.user_data)
     
     # Детализация по радиостанциям
     stations_text = ""
-    station_listeners = {
-        'LOVE RADIO': 1600,
-        'АВТОРАДИО': 1400,
-        'РАДИО ДАЧА': 1800,
-        'РАДИО ШАНСОН': 1200,
-        'РЕТРО FM': 1500,
-        'ЮМОР FM': 1100
-    }
-    
     for radio in context.user_data.get('selected_radios', []):
-        listeners = station_listeners.get(radio, 0)
+        listeners = STATION_LISTENERS.get(radio, 0)
         stations_text += f"• {radio}: {format_number(listeners)}/день\n"
     
     # Детализация по слотам
@@ -1287,11 +1219,10 @@ Email: {context.user_data.get('email', 'Не указан')}
 Скидка 50%: -{format_number(discount)}₽
 Итоговая: {format_number(final_price)}₽
 
-🎯 ОХВАТ:
-• Выходов в день: {spots_per_day}
-• Всего выходов: {spots_per_day * context.user_data.get('campaign_period_days', 30)}
-• Ежедневно: ~{format_number(daily_listeners)} чел.
-• За период: ~{format_number(total_reach)} чел.
+🎯 ОХВАТ (согласно выбранным спотам):
+• Количество спотов в день: {spots_per_day}
+• Ежедневный охват: ~{format_number(daily_coverage)} чел.
+• Общий охват за период: ~{format_number(total_reach)} чел.
 """
     
     keyboard = [
@@ -1315,7 +1246,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     elif query.data == "submit_campaign":
         try:
             # Рассчитываем финальную стоимость и охват
-            base_price, discount, final_price, total_reach, daily_listeners, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
+            base_price, discount, final_price, total_reach, daily_listeners, spots_per_day, daily_coverage = calculate_campaign_price_and_reach(context.user_data)
             context.user_data['base_price'] = base_price
             context.user_data['discount'] = discount
             context.user_data['final_price'] = final_price
@@ -1453,7 +1384,7 @@ async def personal_cabinet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return FINAL_ACTIONS
 
-# Статистика охвата
+# Статистика охвата - ОБНОВЛЕННАЯ ВЕРСИЯ
 async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1461,39 +1392,63 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await query.edit_message_text(
-        "📊 СТАТИСТИКА ОХВАТА\n\n"
-        "• Ежедневный охват: 9,200+\n"
-        "• Месячный охват: 68,000+\n"
-        "• Радиус вещания: 35 км вокруг городов\n"
-        "• Доля рынка: 52%\n"
-        "• Базовая цена: 2₽/сек\n\n"
-        "По станциям (в день):\n"
-        "• LOVE RADIO: 1,600\n"
-        "• АВТОРАДИО: 1,400\n"  
-        "• РАДИО ДАЧА: 1,800\n"
-        "• РАДИО ШАНСОН: 1,200\n"
-        "• РЕТРО FM: 1,500\n"
-        "• ЮМОР FM: 1,100\n\n"
-        "🎯 Охватываем:\n"
-        "📍 Ялуторовск\n"
-        "📍 Заводоуковск\n"  
-        "📍 Территория +35 км вокруг городов\n\n"
-        "📈 Источники исследований:\n"
-        "• RADIOPORTAL.RU - Радио в малых городах\n"
-        "• Mediascope - Российский радиорынок\n"  
-        "• ВЦИОМ - Популярность радио в региона\n\n"
-        "🔗 radioportal.ru/radio-audience-research\n"
-        "🔗 mediascope.net/services/media/radio/\n"
-        "🔗 wciom.ru/analytical-reviews/radio-audience\n\n"
-        "🎧 В малых городах слушают 2.5 часа/день\n"
-        "🚗 65% аудитории - автомобилисты\n"
-        "🏘️ +35% охват за счет сельской местности",
-        reply_markup=reply_markup
-    )
+    text = """
+📊 СТАТИСТИКА ОХВАТА
+
+🎯 ОБЩИЕ ПОКАЗАТЕЛИ:
+• Ежедневный охват: ~14,900 человек
+• Месячный охват: ~447,000 человек
+• Радиус вещания: 35 км вокруг городов
+• Доля рынка: 52%
+• Базовая цена: 2₽/сек
+
+📈 ВОЗРАСТНАЯ СТРУКТУРА И ВЛИЯНИЕ НА ОХВАТ:
+
+Возрастная структура населения Ялуторовска и Заводоуковска 
+существенно корректирует предполагаемый охват радиостанций — 
+в сторону снижения для молодёжных форматов и роста для «взрослых».
+
+🔍 КЛЮЧЕВЫЕ ФАКТЫ:
+• Ялуторовск: выше доля 65+ лет (6 969 человек)
+• Заводоуковск: моложе, но старше Тюмени (средний возраст 38,1 года)
+• Общий тренд: старение населения за счет оттока молодежи
+
+🎧 ВЛИЯНИЕ НА РАДИООХВАТ:
+• Снижение охвата молодёжных станций на 40-50%
+• Рост охвата "взрослых" форматов на 80-140%
+
+📊 ОХВАТ ПО СТАНЦИЯМ (с учетом возрастной корректировки):
+
+🔥 ВЫСОКИЙ ОХВАТ (аудитория 35+):
+• Ретро FM: 3,600 чел./день (35-65 лет)
+• Авторадио: 3,250 чел./день (25-55 лет)  
+• Радио Дача: 3,250 чел./день (35-60 лет)
+• Радио Шансон: 2,900 чел./день (30-60+ лет)
+
+⚡ СРЕДНИЙ ОХВАТ:
+• Юмор FM: 1,260 чел./день (25-45 лет)
+
+📱 НИЗКИЙ ОХВАТ (молодёжные форматы):
+• Love Radio: 540 чел./день (16-35 лет)
+
+💡 РЕКОМЕНДАЦИИ ДЛЯ РЕКЛАМЫ:
+✅ Высокая эффективность:
+• Для товаров/услуг 45+: Ретро FM, Радио Дача
+• Для мужской аудитории 40+: Радио Шансон  
+• Для широкого охвата: Авторадио
+
+⚠️ Ограниченный охват:
+• Для молодёжи 18-30: Love Radio (только целевая аудитория)
+
+📝 Примечание: 
+Данные приближённые, точные метрики требуют локальных замеров.
+Сезонность: летом охват может расти за счёт приезжих и автовладельцев.
+"""
+    
+    await query.edit_message_text(text, reply_markup=reply_markup)
     return MAIN_MENU
 
-# О нас
+# О нас с логотипом
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1501,7 +1456,7 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await query.edit_message_text(
+    text = (
         "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
         "📍 Ялуторовск • Заводоуковск\n\n"
         "ℹ️ О НАС\n\n"
@@ -1512,12 +1467,19 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Хлыстунов Алексей Александрович\n"
         "ОГРНИП 315723200067362\n\n"
         "📧 a.khlistunov@gmail.com\n"
-        "📱 Telegram: t.me/AlexeyKhlistunov",
+        "📱 Telegram: t.me/AlexeyKhlistunov"
+    )
+    
+    # Отправляем логотип и текст
+    await query.message.reply_photo(
+        photo=LOGO_URL,
+        caption=text,
         reply_markup=reply_markup
     )
+    
     return MAIN_MENU
 
-# Улучшенный обработчик главного меню - добавим обработку новой кнопки
+# Улучшенный обработчик главного меню
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1540,31 +1502,43 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("generate_excel_"):
         campaign_number = query.data.replace("generate_excel_", "")
         try:
-            excel_buffer = create_excel_file(context.user_data, campaign_number)
-            if excel_buffer:
-                await query.message.reply_document(
-                    document=excel_buffer,
-                    filename=f"mediaplan_{campaign_number}.xlsx",
-                    caption=f"📊 Excel для клиента #{campaign_number}"
-                )
+            # Получаем данные заявки из БД
+            conn = sqlite3.connect('campaigns.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM campaigns WHERE campaign_number = ?', (campaign_number,))
+            campaign_data = cursor.fetchone()
+            conn.close()
+            
+            if campaign_data:
+                # Создаем user_data из данных БД
+                user_data = {
+                    'selected_radios': campaign_data[3].split(','),
+                    'campaign_period_days': PERIOD_OPTIONS.get(campaign_data[4], {}).get('days', 30),
+                    'selected_time_slots': list(map(int, campaign_data[5].split(','))) if campaign_data[5] else [],
+                    'branded_section': campaign_data[6],
+                    'campaign_text': campaign_data[7],
+                    'production_option': campaign_data[8],
+                    'production_cost': PRODUCTION_OPTIONS.get(campaign_data[8], {}).get('price', 0),
+                    'contact_name': campaign_data[9],
+                    'company': campaign_data[10],
+                    'phone': campaign_data[11],
+                    'email': campaign_data[12],
+                    'duration': 20  # значение по умолчанию
+                }
+                
+                excel_buffer = create_excel_file(user_data, campaign_number)
+                if excel_buffer:
+                    await query.message.reply_document(
+                        document=excel_buffer,
+                        filename=f"mediaplan_{campaign_number}.xlsx",
+                        caption=f"📊 Excel для кампании #{campaign_number}"
+                    )
+                else:
+                    await query.message.reply_text(f"❌ Ошибка при создании Excel")
             else:
-                await query.message.reply_text(f"❌ Ошибка при создании Excel")
+                await query.message.reply_text(f"❌ Заявка #{campaign_number} не найдена")
         except Exception as e:
-            await query.message.reply_text(f"❌ Ошибка при создании Excel: {e}")
-    
-    elif query.data.startswith("get_excel_"):
-        campaign_number = query.data.replace("get_excel_", "")
-        try:
-            excel_buffer = create_excel_file(context.user_data, campaign_number)
-            if excel_buffer:
-                await query.message.reply_document(
-                    document=excel_buffer,
-                    filename=f"mediaplan_{campaign_number}.xlsx",
-                    caption=f"📊 Excel для клиента #{campaign_number}"
-                )
-            else:
-                await query.message.reply_text(f"❌ Ошибка при создании Excel")
-        except Exception as e:
+            logger.error(f"Ошибка при создании Excel: {e}")
             await query.message.reply_text(f"❌ Ошибка при создании Excel: {e}")
     
     elif query.data.startswith("call_"):
