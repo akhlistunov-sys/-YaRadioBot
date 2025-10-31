@@ -13,6 +13,11 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
+# НОВЫЕ ИМПОРТЫ ДЛЯ EXCEL XLSX
+import openpyxl
+from openpyxl.styles import Font, Border, Side, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+
 # Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -35,7 +40,7 @@ BASE_PRICE_PER_SECOND = 4
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
-# Восстановленный полный список 6 радиостанций
+# *** ВОССТАНОВЛЕННЫЙ ПОЛНЫЙ СПИСОК 6 РАДИОСТАНЦИЙ, КАК ВЫ УКАЗАЛИ ***
 RADIO_STATIONS = [
     {"id": "CITY", "name": "Радио СИТИ 105,9 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 1.0},
     {"id": "DACHA", "name": "Радио ДАЧА 105,9 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 0.95},
@@ -45,7 +50,7 @@ RADIO_STATIONS = [
     {"id": "RADIO7", "name": "Радио 7 104,2 FM", "base_price": BASE_PRICE_PER_SECOND, "multiplier": 0.9},
 ]
 
-# Восстановленная детализированная структура слотов
+# *** ВОССТАНОВЛЕННАЯ ДЕТАЛИЗИРОВАННАЯ СТРУКТУРА СЛОТОВ ***
 TIME_SLOTS_DATA = [
     {"time": "06:00-09:00", "description": "Утренний Пик", "multipliers": {"Пн": 1.2, "Вт": 1.2, "Ср": 1.2, "Чт": 1.2, "Пт": 1.5, "Сб": 0.8, "Вс": 0.8}, "base_rate": 20},
     {"time": "09:00-14:00", "description": "Дневной Эфир", "multipliers": {"Пн": 1.0, "Вт": 1.0, "Ср": 1.0, "Чт": 1.0, "Пт": 1.2, "Сб": 0.9, "Вс": 0.9}, "base_rate": 20},
@@ -54,7 +59,7 @@ TIME_SLOTS_DATA = [
     {"time": "24:00-06:00", "description": "Ночной Эфир", "multipliers": {"Пн": 0.7, "Вт": 0.7, "Ср": 0.7, "Чт": 0.7, "Пт": 0.8, "Сб": 0.7, "Вс": 0.7}, "base_rate": 20},
 ]
 
-# --- DB SETUP (Оставлено без изменений) ---
+# --- DB SETUP (Без изменений) ---
 
 def init_db():
     conn = sqlite3.connect('campaigns.db')
@@ -88,17 +93,22 @@ init_db()
 def get_db_connection():
     return sqlite3.connect('campaigns.db')
 
+# --- ЛОГИКА РАСЧЕТА БЮДЖЕТА ---
+
 def calculate_budget(context):
-    # Логика расчета бюджета
+    """
+    Рассчитывает общий бюджет и количество слотов на основе данных пользователя.
+    Возвращает: total_budget (int), total_slots (int), detailed_schedule (list of dicts)
+    """
     data = context.user_data
-    # Используем множитель, привязанный к радиостанции
     radio_station = next((r for r in RADIO_STATIONS if r['id'] == data.get('radio_id')), None)
     
     if not radio_station or 'start_date' not in data or 'end_date' not in data:
-        return 0, 0
+        return 0, 0, []
 
     total_budget = 0
     total_slots = 0
+    detailed_schedule = []
     radio_multiplier = radio_station.get('multiplier', 1.0)
     
     try:
@@ -115,15 +125,10 @@ def calculate_budget(context):
                 for slot_time in selected_slots:
                     slot_data = next((s for s in TIME_SLOTS_DATA if s['time'] == slot_time), None)
                     if slot_data:
-                        # Множитель дня недели
                         day_multiplier = slot_data['multipliers'].get(day_of_week_rus, 1.0)
-                        
                         duration_seconds = slot_data['base_rate'] 
-                        
-                        # Применяем мультипликатор брендинга (1.15)
                         branded_multiplier = 1.15 if data.get('is_branded') else 1.0
                         
-                        # Расчет: Базовая цена * Длительность * Множитель Дня * Множитель Радио * Множитель Брендинга
                         price_per_slot = (
                             radio_station['base_price'] 
                             * duration_seconds 
@@ -135,58 +140,168 @@ def calculate_budget(context):
                         total_budget += price_per_slot
                         total_slots += 1
                         
+                        detailed_schedule.append({
+                            'date': current_date.strftime('%Y-%m-%d'),
+                            'day': day_of_week_rus,
+                            'time': slot_time,
+                            'price': round(price_per_slot),
+                            'base_price_sec': radio_station['base_price'],
+                            'duration': duration_seconds,
+                            'radio_mult': radio_multiplier,
+                            'day_mult': day_multiplier,
+                            'branded_mult': branded_multiplier,
+                        })
+                        
             current_date = current_date + timedelta(days=1)
             
         # Добавление стоимости производства
-        if data.get('production_needed'):
-            total_budget += MIN_PRODUCTION_COST
-            
+        production_cost = MIN_PRODUCTION_COST if data.get('production_needed') else 0
+        total_budget += production_cost
+        
     except Exception as e:
         logger.error(f"Error during budget calculation: {e}")
-        return 0, 0
+        return 0, 0, []
 
-    return round(total_budget), total_slots
+    return round(total_budget), total_slots, detailed_schedule
 
-def generate_excel_compatible_csv_report(context):
-    # Генерируем отчет в формате CSV, который легко открывается в Excel
+# --- ГЕНЕРАЦИЯ EXCEL (XLSX) ОТЧЕТА ---
+
+def generate_xlsx_report(context):
+    """
+    Создает полноценный XLSX отчет с форматированием.
+    Возвращает: io.BytesIO с содержимым файла.
+    """
     data = context.user_data
-    radio_name = data.get('radio_name', 'Неизвестно')
-    total_budget, total_slots = calculate_budget(context)
+    total_budget, total_slots, detailed_schedule = calculate_budget(context)
     
-    output = io.StringIO()
-    # Заголовок
-    output.write("Отчет по заявке на рекламную кампанию\n")
-    output.write(f"Дата создания отчета,{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-    output.write("\n")
-    
-    # Основные данные кампании
-    # Важно: используем запятую как разделитель
-    output.write("Параметр,Значение\n")
-    output.write(f"Название компании (Заказчик),{data.get('company_name', 'Не указано')}\n")
-    output.write(f"Радиостанция,{radio_name}\n")
-    output.write(f"Начало кампании,{data.get('start_date', 'Не указано')}\n")
-    output.write(f"Конец кампании,{data.get('end_date', 'Не указано')}\n")
-    output.write(f"Дни недели,\"{', '.join(data.get('days_of_week', ['Не указано']))}\"\n") # Кавычки для сложных полей
-    output.write(f"Время выхода (Слоты),\"{', '.join(data.get('selected_time_slots', ['Не выбрано']))}\"\n")
-    output.write(f"Брендированные секции,{('Да' if data.get('is_branded') else 'Нет')}\n")
-    output.write(f"Необходимо производство,{('Да' if data.get('production_needed') else 'Нет')}\n")
-    output.write("\n")
-    
-    # Итоговые расчеты
-    output.write("Расчеты\n")
-    output.write(f"Общее количество выходов (слотов),{total_slots}\n")
-    output.write(f"Оценочный общий бюджет (руб.),{total_budget}\n")
-    output.write("\n")
-    
-    # Контактные данные
-    output.write("Контактная информация\n")
-    output.write(f"Имя,{data.get('contact_name', 'Не указано')}\n")
-    output.write(f"Телефон,{data.get('contact_phone', 'Не указано')}\n")
-    output.write(f"Email,{data.get('contact_email', 'Не указано')}\n")
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Медиаплан"
 
-    return output.getvalue(), total_budget, total_slots
+    # --- СТИЛИ ---
+    HEADER_FONT = Font(name='Arial', size=11, bold=True, color='FFFFFF')
+    TITLE_FONT = Font(name='Arial', size=14, bold=True)
+    DATA_FONT = Font(name='Arial', size=11)
+    
+    THIN_BORDER = Border(left=Side(style='thin'), 
+                         right=Side(style='thin'), 
+                         top=Side(style='thin'), 
+                         bottom=Side(style='thin'))
+    
+    HEADER_FILL = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+    INFO_FILL = PatternFill(start_color="F0F8FF", end_color="F0F8FF", fill_type="solid")
+    TOTAL_FILL = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
 
-# --- HANDLERS ---
+    # --- БЛОК 1: Общая информация ---
+    ws.merge_cells('A1:C1')
+    ws['A1'] = "Сводная информация по кампании"
+    ws['A1'].font = TITLE_FONT
+    
+    info_data = [
+        ("Заказчик (Компания)", data.get('company_name', 'Не указано')),
+        ("Радиостанция", data.get('radio_name', 'Не выбрано')),
+        ("Период кампании", f"{data.get('start_date', '?')} - {data.get('end_date', '?')}"),
+        ("Дни недели", ', '.join(data.get('days_of_week', ['-']))),
+        ("Слоты", ', '.join(data.get('selected_time_slots', ['-']))),
+        ("Брендированные секции", 'Да' if data.get('is_branded') else 'Нет'),
+        ("Изготовление ролика (стоимость 2000)", 'Да' if data.get('production_needed') else 'Нет'),
+    ]
+
+    row_num = 3
+    for label, value in info_data:
+        ws[f'A{row_num}'] = label
+        ws[f'B{row_num}'] = value
+        ws[f'B{row_num}'].fill = INFO_FILL
+        ws[f'A{row_num}'].font = Font(bold=True)
+        ws[f'B{row_num}'].border = THIN_BORDER
+        row_num += 1
+
+    # --- БЛОК 2: Итоговый бюджет ---
+    row_num += 1
+    ws[f'A{row_num}'] = "ОЦЕНОЧНЫЙ ОБЩИЙ БЮДЖЕТ"
+    ws[f'B{row_num}'] = f"{total_budget:,.0f} руб."
+    ws.merge_cells(f'A{row_num}:A{row_num+1}')
+    ws[f'B{row_num}'].font = Font(size=14, bold=True)
+    ws[f'B{row_num}'].fill = TOTAL_FILL
+    ws[f'A{row_num}'].fill = TOTAL_FILL
+    
+    ws[f'B{row_num+1}'] = f"({total_slots} выходов)"
+    ws[f'B{row_num+1}'].fill = TOTAL_FILL
+    row_num += 3
+
+    # --- БЛОК 3: Детализированное расписание ---
+    
+    # Заголовки таблицы
+    headers = ["Дата", "День", "Время выхода", "Хронометраж (сек)", "Базовая Цена (за сек)", "Множитель Дня", "Множитель Радио", "Множитель Брендинга", "Стоимость выхода (руб)"]
+    ws.append(headers)
+    
+    header_row = row_num
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=header_row, column=col_idx)
+        cell.value = header
+        cell.font = HEADER_FONT
+        cell.fill = HEADER_FILL
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        cell.border = THIN_BORDER
+
+    # Заполнение данными
+    row_num += 1
+    for item in detailed_schedule:
+        ws.append([
+            item['date'], 
+            item['day'], 
+            item['time'], 
+            item['duration'], 
+            item['base_price_sec'],
+            item['day_mult'],
+            item['radio_mult'],
+            item['branded_mult'],
+            item['price']
+        ])
+        for col in range(1, len(headers) + 1):
+            ws.cell(row=row_num, column=col).border = THIN_BORDER
+            ws.cell(row=row_num, column=col).font = DATA_FONT
+        row_num += 1
+    
+    # --- БЛОК 4: Контакты ---
+    row_num += 2
+    ws.merge_cells(f'A{row_num}:C{row_num}')
+    ws[f'A{row_num}'] = "Контактная информация Заказчика"
+    ws[f'A{row_num}'].font = TITLE_FONT
+    row_num += 1
+    
+    contact_data = [
+        ("Имя", data.get('contact_name', '-')),
+        ("Телефон", data.get('contact_phone', '-')),
+        ("Email", data.get('contact_email', '-')),
+    ]
+    
+    for label, value in contact_data:
+        ws[f'A{row_num}'] = label
+        ws[f'B{row_num}'] = value
+        ws[f'A{row_num}'].font = Font(bold=True)
+        row_num += 1
+        
+    # Автонастройка ширины столбцов
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column # Get the column index
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        ws.column_dimensions[get_column_letter(column)].width = adjusted_width
+
+    # Сохранение в байтовый поток
+    excel_file = io.BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    return excel_file
+
+# --- HANDLERS (Остальные функции без изменений, кроме finalize_and_send) ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
@@ -294,6 +409,7 @@ async def prompt_time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Убедимся, что дни недели всегда массив
     context.user_data['days_of_week'] = context.user_data.get('days_of_week', ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"])
 
+    # Кнопки для слотов, использующие восстановленную структуру TIME_SLOTS_DATA
     slot_buttons = [
         [InlineKeyboardButton(
             f"{'✅ ' if slot['time'] in context.user_data['selected_time_slots'] else ''}{slot['time']} ({slot['description']})", 
@@ -494,7 +610,7 @@ async def review_campaign_details(update: Update, context: ContextTypes.DEFAULT_
     # Шаг 8: Обзор и подтверждение заявки (FINAL_ACTIONS)
     
     # Генерируем отчет в памяти для отображения сводки
-    report_csv, total_budget, total_slots = generate_excel_compatible_csv_report(context)
+    total_budget, total_slots, _ = calculate_budget(context)
     
     data = context.user_data
     
@@ -562,9 +678,17 @@ async def finalize_and_send(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     data = context.user_data
     user_id = query.from_user.id
     
-    # 1. Генерируем отчет и получаем данные
-    report_csv_content, total_budget, total_slots = generate_excel_compatible_csv_report(context)
-    
+    # 1. Генерируем XLSX отчет
+    try:
+        excel_file_io = generate_xlsx_report(context)
+        total_budget, total_slots, _ = calculate_budget(context)
+    except Exception as e:
+        logger.error(f"Error generating XLSX report: {e}")
+        await query.edit_message_text(
+            "❌ Произошла ошибка при создании медиаплана (XLSX). Попробуйте еще раз или свяжитесь с поддержкой."
+        )
+        return ConversationHandler.END
+
     # 2. Сохраняем в БД
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -615,22 +739,21 @@ async def finalize_and_send(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         parse_mode='HTML'
     )
     
-    # 4. Автоматическая отправка заявки АДМИНУ (в Excel-совместимом CSV)
-    report_file = io.BytesIO(report_csv_content.encode('utf-8'))
-    report_file.name = f"Заявка_№{campaign_id}_{data['company_name']}.csv" # Имя файла для админа
+    # 4. Автоматическая отправка заявки АДМИНУ (в формате XLSX)
+    excel_file_io.name = f"Заявка_Медиаплан_№{campaign_id}_{data['company_name']}.xlsx"
 
     admin_message = (
-        f"🚨 НОВАЯ ЗАЯВКА №{campaign_id} (Excel-совместимый CSV) 🚨\n\n"
+        f"🚨 НОВАЯ ЗАЯВКА №{campaign_id} (XLSX отчет) 🚨\n\n"
         f"<b>Компания:</b> {data.get('company_name', 'Не указано')}\n"
         f"<b>Бюджет:</b> {total_budget:,.0f} руб.\n"
         f"<b>Контакт:</b> {data.get('contact_name', 'Не указано')} ({data.get('contact_phone', 'Не указано')})\n"
         f"<b>Email:</b> {data.get('contact_email', 'Не указано')}\n\n"
-        "Подробный отчет прикреплен (откроется в Excel)."
+        "Подробный медиаплан прикреплен."
     )
     
     await context.bot.send_document(
         chat_id=ADMIN_TELEGRAM_ID,
-        document=report_file,
+        document=excel_file_io,
         caption=admin_message,
         parse_mode='HTML'
     )
