@@ -10,7 +10,6 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.drawing.image import Image as XLImage
 
 # Настройка логирования
 logging.basicConfig(
@@ -517,9 +516,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     else:
-        await update.callback_query.message.reply_photo(
-            photo=LOGO_URL,
-            caption=text,
+        await update.callback_query.edit_message_text(
+            text,
             reply_markup=reply_markup
         )
     
@@ -1448,7 +1446,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text, reply_markup=reply_markup)
     return MAIN_MENU
 
-# О нас с логотипом
+# О нас - ИСПРАВЛЕННАЯ ВЕРСИЯ (без логотипа)
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1470,13 +1468,7 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📱 Telegram: t.me/AlexeyKhlistunov"
     )
     
-    # Отправляем логотип и текст
-    await query.message.reply_photo(
-        photo=LOGO_URL,
-        caption=text,
-        reply_markup=reply_markup
-    )
-    
+    await query.edit_message_text(text, reply_markup=reply_markup)
     return MAIN_MENU
 
 # Улучшенный обработчик главного меню
