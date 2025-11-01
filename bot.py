@@ -420,65 +420,26 @@ def create_excel_file_from_db(campaign_number):
 async def send_excel_file_to_admin(context, campaign_number, query):
     try:
         logger.info(f"📤 Отправка Excel для кампании #{campaign_number} админу")
-        
-        # Создаем Excel
         excel_buffer = create_excel_file_from_db(campaign_number)
         
         if not excel_buffer:
             logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
-            await query.answer("❌ Ошибка при создании Excel файла", show_alert=True)
             return False
             
-        logger.info(f"✅ Excel создан ({len(excel_buffer.getvalue())} байт), отправляем...")
-        
-        # Отправляем файл админу
+        logger.info(f"✅ Excel создан, отправляем файл...")
         await context.bot.send_document(
             chat_id=ADMIN_TELEGRAM_ID,
             document=excel_buffer,
             filename=f"mediaplan_{campaign_number}.xlsx",
             caption=f"📊 Медиаплан кампании #{campaign_number}"
         )
-        
-        logger.info(f"✅ Excel успешно отправлен админу")
-        await query.answer("✅ Excel отправлен вам в личные сообщения")
+        logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
         return True
         
     except Exception as e:
         logger.error(f"❌ Ошибка при отправке Excel админу: {e}")
-        await query.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
         return False
 
-def create_excel_file_from_db(campaign_number):
-    try:
-        logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
-        
-        conn = sqlite3.connect('campaigns.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM campaigns WHERE campaign_number = ?', (campaign_number,))
-        campaign_data = cursor.fetchone()
-        conn.close()
-        
-        if not campaign_data:
-            logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
-            return None
-            
-        logger.info(f"✅ Кампания найдена, создаем Excel...")
-        
-        # [ВСТАВЬ СЮДА ВЕСЬ СУЩЕСТВУЮЩИЙ КОД ФУНКЦИИ create_excel_file_from_db]
-        # Тот большой блок который создает Excel файл
-        # Не меняй его, просто убедись что он есть
-        
-        # В конце функции должен быть:
-        buffer = io.BytesIO()
-        wb.save(buffer)
-        buffer.seek(0)
-        
-        logger.info(f"✅ Excel файл создан успешно")
-        return buffer
-        
-    except Exception as e:
-        logger.error(f"❌ Ошибка при создании Excel: {e}")
-        return None
 async def send_admin_notification(context, user_data, campaign_number):
     try:
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(user_data)
@@ -1698,6 +1659,7 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
                 try:
                     excel_buffer = create_excel_file_from_db(campaign_number)
                     if excel_buffer:
+                        # ОТПРАВЛЯЕМ КЛИЕНТУ
                         await query.message.reply_document(
                             document=excel_buffer,
                             filename=f"mediaplan_{campaign_number}.xlsx",
@@ -1727,6 +1689,20 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
             context.user_data.update(saved_contacts)
             await query.message.reply_text("🚀 Начинаем новую кампанию!")
             return await radio_selection(update, context)
+        
+        elif query.data == "back_to_final":
+            keyboard = [
+                [InlineKeyboardButton("📊 СФОРМИРОВАТЬ EXCEL МЕДИАПЛАН", callback_data="generate_excel")],
+                [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
+                [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                "Выберите дальнейшее действие:",
+                reply_markup=reply_markup
+            )
+            return FINAL_ACTIONS
         
         return FINAL_ACTIONS
         
@@ -1869,14 +1845,21 @@ async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if query.data.startswith("generate_excel_"):
         campaign_number = query.data.replace("generate_excel_", "")
-        logger.info(f"🔄 Обработка кнопки Excel для кампании #{campaign_number}")
-        
         try:
-            success = await send_excel_file_to_admin(context, campaign_number, query)
-            if not success:
-                await query.answer("❌ Не удалось отправить Excel", show_alert=True)
+            # АДМИНСКИЙ Excel - отправляем админу
+            excel_buffer = create_excel_file_from_db(campaign_number)
+            if excel_buffer:
+                await context.bot.send_document(
+                    chat_id=ADMIN_TELEGRAM_ID,
+                    document=excel_buffer,
+                    filename=f"mediaplan_{campaign_number}.xlsx",
+                    caption=f"📊 Медиаплан кампании #{campaign_number}"
+                )
+                await query.answer("✅ Excel отправлен вам в личные сообщения")
+            else:
+                await query.answer("❌ Ошибка при создании Excel", show_alert=True)
         except Exception as e:
-            logger.error(f"❌ Ошибка админского Excel: {e}")
+            logger.error(f"Ошибка админского Excel: {e}")
             await query.answer("❌ Ошибка при создании Excel", show_alert=True)
     
     elif query.data.startswith("call_"):
@@ -2059,7 +2042,7 @@ def main():
             PRODUCTION_OPTION: [
                 CallbackQueryHandler(handle_production_option, pattern='^.*$')
             ],
-                                    CONTACT_INFO: [
+            CONTACT_INFO: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
                 CallbackQueryHandler(handle_main_menu, pattern='^back_to_production$'),
                 CommandHandler('cancel', cancel)
