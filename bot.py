@@ -419,16 +419,20 @@ def create_excel_file_from_db(campaign_number):
 
 async def send_excel_file_to_admin(context, campaign_number, query):
     try:
-        logger.info(f"📤 Отправка Excel для кампании #{campaign_number} админу")
+        logger.info(f"🔍 DEBUG: Начало отправки Excel для кампании #{campaign_number}")
+        
+        # Создаем Excel
         excel_buffer = create_excel_file_from_db(campaign_number)
+        logger.info(f"🔍 DEBUG: Excel buffer создан: {excel_buffer is not None}")
         
         if not excel_buffer:
             logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
+            await query.answer("❌ Ошибка при создании Excel файла")
             return False
             
-        logger.info(f"✅ Excel создан, отправляем файл админу...")
+        logger.info(f"🔍 DEBUG: Пытаемся отправить файл админу {ADMIN_TELEGRAM_ID}")
         
-        # Отправляем файл напрямую админу, а не через query
+        # Отправляем файл админу
         await context.bot.send_document(
             chat_id=ADMIN_TELEGRAM_ID,
             document=excel_buffer,
@@ -437,10 +441,12 @@ async def send_excel_file_to_admin(context, campaign_number, query):
         )
         
         logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
+        await query.answer("✅ Excel отправлен вам в личные сообщения")
         return True
         
     except Exception as e:
         logger.error(f"❌ Ошибка при отправке Excel админу: {e}")
+        await query.answer("❌ Ошибка при отправке Excel")
         return False
 
 async def send_admin_notification(context, user_data, campaign_number):
