@@ -28,7 +28,7 @@ TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
 # Цены и параметры
-BASE_PRICE_PER_SECOND = 2
+BASE_PRICE_PER_SECOND = 3
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
@@ -357,14 +357,13 @@ def create_excel_file_from_db(campaign_number):
         logger.error(f"Ошибка при создании Excel: {e}")
         return None
 
-async def send_excel_file_to_admin(context, campaign_number):
+async def send_excel_file_to_admin(context, campaign_number, query):
     try:
         excel_buffer = create_excel_file_from_db(campaign_number)
         if not excel_buffer:
             return False
             
-        await context.bot.send_document(
-            chat_id=ADMIN_TELEGRAM_ID,
+        await query.message.reply_document(
             document=excel_buffer,
             filename=f"mediaplan_{campaign_number}.xlsx",
             caption=f"📊 Медиаплан кампании #{campaign_number}"
@@ -452,12 +451,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     caption = (
-        "📍 Ялуторовск • Заводоуковск\n"
-        "📍 Территория +35 км вокруг городов\n\n"
-        "📊 Потенциальных контактов: от 3,000+ в день\n"
-        "👥 Уникальных слушателей: от 35,000+ в месяц\n\n"
-        "🎯 52% доля местного радиорынка\n"
-        "💰 2₽/сек базовая цена"
+        "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
+        "📍 Ялуторовск • Заводоуковск • +35 км вокруг\n\n"
+        "📻 ВЕЩАЕМ НА 6 СТАНЦИЯХ:\n"
+        "• LOVE RADIO • АВТОРАДИО • РАДИО ДАЧА\n"
+        "• РАДИО ШАНСОН • РЕТРО FM • ЮМОР FM\n\n"
+        "📊 ОХВАТ АУДИТОРИИ:\n"
+        "• 3,000+ контактов в день\n"
+        "• 35,000+ уникальных слушателей в месяц\n"
+        "• 52% доля местного радиорынка\n\n"
+        "💰 БАЗОВАЯ ЦЕНА: 3₽/секунду"
     )
     
     # Если это сообщение от команды /start
@@ -1632,7 +1635,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "o более высокой доли пенсионеров;\n"
         "o низкой рождаемости.\n\n"
         "2. Как это влияет на радиоохват\n"
-        "Каждая станция имеет ядро целевой аудитории по возрасту. В «постаревших» городах:\n"
+        "Каждая станция имеет ядро целевой аудитории по возрасту. В «постаревших» городаы:\n"
         "• падает охват станций с молодёжной аудиторией;\n"
         "• растёт охват станций, ориентированных на 35+.\n\n"
         "по станциям:\n\n"
@@ -1733,7 +1736,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("generate_excel_"):
         campaign_number = query.data.replace("generate_excel_", "")
         try:
-            success = await send_excel_file_to_admin(context, campaign_number)
+            success = await send_excel_file_to_admin(context, campaign_number, query)
             if success:
                 await query.answer("✅ Excel отправлен вам в личные сообщения")
             else:
