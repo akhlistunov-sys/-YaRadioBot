@@ -426,13 +426,16 @@ async def send_excel_file_to_admin(context, campaign_number, query):
             logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
             return False
             
-        logger.info(f"✅ Excel создан, отправляем файл...")
+        logger.info(f"✅ Excel создан, отправляем файл админу...")
+        
+        # Отправляем файл напрямую админу, а не через query
         await context.bot.send_document(
             chat_id=ADMIN_TELEGRAM_ID,
             document=excel_buffer,
             filename=f"mediaplan_{campaign_number}.xlsx",
             caption=f"📊 Медиаплан кампании #{campaign_number}"
         )
+        
         logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
         return True
         
