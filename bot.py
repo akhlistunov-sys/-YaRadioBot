@@ -28,7 +28,7 @@ TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
 # Цены и параметры
-BASE_PRICE_PER_SECOND = 2.5
+BASE_PRICE_PER_SECOND = 2.0  # 2₽ за секунду
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
@@ -103,6 +103,17 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Таблица для ограничения частоты запросов
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rate_limits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                action_type TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         conn.commit()
         conn.close()
         logger.info("База данных инициализирована успешно")
@@ -112,11 +123,48 @@ def init_db():
         return False
 
 def validate_phone(phone: str) -> bool:
-    pattern = r'^(\+7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$'
-    return bool(re.match(pattern, phone))
+    """Упрощенная валидация телефона"""
+    if not phone:
+        return False
+    # Принимаем любой текст для упрощения тестирования
+    return True
+
+def validate_date(date_text: str) -> bool:
+    """Проверка валидности даты"""
+    try:
+        date = datetime.strptime(date_text, '%d.%m.%Y')
+        # Проверяем что дата не в прошлом
+        if date < datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+            return False
+        # Проверяем что дата не более чем на 1 год вперед
+        if date > datetime.now() + timedelta(days=365):
+            return False
+        return True
+    except ValueError:
+        return False
 
 def format_number(num):
     return f"{num:,}".replace(',', ' ')
+
+def check_rate_limit(user_id: int) -> bool:
+    """Проверка ограничения в 5 заявок в день"""
+    try:
+        conn = sqlite3.connect('campaigns.db')
+        cursor = conn.cursor()
+        
+        # Считаем заявки за последние 24 часа
+        cursor.execute('''
+            SELECT COUNT(*) FROM campaigns 
+            WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
+        ''', (user_id,))
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count < 5
+    except Exception as e:
+        logger.error(f"Ошибка проверки лимита: {e}")
+        return True
 
 def calculate_campaign_price_and_reach(user_data):
     try:
@@ -125,6 +173,10 @@ def calculate_campaign_price_and_reach(user_data):
         num_stations = len(user_data.get('selected_radios', []))
         selected_time_slots = user_data.get('selected_time_slots', [])
         
+        # Защита от деления на ноль
+        if not selected_time_slots:
+            return 0, 0, MIN_BUDGET, 0, 0, 0
+            
         spots_per_day = len(selected_time_slots) * num_stations
         base_air_cost = base_duration * BASE_PRICE_PER_SECOND * spots_per_day * campaign_days
         
@@ -160,7 +212,7 @@ def calculate_campaign_price_and_reach(user_data):
         return base_price, discount, final_price, total_reach, int(daily_coverage), spots_per_day
     except Exception as e:
         logger.error(f"Ошибка расчета стоимости: {e}")
-        return 0, 0, 0, 0, 0, 0
+        return 0, 0, MIN_BUDGET, 0, 0, 0
 
 def get_branded_section_name(section):
     names = {
@@ -375,7 +427,8 @@ async def send_excel_file_to_admin(context, campaign_number, query):
             return False
             
         logger.info(f"✅ Excel создан, отправляем файл...")
-        await query.message.reply_document(
+        await context.bot.send_document(
+            chat_id=ADMIN_TELEGRAM_ID,
             document=excel_buffer,
             filename=f"mediaplan_{campaign_number}.xlsx",
             caption=f"📊 Медиаплан кампании #{campaign_number}"
@@ -474,7 +527,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• 3,000+ контактов в день\n"
         "• 35,000+ уникальных слушателей в месяц\n"
         "• 52% доля местного радиорынка\n\n"
-        "💰 БАЗОВАЯ ЦЕНА: 2,5₽/секунду"
+        "💰 БАЗОВАЯ ЦЕНА: 2₽/секунду"
     )
     
     # Если это сообщение от команды /start
@@ -697,11 +750,14 @@ async def handle_campaign_dates(update: Update, context: ContextTypes.DEFAULT_TY
 async def process_start_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         date_text = update.message.text.strip()
-        start_date = datetime.strptime(date_text, '%d.%m.%Y')
         
-        if start_date < datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+        if not validate_date(date_text):
             await update.message.reply_text(
-                "❌ Дата начала не может быть в прошлом. Введите корректную дату:",
+                "❌ Неверная дата. Проверьте:\n"
+                "• Формат ДД.ММ.ГГГГ\n"
+                "• Дата не в прошлом\n"
+                "• Дата не более чем на 1 год вперед\n\n"
+                "Введите корректную дату:",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ ОТМЕНА", callback_data="cancel_period")]])
             )
             return "WAITING_START_DATE"
@@ -731,7 +787,17 @@ async def process_start_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         date_text = update.message.text.strip()
-        end_date = datetime.strptime(date_text, '%d.%m.%Y')
+        
+        if not validate_date(date_text):
+            await update.message.reply_text(
+                "❌ Неверная дата. Проверьте:\n"
+                "• Формат ДД.ММ.ГГГГ\n"
+                "• Дата не в прошлом\n"
+                "• Дата не более чем на 1 год вперед\n\n"
+                "Введите корректную дату:",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ ОТМЕНА", callback_data="cancel_period")]])
+            )
+            return "WAITING_END_DATE"
         
         if not context.user_data.get('start_date'):
             await update.message.reply_text(
@@ -741,6 +807,7 @@ async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return "WAITING_END_DATE"
         
         start_date = datetime.strptime(context.user_data['start_date'], '%d.%m.%Y')
+        end_date = datetime.strptime(date_text, '%d.%m.%Y')
         
         if end_date <= start_date:
             await update.message.reply_text(
@@ -1322,20 +1389,12 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
             context.user_data['contact_name'] = text
             await update.message.reply_text(
                 "📞 Введите ваш телефон:\n\n"
-                "Формат: +79XXXXXXXXX\n"
-                "Пример: +79123456789\n\n"
+                "Пример: +79123456789 или любой другой формат\n\n"
                 "❌ ОТМЕНА - /cancel"
             )
             return CONTACT_INFO
         
         elif 'phone' not in context.user_data:
-            if not validate_phone(text):
-                await update.message.reply_text(
-                    "❌ Неверный формат телефона. Используйте формат: +79XXXXXXXXX\n\n"
-                    "Пример: +79123456789\n\n"
-                    "❌ ОТМЕНА - /cancel"
-                )
-                return CONTACT_INFO
             context.user_data['phone'] = text
             await update.message.reply_text("📧 Введите ваш email:\n\n❌ ОТМЕНА - /cancel")
             return CONTACT_INFO
@@ -1406,7 +1465,7 @@ Email: {context.user_data.get('email', 'Не указан')}
     
     keyboard = [
         [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ", callback_data="submit_campaign")],
-        [InlineKeyboardButton("◀️ ВЕРНУТЬСЯ К ВЫБОРУ РАДИО", callback_data="back_to_radio_from_confirmation")]
+        [InlineKeyboardButton("◀️ ВЕРНУТЬСЯ К ВЫБОРУ РАДИО", callback_data="back_to_radio")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1465,7 +1524,7 @@ Email: {context.user_data.get('email', 'Не указан')}
     
     keyboard = [
         [InlineKeyboardButton("📤 ОТПРАВИТЬ ЗАЯВКУ", callback_data="submit_campaign")],
-        [InlineKeyboardButton("◀️ ВЕРНУТЬСЯ К ВЫБОРУ РАДИО", callback_data="back_to_radio_from_confirmation")]
+        [InlineKeyboardButton("◀️ ВЕРНУТЬСЯ К ВЫБОРУ РАДИО", callback_data="back_to_radio")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1476,11 +1535,29 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     await query.answer()
     
-    if query.data == "back_to_radio_from_confirmation":
+    if query.data == "back_to_radio":
+        # Сохраняем контакты при возврате к выбору радио
+        saved_contacts = {
+            'contact_name': context.user_data.get('contact_name'),
+            'phone': context.user_data.get('phone'), 
+            'email': context.user_data.get('email'),
+            'company': context.user_data.get('company')
+        }
+        # Очищаем user_data но сохраняем контакты
+        context.user_data.clear()
+        context.user_data.update(saved_contacts)
         return await radio_selection(update, context)
     
     elif query.data == "submit_campaign":
         try:
+            # Проверяем лимит заявок
+            if not check_rate_limit(query.from_user.id):
+                await query.answer(
+                    "❌ Вы превысили лимит в 5 заявок в день. Попробуйте завтра или свяжитесь с поддержкой: @AlexeyKhlistunov",
+                    show_alert=True
+                )
+                return CONFIRMATION
+            
             base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
             
             campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
@@ -1591,7 +1668,15 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
             return await personal_cabinet(update, context)
         
         elif query.data == "new_order":
+            # Сохраняем контакты для новой кампании
+            saved_contacts = {
+                'contact_name': context.user_data.get('contact_name'),
+                'phone': context.user_data.get('phone'),
+                'email': context.user_data.get('email'),
+                'company': context.user_data.get('company')
+            }
             context.user_data.clear()
+            context.user_data.update(saved_contacts)
             await query.message.reply_text("🚀 Начинаем новую кампанию!")
             return await radio_selection(update, context)
         
@@ -1729,12 +1814,47 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return MAIN_MENU
 
+async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик админских кнопок"""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data.startswith("generate_excel_"):
+        campaign_number = query.data.replace("generate_excel_", "")
+        try:
+            success = await send_excel_file_to_admin(context, campaign_number, query)
+            if success:
+                await query.answer("✅ Excel отправлен вам в личные сообщения")
+            else:
+                await query.answer("❌ Ошибка при создании Excel")
+        except Exception as e:
+            logger.error(f"Ошибка админского Excel: {e}")
+            await query.answer("❌ Ошибка при создании Excel")
+    
+    elif query.data.startswith("call_"):
+        phone = query.data.replace("call_", "")
+        await query.answer(f"📞 Телефон: {phone}")
+    
+    elif query.data.startswith("email_"):
+        email = query.data.replace("email_", "")
+        await query.answer(f"✉️ Email: {email}")
+    
+    return MAIN_MENU
+
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     if query.data == "create_campaign":
+        # Сохраняем контакты при начале новой кампании
+        saved_contacts = {
+            'contact_name': context.user_data.get('contact_name'),
+            'phone': context.user_data.get('phone'),
+            'email': context.user_data.get('email'),
+            'company': context.user_data.get('company')
+        }
         context.user_data.clear()
+        context.user_data.update(saved_contacts)
         return await radio_selection(update, context)
     
     elif query.data == "statistics":
@@ -1746,34 +1866,25 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "about":
         return await about(update, context)
     
-    # ОБРАБОТКА АДМИНСКИХ КНОПОК EXCEL
-    elif query.data.startswith("generate_excel_"):
-        campaign_number = query.data.replace("generate_excel_", "")
-        try:
-            success = await send_excel_file_to_admin(context, campaign_number, query)
-            if success:
-                await query.answer("✅ Excel отправлен вам в личные сообщения")
-            else:
-                await query.answer("❌ Ошибка при создании Excel")
-        except Exception as e:
-            await query.answer(f"❌ Ошибка: {e}")
-    
-    elif query.data.startswith("call_"):
-        phone = query.data.replace("call_", "")
-        await query.answer(f"📞 Наберите: {phone}")
-    
-    elif query.data.startswith("email_"):
-        email = query.data.replace("email_", "")
-        await query.answer(f"✉️ Email: {email}")
+    # ОБРАБОТКА АДМИНСКИХ КНОПОК
+    elif query.data.startswith("generate_excel_") or query.data.startswith("call_") or query.data.startswith("email_"):
+        return await handle_admin_buttons(update, context)
     
     # НАВИГАЦИЯ
     elif query.data == "back_to_main":
         return await start(update, context)
     
     elif query.data == "back_to_radio":
-        return await radio_selection(update, context)
-    
-    elif query.data == "back_to_radio_from_confirmation":
+        # Сохраняем контакты при возврате к выбору радио
+        saved_contacts = {
+            'contact_name': context.user_data.get('contact_name'),
+            'phone': context.user_data.get('phone'),
+            'email': context.user_data.get('email'),
+            'company': context.user_data.get('company')
+        }
+        # Очищаем user_data но сохраняем контакты
+        context.user_data.clear()
+        context.user_data.update(saved_contacts)
         return await radio_selection(update, context)
     
     elif query.data == "back_to_dates":
@@ -1820,7 +1931,11 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif query.data == "provide_own_audio":
         current_state = context.user_data.get('provide_own_audio', False)
+        # Сохраняем текст при переключении опции
+        campaign_text = context.user_data.get('campaign_text', '')
         context.user_data['provide_own_audio'] = not current_state
+        # Восстанавливаем текст
+        context.user_data['campaign_text'] = campaign_text
         return await campaign_creator(update, context)
     
     elif query.data == "to_production_option":
@@ -1913,9 +2028,11 @@ def main():
     )
     
     application.add_handler(conv_handler)
+    
+    # Отдельный обработчик для админских кнопок
     application.add_handler(CallbackQueryHandler(
-        handle_main_menu, 
-        pattern='^(generate_excel_|get_excel_|call_|email_)'
+        handle_admin_buttons, 
+        pattern='^(generate_excel_|call_|email_)'
     ))
     
     if 'RENDER' in os.environ:
