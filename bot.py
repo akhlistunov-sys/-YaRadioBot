@@ -1392,17 +1392,17 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
                 "Пример: +79123456789 или любой другой формат\n\n"
                 "❌ ОТМЕНА - /cancel"
             )
-            return CONTACT_INFO
+            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
         
         elif 'phone' not in context.user_data:
             context.user_data['phone'] = text
             await update.message.reply_text("📧 Введите ваш email:\n\n❌ ОТМЕНА - /cancel")
-            return CONTACT_INFO
+            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
         
         elif 'email' not in context.user_data:
             context.user_data['email'] = text
             await update.message.reply_text("🏢 Введите название компании:\n\n❌ ОТМЕНА - /cancel")
-            return CONTACT_INFO
+            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
         
         elif 'company' not in context.user_data:
             context.user_data['company'] = text
