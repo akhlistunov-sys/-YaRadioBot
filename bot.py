@@ -442,12 +442,26 @@ async def send_excel_file_to_admin(context, campaign_number, query):
 
 async def send_admin_notification(context, user_data, campaign_number):
     try:
+        # Сначала создаем и отправляем Excel
+        excel_buffer = create_excel_file_from_db(campaign_number)
+        if excel_buffer:
+            await context.bot.send_document(
+                chat_id=ADMIN_TELEGRAM_ID,
+                document=excel_buffer,
+                filename=f"mediaplan_{campaign_number}.xlsx",
+                caption=f"📊 Медиаплан кампании #{campaign_number}"
+            )
+            logger.info(f"✅ Excel автоматически отправлен админу для кампании #{campaign_number}")
+        
+        # Затем отправляем текстовое уведомление с кнопками
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(user_data)
         
         stations_text = ""
         for radio in user_data.get('selected_radios', []):
             listeners = STATION_COVERAGE.get(radio, 0)
             stations_text += f"• {radio}: {format_number(listeners)}/день\n"
+        
+        # ... остальной код уведомления без изменений
         
         slots_text = ""
         for slot_index in user_data.get('selected_time_slots', []):
