@@ -1365,6 +1365,9 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_production")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    # Всегда начинаем с имени
+    context.user_data['current_contact_field'] = 'name'
+    
     text = (
         f"Контактные данные\n\n"
         f"💰 Стоимость кампании:\n"
@@ -1375,7 +1378,7 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"─────────────────\n"
         f"📝 ВВЕДИТЕ ВАШЕ ИМЯ\n"
         f"─────────────────\n"
-        f"(нажмите Enter для отправки)"
+        f"(отправьте сообщением)"
     )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
@@ -1383,29 +1386,35 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        text = update.message.text
+        text = update.message.text.strip()
+        current_field = context.user_data.get('current_contact_field', 'name')
         
-        if 'contact_name' not in context.user_data:
+        if current_field == 'name':
             context.user_data['contact_name'] = text
+            context.user_data['current_contact_field'] = 'phone'
             await update.message.reply_text(
                 "📞 Введите ваш телефон:\n\n"
-                "Пример: +79123456789 или любой другой формат\n\n"
+                "Пример: +79123456789 или любой формат\n\n"
                 "❌ ОТМЕНА - /cancel"
             )
-            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
-        
-        elif 'phone' not in context.user_data:
+            return CONTACT_INFO
+            
+        elif current_field == 'phone':
             context.user_data['phone'] = text
+            context.user_data['current_contact_field'] = 'email'
             await update.message.reply_text("📧 Введите ваш email:\n\n❌ ОТМЕНА - /cancel")
-            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
-        
-        elif 'email' not in context.user_data:
+            return CONTACT_INFO
+            
+        elif current_field == 'email':
             context.user_data['email'] = text
+            context.user_data['current_contact_field'] = 'company'
             await update.message.reply_text("🏢 Введите название компании:\n\n❌ ОТМЕНА - /cancel")
-            return CONTACT_INFO  # ВАЖНО: возвращаем состояние
-        
-        elif 'company' not in context.user_data:
+            return CONTACT_INFO
+            
+        elif current_field == 'company':
             context.user_data['company'] = text
+            # Очищаем временное поле
+            context.user_data.pop('current_contact_field', None)
             return await show_confirmation_from_message(update, context)
             
     except Exception as e:
