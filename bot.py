@@ -2020,9 +2020,9 @@ def main():
             PRODUCTION_OPTION: [
                 CallbackQueryHandler(handle_production_option, pattern='^.*$')
             ],
-                        CONTACT_INFO: [
+                                    CONTACT_INFO: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
-                CallbackQueryHandler(handle_main_menu, pattern='^.*$'),
+                CallbackQueryHandler(handle_main_menu, pattern='^back_to_production$'),
                 CommandHandler('cancel', cancel)
             ],
             CONFIRMATION: [
