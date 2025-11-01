@@ -35,17 +35,17 @@ MIN_BUDGET = 7000
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True},
     {"time": "07:00-08:00", "label": "Утренние поездки", "premium": True},
-    {"time": "08:00-09:00", "label": "Пик трафика 🚀", "premium": True},
+    {"time": "08:00-09:00", "label": "Пик трафика", "premium": True},
     {"time": "09:00-10:00", "label": "Начало работы", "premium": True},
-    {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": False},
-    {"time": "11:00-12:00", "label": "Предобеденное время", "premium": False},
-    {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": False},
-    {"time": "13:00-14:00", "label": "После обеда", "premium": False},
-    {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": False},
-    {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": False},
+    {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": True},
+    {"time": "11:00-12:00", "label": "Предобеденное время", "premium": True},
+    {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": True},
+    {"time": "13:00-14:00", "label": "После обеда", "premium": True},
+    {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": True},
+    {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": True},
     {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": True},
     {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": True},
-    {"time": "18:00-19:00", "label": "Пик трафика 🚀", "premium": True},
+    {"time": "18:00-19:00", "label": "Пик трафика", "premium": True},
     {"time": "19:00-20:00", "label": "Домашний вечер", "premium": True},
     {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": True}
 ]
@@ -311,10 +311,10 @@ def create_excel_file_from_db(campaign_number):
         for radio in user_data.get('selected_radios', []):
             listeners = STATION_COVERAGE.get(radio, 0)
             total_listeners += listeners
-            ws[f'A{row}'] = f"• {radio}: {format_number(listeners)} слушателей/день"
+            ws[f'A{row}'] = f"• {radio}: ~{format_number(listeners)} слушателей"
             row += 1
         
-        ws[f'A{row}'] = f"• ИТОГО: {format_number(total_listeners)} слушателей/день"
+        ws[f'A{row}'] = f"• ИТОГО: ~{format_number(total_listeners)} слушателей"
         ws[f'A{row}'].font = Font(bold=True)
         
         row += 2
@@ -325,8 +325,7 @@ def create_excel_file_from_db(campaign_number):
         for slot_index in user_data.get('selected_time_slots', []):
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
-                premium = "✅" if slot['premium'] else "❌"
-                ws[f'A{row}'] = f"• {slot['time']} - {slot['label']} (Премиум: {premium})"
+                ws[f'A{row}'] = f"• {slot['time']} - {slot['label']}"
                 row += 1
         
         row += 1
@@ -417,29 +416,6 @@ def create_excel_file_from_db(campaign_number):
         logger.error(f"❌ Ошибка при создании Excel: {e}")
         return None
 
-async def send_excel_file_to_admin(context, campaign_number, query):
-    try:
-        logger.info(f"📤 Отправка Excel для кампании #{campaign_number} админу")
-        excel_buffer = create_excel_file_from_db(campaign_number)
-        
-        if not excel_buffer:
-            logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
-            return False
-            
-        logger.info(f"✅ Excel создан, отправляем файл...")
-        await context.bot.send_document(
-            chat_id=ADMIN_TELEGRAM_ID,
-            document=excel_buffer,
-            filename=f"mediaplan_{campaign_number}.xlsx",
-            caption=f"📊 Медиаплан кампании #{campaign_number}"
-        )
-        logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Ошибка при отправке Excel админу: {e}")
-        return False
-
 async def send_admin_notification(context, user_data, campaign_number):
     try:
         # Сначала создаем и отправляем Excel
@@ -459,16 +435,13 @@ async def send_admin_notification(context, user_data, campaign_number):
         stations_text = ""
         for radio in user_data.get('selected_radios', []):
             listeners = STATION_COVERAGE.get(radio, 0)
-            stations_text += f"• {radio}: {format_number(listeners)}/день\n"
-        
-        # ... остальной код уведомления без изменений
+            stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
         
         slots_text = ""
         for slot_index in user_data.get('selected_time_slots', []):
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
-                premium = "✅" if slot['premium'] else "❌"
-                slots_text += f"• {slot['time']} - {slot['label']} (Премиум: {premium})\n"
+                slots_text += f"• {slot['time']} - {slot['label']}\n"
         
         notification_text = f"""
 🔔 НОВАЯ ЗАЯВКА #{campaign_number}
@@ -482,7 +455,7 @@ Email: {user_data.get('email', 'Не указан')}
 📊 РАДИОСТАНЦИИ:
 {stations_text}
 📅 ПЕРИОД: {user_data.get('start_date')} - {user_data.get('end_date')} ({user_data.get('campaign_days')} дней)
-🕒 СЛОТЫ ({len(user_data.get('selected_time_slots', []))} выбрано):
+🕒 ВЫБРАНО СЛОТОВ: {len(user_data.get('selected_time_slots', []))}
 {slots_text}
 🎙️ РУБРИКА: {get_branded_section_name(user_data.get('branded_section'))}
 ⏱️ РОЛИК: {PRODUCTION_OPTIONS.get(user_data.get('production_option', 'ready'), {}).get('name', 'Не выбрано')}
@@ -502,9 +475,6 @@ Email: {user_data.get('email', 'Не указан')}
         
         keyboard = [
             [
-                InlineKeyboardButton("📊 СФОРМИРОВАТЬ EXCEL", callback_data=f"generate_excel_{campaign_number}"),
-            ],
-            [
                 InlineKeyboardButton(f"📞 {user_data.get('phone', 'Телефон')}", callback_data=f"call_{user_data.get('phone', '')}"),
                 InlineKeyboardButton(f"✉️ Написать", callback_data=f"email_{user_data.get('email', '')}")
             ]
@@ -518,6 +488,7 @@ Email: {user_data.get('email', 'Не указан')}
         )
         logger.info(f"✅ Уведомление админу отправлено для кампании #{campaign_number}")
         return True
+        
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
         return False
@@ -590,7 +561,7 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     for name, callback, listeners in radio_stations:
         emoji = "✅" if name in selected_radios else "⚪"
-        button_text = f"{emoji} {name} ({format_number(listeners)} ч/день)"
+        button_text = f"{emoji} {name} (~{format_number(listeners)} слушателей)"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=callback)])
         keyboard.append([InlineKeyboardButton("📖 Подробнее", callback_data=f"details_{callback}")])
     
@@ -602,18 +573,18 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"Выбор радиостанций\n\n"
         f"{'✅' if 'LOVE RADIO' in selected_radios else '⚪'} LOVE RADIO\n"
-        f"👥 540 слушателей/день\n👩 Молодёжь 16-35 лет\n\n"
+        f"~540 слушателей\n👩 Молодёжь 16-35 лет\n\n"
         f"{'✅' if 'АВТОРАДИО' in selected_radios else '⚪'} АВТОРАДИО\n"
-        f"👥 3,250 слушателей/день\n👨 Автомобилисты 25-55 лет\n\n"
+        f"~3,250 слушателей\n👨 Автомобилисты 25-55 лет\n\n"
         f"{'✅' if 'РАДИО ДАЧА' in selected_radios else '⚪'} РАДИО ДАЧА\n"
-        f"👥 3,250 слушателей/день\n👨👩 Семья 35-60 лет\n\n"
+        f"~3,250 слушателей\n👨👩 Семья 35-60 лет\n\n"
         f"{'✅' if 'РАДИО ШАНСОН' in selected_radios else '⚪'} РАДИО ШАНСОН\n"
-        f"👥 2,900 слушателей/день\n👨 Мужчины 30-60+ лет\n\n"
+        f"~2,900 слушателей\n👨 Мужчины 30-60+ лет\n\n"
         f"{'✅' if 'РЕТРО FM' in selected_radios else '⚪'} РЕТРО FM\n"
-        f"👥 3,600 слушателей/день\n👴👵 Взрослые 35-65 лет\n\n"
+        f"~3,600 слушателей\n👴👵 Взрослые 35-65 лет\n\n"
         f"{'✅' if 'ЮМОР FM' in selected_radios else '⚪'} ЮМОР FM\n"
-        f"👥 1,260 слушателей/день\n👦👧 Молодежь 12-19 и взрослые 25-45 лет\n\n"
-        f"Выбрано: {len(selected_radios)} станции • {format_number(total_listeners)} слушателей\n"
+        f"~1,260 слушателей\n👦👧 Молодежь 12-19 и взрослые 25-45 лет\n\n"
+        f"Выбрано: {len(selected_radios)} станции • ~{format_number(total_listeners)} слушателей\n"
         f"[ ДАЛЕЕ ]"
     )
     
@@ -635,12 +606,12 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
     
     elif query.data.startswith("details_"):
         station_data = {
-            'details_radio_love': "LOVE RADIO - 540 слушателей/день\n• Молодёжь 16-35 лет\n• Охват снижен на 40-50% из-за возрастной структуры\n• Музыка: современные хиты",
-            'details_radio_auto': "АВТОРАДИО - 3,250 слушателей/день\n• Автомобилисты 25-55 лет\n• Универсальный формат для широкой аудитории\n• Дорожные новости, пробки",
-            'details_radio_dacha': "РАДИО ДАЧА - 3,250 слушателей/день\n• Семья 35-60 лет\n• Высокий охват среди пенсионеров\n• Семейные ценности, дачные советы",
-            'details_radio_chanson': "РАДИО ШАНСОН - 2,900 слушателей/день\n• Мужчины 30-60+ лет\n• Популярно среди старшей аудитории\n• Музыка: шансон, авторская песня",
-            'details_radio_retro': "РЕТРО FM - 3,600 слушателей/день\n• Взрослые 35-65 лет\n• Идеально подходит для возрастной структуры\n• Музыка: хиты 80-90-х годов",
-            'details_radio_humor': "ЮМОР FM - 1,260 слушателей/день\n• Молодежь 12-19 и взрослые 25-45 лет\n• Стабильный охват\n• Юмористические программы"
+            'details_radio_love': "LOVE RADIO - ~540 слушателей\n• Молодёжь 16-35 лет\n• Охват снижен на 40-50% из-за возрастной структуры\n• Музыка: современные хиты",
+            'details_radio_auto': "АВТОРАДИО - ~3,250 слушателей\n• Автомобилисты 25-55 лет\n• Универсальный формат для широкой аудитории\n• Дорожные новости, пробки",
+            'details_radio_dacha': "РАДИО ДАЧА - ~3,250 слушателей\n• Семья 35-60 лет\n• Высокий охват среди пенсионеров\n• Семейные ценности, дачные советы",
+            'details_radio_chanson': "РАДИО ШАНСОН - ~2,900 слушателей\n• Мужчины 30-60+ лет\n• Популярно среди старшей аудитории\n• Музыка: шансон, авторская песня",
+            'details_radio_retro': "РЕТРО FM - ~3,600 слушателей\n• Взрослые 35-65 лет\n• Идеально подходит для возрастной структуры\n• Музыка: хиты 80-90-х годов",
+            'details_radio_humor': "ЮМОР FM - ~1,260 слушателей\n• Молодежь 12-19 и взрослые 25-45 лет\n• Стабильный охват\n• Юмористические программы"
         }
         
         station_info = station_data.get(query.data, "Информация о станции")
@@ -694,7 +665,7 @@ async def campaign_dates(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
     for radio in selected_radios:
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_info += f"• {radio} ({format_number(listeners)} ч/день)\n"
+        stations_info += f"• {radio}: ~{format_number(listeners)} слушателей\n"
     
     # Определяем текст кнопки в зависимости от состояния
     dates_button_text = "✅ ПЕРИОД ВЫБРАН" if start_date and end_date else "🗓️ ВЫБРАТЬ ПЕРИОД"
@@ -863,7 +834,7 @@ async def campaign_dates_from_message(update: Update, context: ContextTypes.DEFA
     stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
     for radio in selected_radios:
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_info += f"• {radio} ({format_number(listeners)} ч/день)\n"
+        stations_info += f"• {radio}: ~{format_number(listeners)} слушателей\n"
     
     dates_button_text = "✅ ПЕРИОД ВЫБРАН" if start_date and end_date else "🗓️ ВЫБРАТЬ ПЕРИОД"
     
@@ -903,23 +874,8 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = []
     keyboard.append([InlineKeyboardButton("✅ ВЫБРАТЬ ВСЕ СЛОТЫ", callback_data="select_all_slots")])
-    keyboard.append([InlineKeyboardButton("🌅 УТРЕННИЕ СЛОТЫ (+10%)", callback_data="header_morning")])
     
-    for i in range(4):
-        slot = TIME_SLOTS_DATA[i]
-        emoji = "✅" if i in selected_slots else "⚪"
-        button_text = f"{emoji} {slot['time']} • {slot['label']}"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=f"time_{i}")])
-    
-    keyboard.append([InlineKeyboardButton("☀️ ДНЕВНЫЕ СЛОТЫ", callback_data="header_day")])
-    for i in range(4, 10):
-        slot = TIME_SLOTS_DATA[i]
-        emoji = "✅" if i in selected_slots else "⚪"
-        button_text = f"{emoji} {slot['time']} • {slot['label']}"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=f"time_{i}")])
-    
-    keyboard.append([InlineKeyboardButton("🌇 ВЕЧЕРНИЕ СЛОТЫ (+10%)", callback_data="header_evening")])
-    for i in range(10, 15):
+    for i in range(15):
         slot = TIME_SLOTS_DATA[i]
         emoji = "✅" if i in selected_slots else "⚪"
         button_text = f"{emoji} {slot['time']} • {slot['label']}"
@@ -1445,14 +1401,13 @@ async def show_confirmation_from_message(update: Update, context: ContextTypes.D
     stations_text = ""
     for radio in context.user_data.get('selected_radios', []):
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_text += f"• {radio}: {format_number(listeners)}/день\n"
+        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
     
     slots_text = ""
     for slot_index in context.user_data.get('selected_time_slots', []):
         if 0 <= slot_index < len(TIME_SLOTS_DATA):
             slot = TIME_SLOTS_DATA[slot_index]
-            premium = "✅" if slot['premium'] else "❌"
-            slots_text += f"• {slot['time']} - {slot['label']} (Премиум: {premium})\n"
+            slots_text += f"• {slot['time']} - {slot['label']}\n"
     
     confirmation_text = f"""
 📋 ПОДТВЕРЖДЕНИЕ ЗАЯВКИ
@@ -1504,14 +1459,13 @@ async def show_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stations_text = ""
     for radio in context.user_data.get('selected_radios', []):
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_text += f"• {radio}: {format_number(listeners)}/день\n"
+        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
     
     slots_text = ""
     for slot_index in context.user_data.get('selected_time_slots', []):
         if 0 <= slot_index < len(TIME_SLOTS_DATA):
             slot = TIME_SLOTS_DATA[slot_index]
-            premium = "✅" if slot['premium'] else "❌"
-            slots_text += f"• {slot['time']} - {slot['label']} (Премиум: {premium})\n"
+            slots_text += f"• {slot['time']} - {slot['label']}\n"
     
     confirmation_text = f"""
 📋 ПОДТВЕРЖДЕНИЕ ЗАЯВКИ
@@ -1779,30 +1733,30 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "1. Love Radio (ядро: 16–35 лет)\n"
         "o В Тюмени/крупных городах: высокий охват за счёт студентов и молодых специалистов.\n"
         "o В Ялуторовске/Заводоуковске: охват снижается на 40–50 % из за меньшей доли молодёжи.\n"
-        " Базовый охват = 480–600 чел./день.\n\n"
+        " Базовый охват = ~480-600 слушателей.\n\n"
         "2. Юмор FM (ядро: 12–19 и 25–45 лет)\n"
         "o Потеря молодёжного сегмента (12–19 лет) снижает охват на 20–30 %.\n"
-        "o Базовый охват = 1 120–1 400 чел./день \n\n"
+        "o Базовый охват = ~1 120-1 400 слушателей\n\n"
         "3. Авторадио (25–55 лет)\n"
         "o Ядро совпадает с наиболее многочисленной возрастной группой в малых городаы.\n"
-        "o Базовый охват = 2 900–3 600 чел./день \n\n"
+        "o Базовый охват = ~2 900-3 600 слушателей\n\n"
         "4. Ретро FM (35–65 лет)\n"
         "o Идеально попадает в возрастную структуру: высокая доля 45–65-летних.\n"
-        "o Базовый охват = 3 200–4 000 чел./день \n\n"
+        "o Базовый охват = ~3 200-4 000 слушателей\n\n"
         "5. Радио Дача (35–60 лет)\n"
         "o Сильный охват за счёт семейной аудитории и пенсионеров.\n"
-        "o Базовый охват = 2 900–3 600 чел./день\n\n"
+        "o Базовый охват = ~2 900-3 600 слушателей\n\n"
         "6. Радио Шансон (30–60+ лет)\n"
         "o Высокая популярность среди мужчин 45+ и пенсионеров.\n"
-        "o Базовый охват = 2 600–3 200 чел./день \n\n"
+        "o Базовый охват = ~2 600-3 200 слушателей\n\n"
         "3. Итоговый свод с учётом возраста\n"
-        "Радиостанция	Охват (чел./день)\n"
-        "Love Radio	480–600\n"
-        "Юмор FM	1 120–1 400\n"
-        "Авторадио	2 900–3 600\n"
-        "Ретро FM	3 200–4 000\n"
-        "Радио Дача	2 900–3 600\n"
-        "Радио Шансон	2 600–3 200\n\n"
+        "Радиостанция	Охват (слушателей)\n"
+        "Love Radio	~480-600\n"
+        "Юмор FM	~1 120-1 400\n"
+        "Авторадио	~2 900-3 600\n"
+        "Ретро FM	~3 200-4 000\n"
+        "Радио Дача	~2 900-3 600\n"
+        "Радио Шансон	~2 600-3 200\n\n"
         "4. Ключевые выводы\n"
         "1. Самые эффективные станции для Ялуторовска/Заводоуковска:\n"
         "o Ретро FM, Радио Дача, Радио Шансон — их охват выше среднего за счёт совпадения с возрастной структуры.\n"
@@ -1857,26 +1811,7 @@ async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
     
-    if query.data.startswith("generate_excel_"):
-        campaign_number = query.data.replace("generate_excel_", "")
-        try:
-            # АДМИНСКИЙ Excel - отправляем админу
-            excel_buffer = create_excel_file_from_db(campaign_number)
-            if excel_buffer:
-                await context.bot.send_document(
-                    chat_id=ADMIN_TELEGRAM_ID,
-                    document=excel_buffer,
-                    filename=f"mediaplan_{campaign_number}.xlsx",
-                    caption=f"📊 Медиаплан кампании #{campaign_number}"
-                )
-                await query.answer("✅ Excel отправлен вам в личные сообщения")
-            else:
-                await query.answer("❌ Ошибка при создании Excel", show_alert=True)
-        except Exception as e:
-            logger.error(f"Ошибка админского Excel: {e}")
-            await query.answer("❌ Ошибка при создании Excel", show_alert=True)
-    
-    elif query.data.startswith("call_"):
+    if query.data.startswith("call_"):
         phone = query.data.replace("call_", "")
         await query.answer(f"📞 Телефон: {phone}")
     
@@ -1912,7 +1847,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await about(update, context)
     
     # ОБРАБОТКА АДМИНСКИХ КНОПОК
-    elif query.data.startswith("generate_excel_") or query.data.startswith("call_") or query.data.startswith("email_"):
+    elif query.data.startswith("call_") or query.data.startswith("email_"):
         return await handle_admin_buttons(update, context)
     
     # НАВИГАЦИЯ
@@ -2077,7 +2012,7 @@ def main():
     # Отдельный обработчик для админских кнопок
     application.add_handler(CallbackQueryHandler(
         handle_admin_buttons, 
-        pattern='^(generate_excel_|call_|email_)'
+        pattern='^(call_|email_)'
     ))
     
     if 'RENDER' in os.environ:
