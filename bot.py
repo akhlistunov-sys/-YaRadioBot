@@ -28,7 +28,7 @@ TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
 # Цены и параметры
-BASE_PRICE_PER_SECOND = 3
+BASE_PRICE_PER_SECOND = 2.5
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
@@ -173,6 +173,8 @@ def get_branded_section_name(section):
 
 def create_excel_file_from_db(campaign_number):
     try:
+        logger.info(f"🔍 Начинаем создание Excel для кампании #{campaign_number}")
+        
         conn = sqlite3.connect('campaigns.db')
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM campaigns WHERE campaign_number = ?', (campaign_number,))
@@ -180,8 +182,11 @@ def create_excel_file_from_db(campaign_number):
         conn.close()
         
         if not campaign_data:
+            logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
             return None
             
+        logger.info(f"✅ Кампания #{campaign_number} найдена в БД")
+        
         # Создаем user_data из данных БД
         user_data = {
             'selected_radios': campaign_data[3].split(','),
@@ -200,7 +205,10 @@ def create_excel_file_from_db(campaign_number):
             'production_cost': PRODUCTION_OPTIONS.get(campaign_data[10], {}).get('price', 0)
         }
         
+        logger.info(f"📊 Данные пользователя подготовлены: {len(user_data.get('selected_radios', []))} радиостанций")
+        
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(user_data)
+        logger.info(f"💰 Расчет стоимости: база={base_price}, скидка={discount}, итого={final_price}")
         
         wb = Workbook()
         ws = wb.active
@@ -350,27 +358,33 @@ def create_excel_file_from_db(campaign_number):
         wb.save(buffer)
         buffer.seek(0)
         
-        logger.info(f"Excel файл успешно создан для кампании #{campaign_number}")
+        logger.info(f"✅ Excel файл успешно создан для кампании #{campaign_number}, размер: {len(buffer.getvalue())} байт")
         return buffer
         
     except Exception as e:
-        logger.error(f"Ошибка при создании Excel: {e}")
+        logger.error(f"❌ Ошибка при создании Excel: {e}")
         return None
 
 async def send_excel_file_to_admin(context, campaign_number, query):
     try:
+        logger.info(f"📤 Отправка Excel для кампании #{campaign_number} админу")
         excel_buffer = create_excel_file_from_db(campaign_number)
+        
         if not excel_buffer:
+            logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
             return False
             
+        logger.info(f"✅ Excel создан, отправляем файл...")
         await query.message.reply_document(
             document=excel_buffer,
             filename=f"mediaplan_{campaign_number}.xlsx",
             caption=f"📊 Медиаплан кампании #{campaign_number}"
         )
+        logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
         return True
+        
     except Exception as e:
-        logger.error(f"Ошибка при отправке Excel админу: {e}")
+        logger.error(f"❌ Ошибка при отправке Excel админу: {e}")
         return False
 
 async def send_admin_notification(context, user_data, campaign_number):
@@ -435,10 +449,10 @@ Email: {user_data.get('email', 'Не указан')}
             text=notification_text,
             reply_markup=reply_markup
         )
-        logger.info(f"Уведомление админу отправлено для кампании #{campaign_number}")
+        logger.info(f"✅ Уведомление админу отправлено для кампании #{campaign_number}")
         return True
     except Exception as e:
-        logger.error(f"Ошибка отправки админу: {e}")
+        logger.error(f"❌ Ошибка отправки админу: {e}")
         return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -460,7 +474,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• 3,000+ контактов в день\n"
         "• 35,000+ уникальных слушателей в месяц\n"
         "• 52% доля местного радиорынка\n\n"
-        "💰 БАЗОВАЯ ЦЕНА: 3₽/секунду"
+        "💰 БАЗОВАЯ ЦЕНА: 2,5₽/секунду"
     )
     
     # Если это сообщение от команды /start
@@ -847,7 +861,7 @@ async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📅 ПЕРИОД: {context.user_data.get('start_date')} - {context.user_data.get('end_date')} ({campaign_days} дней)\n\n"
         f"🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
         f"📊 Статистика выбора:\n"
-        f"• Выбрано слots: {total_slots}\n"
+        f"• Выбрано слотов: {total_slots}\n"
         f"• Выходов в день на всех радио: {total_outputs_per_day}\n"
         f"• Всего выходов за период: {format_number(total_outputs_period)}\n\n"
         f"🎯 Выберите подходящие временные интервалы\n"
@@ -1635,7 +1649,7 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "o более высокой доли пенсионеров;\n"
         "o низкой рождаемости.\n\n"
         "2. Как это влияет на радиоохват\n"
-        "Каждая станция имеет ядро целевой аудитории по возрасту. В «постаревших» городаы:\n"
+        "Каждая станция имеет ядро целевой аудитории по возрасту. В «постаревших» городах:\n"
         "• падает охват станций с молодёжной аудиторией;\n"
         "• растёт охват станций, ориентированных на 35+.\n\n"
         "по станциям:\n\n"
