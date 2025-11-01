@@ -1869,15 +1869,15 @@ async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if query.data.startswith("generate_excel_"):
         campaign_number = query.data.replace("generate_excel_", "")
+        logger.info(f"🔄 Обработка кнопки Excel для кампании #{campaign_number}")
+        
         try:
             success = await send_excel_file_to_admin(context, campaign_number, query)
-            if success:
-                await query.answer("✅ Excel отправлен вам в личные сообщения")
-            else:
-                await query.answer("❌ Ошибка при создании Excel")
+            if not success:
+                await query.answer("❌ Не удалось отправить Excel", show_alert=True)
         except Exception as e:
-            logger.error(f"Ошибка админского Excel: {e}")
-            await query.answer("❌ Ошибка при создании Excel")
+            logger.error(f"❌ Ошибка админского Excel: {e}")
+            await query.answer("❌ Ошибка при создании Excel", show_alert=True)
     
     elif query.data.startswith("call_"):
         phone = query.data.replace("call_", "")
@@ -1887,7 +1887,7 @@ async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
         email = query.data.replace("email_", "")
         await query.answer(f"✉️ Email: {email}")
     
-    return MAIN_MENU
+    return
 
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
