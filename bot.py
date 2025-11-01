@@ -419,18 +419,17 @@ def create_excel_file_from_db(campaign_number):
 
 async def send_excel_file_to_admin(context, campaign_number, query):
     try:
-        logger.info(f"🔍 DEBUG: Начало отправки Excel для кампании #{campaign_number}")
+        logger.info(f"📤 Отправка Excel для кампании #{campaign_number} админу")
         
         # Создаем Excel
         excel_buffer = create_excel_file_from_db(campaign_number)
-        logger.info(f"🔍 DEBUG: Excel buffer создан: {excel_buffer is not None}")
         
         if not excel_buffer:
             logger.error(f"❌ Не удалось создать Excel для кампании #{campaign_number}")
-            await query.answer("❌ Ошибка при создании Excel файла")
+            await query.answer("❌ Ошибка при создании Excel файла", show_alert=True)
             return False
             
-        logger.info(f"🔍 DEBUG: Пытаемся отправить файл админу {ADMIN_TELEGRAM_ID}")
+        logger.info(f"✅ Excel создан ({len(excel_buffer.getvalue())} байт), отправляем...")
         
         # Отправляем файл админу
         await context.bot.send_document(
@@ -440,15 +439,46 @@ async def send_excel_file_to_admin(context, campaign_number, query):
             caption=f"📊 Медиаплан кампании #{campaign_number}"
         )
         
-        logger.info(f"✅ Excel успешно отправлен админу для кампании #{campaign_number}")
+        logger.info(f"✅ Excel успешно отправлен админу")
         await query.answer("✅ Excel отправлен вам в личные сообщения")
         return True
         
     except Exception as e:
         logger.error(f"❌ Ошибка при отправке Excel админу: {e}")
-        await query.answer("❌ Ошибка при отправке Excel")
+        await query.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
         return False
 
+def create_excel_file_from_db(campaign_number):
+    try:
+        logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
+        
+        conn = sqlite3.connect('campaigns.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM campaigns WHERE campaign_number = ?', (campaign_number,))
+        campaign_data = cursor.fetchone()
+        conn.close()
+        
+        if not campaign_data:
+            logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
+            return None
+            
+        logger.info(f"✅ Кампания найдена, создаем Excel...")
+        
+        # [ВСТАВЬ СЮДА ВЕСЬ СУЩЕСТВУЮЩИЙ КОД ФУНКЦИИ create_excel_file_from_db]
+        # Тот большой блок который создает Excel файл
+        # Не меняй его, просто убедись что он есть
+        
+        # В конце функции должен быть:
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        logger.info(f"✅ Excel файл создан успешно")
+        return buffer
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка при создании Excel: {e}")
+        return None
 async def send_admin_notification(context, user_data, campaign_number):
     try:
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(user_data)
