@@ -5,11 +5,9 @@ from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import io
-import re
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
 # Настройка логирования
 logging.basicConfig(
@@ -68,9 +66,8 @@ BRANDED_SECTION_PRICES = {
 }
 
 PRODUCTION_OPTIONS = {
-    'standard': {'price': 2000, 'name': 'СТАНДАРТНЫЙ РОЛИК', 'desc': 'Профессиональная озвучка, музыкальное оформление, 2 правки, срок: 2-3 дня'},
-    'premium': {'price': 4000, 'name': 'ПРЕМИУМ РОЛИК', 'desc': 'Озвучка 2-мя голосами, индивидуальная музыка, 5 правки, срочное производство 1 день'},
-    'ready': {'price': 0, 'name': 'ГОТОВЫЙ РОЛИК', 'desc': 'У меня есть свой ролик, пришлю файлом'}
+    'standard': {'price': 2000, 'name': 'СТАНДАРТНЫЙ РОЛИК', 'desc': 'Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня'},
+    'premium': {'price': 5000, 'name': 'ПРЕМИУМ РОЛИК', 'desc': 'Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день'}
 }
 
 # Инициализация базы данных
@@ -99,7 +96,8 @@ def init_db():
                 base_price INTEGER,
                 discount INTEGER,
                 final_price INTEGER,
-                status TEXT DEFAULT 'pending',
+                status TEXT DEFAULT 'active',
+                actual_reach INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -502,9 +500,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ОБНОВЛЕННАЯ СТАРТОВАЯ СТРАНИЦА С АКЦЕНТОМ НА ПРОСТОТУ"""
     keyboard = [
         [InlineKeyboardButton("🚀 НАЧАТЬ РАСЧЕТ", callback_data="create_campaign")],
-        [InlineKeyboardButton("📊 СТАТИСТИКА ОХВАТА", callback_data="statistics")],
-        [InlineKeyboardButton("📋 МОИ ЗАКАЗЫ", callback_data="my_orders")],
-        [InlineKeyboardButton("ℹ️ О НАС", callback_data="about")]
+        [InlineKeyboardButton("📊 ВОЗРАСТНАЯ СТРУКТУРА", callback_data="statistics")],
+        [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
+        [InlineKeyboardButton("📞 КОНТАКТЫ", callback_data="contacts_details")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -567,7 +565,7 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     for name, callback, listeners in radio_stations:
         emoji = "✅" if name in selected_radios else "⚪"
-        button_text = f"{emoji} {name} (~{format_number(listeners)} слушателей)"
+        button_text = f"{emoji} {name} (~{format_number(listeners)} слушателей в день)"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=callback)])
         keyboard.append([InlineKeyboardButton("📖 Подробнее", callback_data=f"details_{callback}")])
     
@@ -580,18 +578,18 @@ async def radio_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"● ● ○ ○ ○ ○ ○   [1/7] ВЫБОР РАДИОСТАНЦИЙ\n\n"
         f"⏱️ Этот шаг займет ~30 секунд\n\n"
         f"{'✅' if 'LOVE RADIO' in selected_radios else '⚪'} LOVE RADIO\n"
-        f"~540 слушателей\n👩 Молодёжь 16-35 лет\n\n"
+        f"~540 слушателей в день\n👩 Молодёжь 16-35 лет\n\n"
         f"{'✅' if 'АВТОРАДИО' in selected_radios else '⚪'} АВТОРАДИО\n"
-        f"~3,250 слушателей\n👨 Автомобилисты 25-55 лет\n\n"
+        f"~3,250 слушателей в день\n👨 Автомобилисты 25-55 лет\n\n"
         f"{'✅' if 'РАДИО ДАЧА' in selected_radios else '⚪'} РАДИО ДАЧА\n"
-        f"~3,250 слушателей\n👨👩 Семья 35-60 лет\n\n"
+        f"~3,250 слушателей в день\n👨👩 Семья 35-60 лет\n\n"
         f"{'✅' if 'РАДИО ШАНСОН' in selected_radios else '⚪'} РАДИО ШАНСОН\n"
-        f"~2,900 слушателей\n👨 Мужчины 30-60+ лет\n\n"
+        f"~2,900 слушателей в день\n👨 Мужчины 30-60+ лет\n\n"
         f"{'✅' if 'РЕТРО FM' in selected_radios else '⚪'} РЕТРО FM\n"
-        f"~3,600 слушателей\n👴👵 Взрослые 35-65 лет\n\n"
+        f"~3,600 слушателей в день\n👴👵 Взрослые 35-65 лет\n\n"
         f"{'✅' if 'ЮМОР FM' in selected_radios else '⚪'} ЮМОР FM\n"
-        f"~1,260 слушателей\n👦👧 Молодежь 12-19 и взрослые 25-45 лет\n\n"
-        f"Выбрано: {len(selected_radios)} станции • ~{format_number(total_listeners)} слушателей\n"
+        f"~1,260 слушателей в день\n👦👧 Молодежь 12-19 и взрослые 25-45 лет\n\n"
+        f"Выбрано: {len(selected_radios)} станции • ~{format_number(total_listeners)} слушателей в день\n"
         f"✅ Готово! Следующий шаг: выбор дат (15 сек)"
     )
     
@@ -613,12 +611,12 @@ async def handle_radio_selection(update: Update, context: ContextTypes.DEFAULT_T
     
     elif query.data.startswith("details_"):
         station_data = {
-            'details_radio_love': "LOVE RADIO - ~540 слушателей\n• Молодёжь 16-35 лет\n• Охват снижен на 40-50% из-за возрастной структуры\n• Музыка: современные хиты",
-            'details_radio_auto': "АВТОРАДИО - ~3,250 слушателей\n• Автомобилисты 25-55 лет\n• Универсальный формат для широкой аудитории\n• Дорожные новости, пробки",
-            'details_radio_dacha': "РАДИО ДАЧА - ~3,250 слушателей\n• Семья 35-60 лет\n• Высокий охват среди пенсионеров\n• Семейные ценности, дачные советы",
-            'details_radio_chanson': "РАДИО ШАНСОН - ~2,900 слушателей\n• Мужчины 30-60+ лет\n• Популярно среди старшей аудитории\n• Музыка: шансон, авторская песня",
-            'details_radio_retro': "РЕТРО FM - ~3,600 слушателей\n• Взрослые 35-65 лет\n• Идеально подходит для возрастной структуры\n• Музыка: хиты 80-90-х годов",
-            'details_radio_humor': "ЮМОР FM - ~1,260 слушателей\n• Молодежь 12-19 и взрослые 25-45 лет\n• Стабильный охват\n• Юмористические программы"
+            'details_radio_love': "LOVE RADIO - ~540 слушателей в день\n• Молодёжь 16-35 лет\n• Охват снижен на 40-50% из-за возрастной структуры\n• Музыка: современные хиты",
+            'details_radio_auto': "АВТОРАДИО - ~3,250 слушателей в день\n• Автомобилисты 25-55 лет\n• Универсальный формат для широкой аудитории\n• Дорожные новости, пробки",
+            'details_radio_dacha': "РАДИО ДАЧА - ~3,250 слушателей в день\n• Семья 35-60 лет\n• Высокий охват среди пенсионеров\n• Семейные ценности, дачные советы",
+            'details_radio_chanson': "РАДИО ШАНСОН - ~2,900 слушателей в день\n• Мужчины 30-60+ лет\n• Популярно среди старшей аудитории\n• Музыка: шансон, авторская песня",
+            'details_radio_retro': "РЕТРО FM - ~3,600 слушателей в день\n• Взрослые 35-65 лет\n• Идеально подходит для возрастной структуры\n• Музыка: хиты 80-90-х годов",
+            'details_radio_humor': "ЮМОР FM - ~1,260 слушателей в день\n• Молодежь 12-19 и взрослые 25-45 лет\n• Стабильный охват\n• Юмористические программы"
         }
         
         station_info = station_data.get(query.data, "Информация о станции")
@@ -672,7 +670,7 @@ async def campaign_dates(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
     for radio in selected_radios:
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_info += f"• {radio}: ~{format_number(listeners)} слушателей\n"
+        stations_info += f"• {radio}: ~{format_number(listeners)} слушателей в день\n"
     
     # Определяем текст кнопки в зависимости от состояния
     dates_button_text = "✅ ПЕРИОД ВЫБРАН" if start_date and end_date else "🗓️ ВЫБРАТЬ ПЕРИОД"
@@ -821,8 +819,8 @@ async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['end_date'] = date_text
         context.user_data['campaign_days'] = campaign_days
         
-        # Возвращаемся в меню дат с обновленной информацией
-        return await campaign_dates_from_message(update, context)
+        # Автоматический переход к выбору времени
+        return await time_slots_from_message(update, context)
         
     except ValueError:
         await update.message.reply_text(
@@ -832,46 +830,46 @@ async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return "WAITING_END_DATE"
 
-async def campaign_dates_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Версия campaign_dates для вызова из message handler"""
-    start_date = context.user_data.get('start_date')
-    end_date = context.user_data.get('end_date')
-    campaign_days = context.user_data.get('campaign_days', 0)
-    
+async def time_slots_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    selected_slots = context.user_data.get('selected_time_slots', [])
     selected_radios = context.user_data.get('selected_radios', [])
-    stations_info = "📻 ВЫБРАНЫ СТАНЦИИ:\n"
-    for radio in selected_radios:
-        listeners = STATION_COVERAGE.get(radio, 0)
-        stations_info += f"• {radio}: ~{format_number(listeners)} слушателей\n"
+    campaign_days = context.user_data.get('campaign_days', 30)
     
-    dates_button_text = "✅ ПЕРИОД ВЫБРАН" if start_date and end_date else "🗓️ ВЫБРАТЬ ПЕРИОД"
+    keyboard = []
+    keyboard.append([InlineKeyboardButton("✅ ВЫБРАТЬ ВСЕ СЛОТЫ", callback_data="select_all_slots")])
     
-    keyboard = [
-        [InlineKeyboardButton(dates_button_text, callback_data="select_period")],
-        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")],
-        [InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_time_slots")]
-    ]
+    for i in range(15):
+        slot = TIME_SLOTS_DATA[i]
+        emoji = "✅" if i in selected_slots else "⚪"
+        button_text = f"{emoji} {slot['time']} • {slot['label']}"
+        keyboard.append([InlineKeyboardButton(button_text, callback_data=f"time_{i}")])
+    
+    keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_dates")])
+    keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_branded_sections")])
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    dates_info = ""
-    if start_date and end_date:
-        dates_info = f"🗓️ Начало: {start_date} ✅\n🗓️ Окончание: {end_date} ✅\n"
-    else:
-        dates_info = "🗓️ Период не выбран\n"
+    total_slots = len(selected_slots)
+    total_outputs_per_day = total_slots * len(selected_radios)
+    total_outputs_period = total_outputs_per_day * campaign_days
+    
+    stations_text = "📻 ВЫБРАНЫ СТАНЦИИ:\n" + "\n".join([f"• {radio}" for radio in selected_radios])
     
     text = (
-        f"● ● ● ○ ○ ○ ○   [2/7] ВЫБОР ДАТ КАМПАНИИ\n\n"
-        f"⏱️ Этот шаг займет ~15 секунд\n\n"
-        f"{stations_info}\n"
-        f"{dates_info}\n"
-        f"─────────────────\n"
-        f"✅ Период: {campaign_days} дней\n"
-        f"⚠️ Минимальный период: 15 дней\n\n"
-        f"✅ Готово! Следующий шаг: выбор времени выхода (30 сек)"
+        f"● ● ● ● ○ ○ ○   [3/7] ВЫБОР ВРЕМЕНИ ВЫХОДА\n\n"
+        f"⏱️ Этот шаг займет ~30 секунд\n\n"
+        f"{stations_text}\n"
+        f"📅 ПЕРИОД: {context.user_data.get('start_date')} - {context.user_data.get('end_date')} ({campaign_days} дней)\n\n"
+        f"🕒 ВЫБЕРИТЕ ВРЕМЯ ВЫХОДА РОЛИКОВ\n\n"
+        f"📊 Статистика выбора:\n"
+        f"• Выбрано слотов: {total_slots}\n"
+        f"• Выходов в день на всех радио: {total_outputs_per_day}\n"
+        f"• Всего выходов за период: {format_number(total_outputs_period)}\n\n"
+        f"✅ Готово! Следующий шаг: брендированные рубрики (15 сек)"
     )
     
     await update.message.reply_text(text, reply_markup=reply_markup)
-    return CAMPAIGN_DATES
+    return TIME_SLOTS
 
 async def time_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -961,8 +959,7 @@ async def branded_sections(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("✅ ИНДИВИДУАЛЬНАЯ" if selected_branded == 'custom' else "⚪ ИНДИВИДУАЛЬНАЯ", callback_data="branded_custom")],
         [InlineKeyboardButton("📋 Посмотреть пример", callback_data="show_example")],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_time")],
-        [InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_branded")],
-        [InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_campaign_creator")]
+        [InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_branded")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1046,9 +1043,6 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
         context.user_data['branded_section'] = None
         return await campaign_creator(update, context)
     
-    elif query.data == "to_campaign_creator":
-        return await campaign_creator(update, context)
-    
     return BRANDED_SECTIONS
 
 async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1062,7 +1056,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     provide_own = context.user_data.get('provide_own_audio', False)
     campaign_text = context.user_data.get('campaign_text', '')
-    char_count = len(campaign_text) if campaign_text else 0
     
     keyboard = []
     
@@ -1073,7 +1066,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
         keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
     
-    keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
     keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
     keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
     
@@ -1084,8 +1076,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⏱️ Этот шаг займет ~60 секунд\n\n"
         "📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
         f"{campaign_text if campaign_text else '[Ваш текст появится здесь]'}\n\n"
-        f"○ {char_count} знаков из 500\n\n"
-        f"⏱️ Длительность ролика: {context.user_data.get('duration', 20)} секунд\n"
         f"📊 Выходов в день: {spots_per_day}\n\n"
         f"💰 Предварительная стоимость:\n"
         f"   Базовая: {format_number(base_price)}₽\n"
@@ -1136,60 +1126,22 @@ async def process_campaign_text(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['campaign_text'] = text
         context.user_data['provide_own_audio'] = False
         
-        # Возвращаемся в конструктор ролика с обновленным текстом
-        return await campaign_creator_from_message(update, context)
+        # Автоматический расчет хронометража
+        char_count = len(text)
+        if char_count <= 75:
+            estimated_duration = 15
+        elif char_count <= 100:
+            estimated_duration = 20
+        else:
+            estimated_duration = 25
+        context.user_data['duration'] = estimated_duration
+        
+        return await production_option(update, context)
         
     except Exception as e:
         logger.error(f"Ошибка в process_campaign_text: {e}")
         await update.message.reply_text("❌ Произошла ошибка. Попробуйте еще раз: /start")
         return ConversationHandler.END
-
-async def campaign_creator_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Версия campaign_creator для вызова из message handler"""
-    base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
-    context.user_data['base_price'] = base_price
-    context.user_data['discount'] = discount
-    context.user_data['final_price'] = final_price
-    
-    provide_own = context.user_data.get('provide_own_audio', False)
-    campaign_text = context.user_data.get('campaign_text', '')
-    char_count = len(campaign_text) if campaign_text else 0
-    
-    keyboard = []
-    
-    if provide_own:
-        keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-        keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-    else:
-        keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
-        keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик" if provide_own else "⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-    
-    keyboard.append([InlineKeyboardButton("⏩ ПРОПУСТИТЬ", callback_data="skip_text")])
-    keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
-    keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_production_option")])
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    text = (
-        f"● ● ● ● ● ● ○   [5/7] СОЗДАНИЕ РОЛИКА\n\n"
-        f"⏱️ Этот шаг займет ~60 секунд\n\n"
-        "📝 ВАШ ТЕКСТ ДЛЯ РОЛИКА (до 500 знаков):\n\n"
-        f"{campaign_text if campaign_text else '[Ваш текст появится здесь]'}\n\n"
-        f"○ {char_count} знаков из 500\n\n"
-        f"⏱️ Длительность ролика: {context.user_data.get('duration', 20)} секунд\n"
-        f"📊 Выходов в день: {spots_per_day}\n\n"
-        f"💰 Предварительная стоимость:\n"
-        f"   Базовая: {format_number(base_price)}₽\n"
-        f"   Скидка 50%: -{format_number(discount)}₽\n"
-        f"   Итоговая: {format_number(final_price)}₽\n\n"
-        f"📊 Примерный охват кампании:\n"
-        f"   ~{format_number(total_reach)} человек за период\n\n"
-        f"{'✅' if provide_own else '⚪'} Пришлю свой ролик\n\n"
-        f"✅ Готово! Следующий шаг: контактные данные (30 сек)"
-    )
-    
-    await update.message.reply_text(text, reply_markup=reply_markup)
-    return CAMPAIGN_CREATOR
 
 async def enter_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -1203,10 +1155,6 @@ async def enter_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await query.edit_message_text(
         "⏱️ Введите длительность ролика в секундах (10-25):\n\n"
-        "Рекомендуем:\n"
-        "• 15 секунд - краткое сообщение\n"
-        "• 20 секунд - стандартный ролик\n"
-        "• 25 секунд - подробное описание\n\n"
         "Отправьте число от 10 до 25:",
         reply_markup=reply_markup
     )
@@ -1228,9 +1176,7 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return "WAITING_DURATION"
         
         context.user_data['duration'] = duration
-        
-        # Возвращаемся в конструктор ролика с обновленным хронометражом
-        return await campaign_creator_from_message(update, context)
+        return await contact_info(update, context)
         
     except ValueError:
         await update.message.reply_text(
@@ -1247,44 +1193,19 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query:
         await query.answer()
     
-    # Если клиент выбрал "Пришлю свой ролик", автоматически выбираем готовый ролик
-    if context.user_data.get('provide_own_audio'):
-        context.user_data['production_option'] = 'ready'
-        context.user_data['production_cost'] = 0
-    
     selected_production = context.user_data.get('production_option')
     campaign_text = context.user_data.get('campaign_text', '')
     
-    # Автоматический расчет хронометража по тексту, если не указан
-    if not context.user_data.get('duration'):
-        char_count = len(campaign_text)
-        if char_count <= 75:
-            estimated_duration = 15
-        elif char_count <= 100:
-            estimated_duration = 20
-        else:
-            estimated_duration = 25
-        context.user_data['duration'] = estimated_duration
-    
     keyboard = []
     
-    # Если выбран "свой ролик", показываем только готовый вариант
-    if context.user_data.get('provide_own_audio'):
+    for key, option in PRODUCTION_OPTIONS.items():
+        is_selected = "✅" if selected_production == key else "⚪"
         keyboard.append([
             InlineKeyboardButton(
-                f"✅ {PRODUCTION_OPTIONS['ready']['name']}", 
-                callback_data="production_ready"
+                f"{is_selected} {option['name']} - от {format_number(option['price'])}₽", 
+                callback_data=f"production_{key}"
             )
         ])
-    else:
-        for key, option in PRODUCTION_OPTIONS.items():
-            is_selected = "✅" if selected_production == key else "⚪"
-            keyboard.append([
-                InlineKeyboardButton(
-                    f"{is_selected} {option['name']} - от {format_number(option['price'])}₽", 
-                    callback_data=f"production_{key}"
-                )
-            ])
     
     keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_creator")])
     keyboard.append([InlineKeyboardButton("➡️ ДАЛЕЕ", callback_data="to_contact_info")])
@@ -1297,19 +1218,11 @@ async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📝 ВАШ ТЕКСТ:\n\"{campaign_text[:100]}{'...' if len(campaign_text) > 100 else ''}\"\n\n"
         f"⏱️ Длительность: {context.user_data.get('duration', 20)} секунд\n\n"
         "🎙️ ВЫБЕРИТЕ ВАРИАНТ РОЛИКА:\n\n"
+        "⚪ СТАНДАРТНЫЙ РОЛИК - от 2,000₽\n"
+        "• Профессиональная озвучка\n• Музыкальное оформление\n• Срок: 2-3 дня\n\n"
+        "⚪ ПРЕМИУМ РОЛИК - от 5,000₽\n"
+        "• Озвучка 2-мя голосами\n• Индивидуальная музыка\n• Срочное производство 1 день\n"
     )
-    
-    if context.user_data.get('provide_own_audio'):
-        text += "✅ ГОТОВЫЙ РОЛИК\n• Вы пришлете свой ролик файлом\n"
-    else:
-        text += (
-            "⚪ СТАНДАРТНЫЙ РОЛИК - от 2,000₽\n"
-            "• Профессиональная озвучка\n• Музыкальное оформление\n• 2 правки\n• Срок: 2-3 дня\n\n"
-            "⚪ ПРЕМИУМ РОЛИК - от 4,000₽\n"
-            "• Озвучка 2-мя голосами\n• Индивидуальная музыка\n• 5 правок\n• Срочное производство 1 день\n\n"
-            "⚪ ГОТОВЫЙ РОЛИК\n"
-            "• У меня есть свой ролик\n"
-        )
     
     text += f"\n✅ Готово! Следующий шаг: контактные данные (30 сек)"
     
@@ -1351,21 +1264,16 @@ async def contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_production")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    # Всегда начинаем с имени
     context.user_data['current_contact_field'] = 'name'
     
     text = (
-        f"● ● ● ● ● ● ●   [7/7] КОНТАКТНЫЕ ДАННЫЕ\n\n"
-        f"⏱️ Этот шаг займет ~30 секунд\n\n"
-        f"💰 Стоимость кампании:\n"
-        f"   Базовая: {format_number(base_price)}₽\n"
-        f"   Скидка 50%: -{format_number(discount)}₽\n"
-        f"   Итоговая: {format_number(final_price)}₽\n\n"
-        f"📊 Примерный охват: ~{format_number(total_reach)} человек за период\n\n"
-        f"─────────────────\n"
-        f"📝 ВВЕДИТЕ ВАШЕ ИМЯ\n"
-        f"─────────────────\n"
-        f"(отправьте сообщением)"
+        f"✨ ВАШ МЕДИАПЛАН СОСТАВЛЕН!\n\n"
+        f"Реклама будет работать на {format_number(total_reach)} человек\n"
+        f"Стоимость со скидкой: {format_number(final_price)}₽\n\n"
+        f"──────────────────\n"
+        f"👤 КАК ВАС ЗОВУТ?\n"
+        f"──────────────────\n"
+        f"Напишите ваше имя для оформления:"
     )
     
     await query.edit_message_text(text, reply_markup=reply_markup)
@@ -1400,7 +1308,6 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
             
         elif current_field == 'company':
             context.user_data['company'] = text
-            # Очищаем временное поле
             context.user_data.pop('current_contact_field', None)
             return await show_confirmation_from_message(update, context)
             
@@ -1412,13 +1319,12 @@ async def process_contact_info(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
 async def show_confirmation_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Версия show_confirmation для вызова из message handler"""
     base_price, discount, final_price, total_reach, daily_coverage, spots_per_day = calculate_campaign_price_and_reach(context.user_data)
     
     stations_text = ""
     for radio in context.user_data.get('selected_radios', []):
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
+        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей в день\n"
     
     slots_text = ""
     for slot_index in context.user_data.get('selected_time_slots', []):
@@ -1476,7 +1382,7 @@ async def show_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stations_text = ""
     for radio in context.user_data.get('selected_radios', []):
         listeners = STATION_COVERAGE.get(radio, 0)
-        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
+        stations_text += f"• {radio}: ~{format_number(listeners)} слушателей в день\n"
     
     slots_text = ""
     for slot_index in context.user_data.get('selected_time_slots', []):
@@ -1562,8 +1468,8 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
                 INSERT INTO campaigns 
                 (user_id, campaign_number, radio_stations, start_date, end_date, campaign_days,
                  time_slots, branded_section, campaign_text, production_option, contact_name,
-                 company, phone, email, duration, base_price, discount, final_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 company, phone, email, duration, base_price, discount, final_price, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 query.from_user.id,
                 campaign_number,
@@ -1582,32 +1488,33 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
                 context.user_data.get('duration', 20),
                 base_price,
                 discount,
-                final_price
+                final_price,
+                'active'
             ))
             
             conn.commit()
             conn.close()
             
+            # Отправляем уведомление админу
             await send_admin_notification(context, context.user_data, campaign_number)
             
             success_text = f"""
-✅ ЗАЯВКА ПРИНЯТА!
+🎉 ЗАЯВКА ПРИНЯТА! 
 
-Спасибо за доверие! 😊
-Наш менеджер свяжется с вами в ближайшее время.
+Спасибо, что выбрали нас! Ваша реклама скоро выйдет в эфир 🎙️
 
 📋 № заявки: {campaign_number}
-📅 Старт: в течение 3 дней
-💰 Сумма со скидкой 50%: {format_number(final_price)}₽
-📊 Примерный охват: ~{format_number(total_reach)} человек за период
+📅 Старт кампании: в течение 3 дней
+💰 Ваша цена: {format_number(final_price)}₽ (скидка 50%)
+📊 Охват аудитории: ~{format_number(total_reach)} человек за период
 
 Выберите дальнейшее действие:
 """
             
             keyboard = [
-                [InlineKeyboardButton("📊 СФОРМИРОВАТЬ EXCEL МЕДИАПЛАН", callback_data="generate_excel")],
-                [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
-                [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
+                [InlineKeyboardButton("📋 ИЗМЕНИТЬ ПАРАМЕТРЫ", callback_data="edit_campaign")],
+                [InlineKeyboardButton("📊 EXCEL МЕДИАПЛАН", callback_data="generate_excel")],
+                [InlineKeyboardButton("📞 СВЯЗЬ С МЕНЕДЖЕРОМ", callback_data="contact_manager")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -1659,10 +1566,20 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
                 await query.message.reply_text("❌ Не найдено данных о кампании.")
             return FINAL_ACTIONS
         
-        elif query.data == "personal_cabinet":
-            return await personal_cabinet(update, context)
+        elif query.data == "edit_campaign":
+            await query.message.reply_text("📋 Функция редактирования параметров в разработке...")
+            return FINAL_ACTIONS
         
-        elif query.data == "new_order":
+        elif query.data == "contact_manager":
+            await query.message.reply_text(
+                "📞 Свяжитесь с менеджером:\n"
+                "👤 @AlexeyKhlistunov\n"
+                "📱 +7 (922) 044-66-44\n"
+                "✉️ a.khlistunov@gmail.com"
+            )
+            return FINAL_ACTIONS
+        
+        elif query.data == "new_campaign":
             # Сохраняем контакты для новой кампании
             saved_contacts = {
                 'contact_name': context.user_data.get('contact_name'),
@@ -1674,20 +1591,6 @@ async def handle_final_actions(update: Update, context: ContextTypes.DEFAULT_TYP
             context.user_data.update(saved_contacts)
             await query.message.reply_text("🚀 Начинаем новую кампанию!")
             return await radio_selection(update, context)
-        
-        elif query.data == "back_to_final":
-            keyboard = [
-                [InlineKeyboardButton("📊 СФОРМИРОВАТЬ EXCEL МЕДИАПЛАН", callback_data="generate_excel")],
-                [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
-                [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await query.edit_message_text(
-                "Выберите дальнейшее действие:",
-                reply_markup=reply_markup
-            )
-            return FINAL_ACTIONS
         
         return FINAL_ACTIONS
         
@@ -1704,34 +1607,67 @@ async def personal_cabinet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn = sqlite3.connect('campaigns.db')
     cursor = conn.cursor()
     
-    cursor.execute('SELECT campaign_number, status, final_price, created_at FROM campaigns WHERE user_id = ? ORDER BY created_at DESC LIMIT 5', (user_id,))
-    orders = cursor.fetchall()
+    # Активные кампании
+    cursor.execute('''
+        SELECT campaign_number, start_date, end_date, final_price 
+        FROM campaigns 
+        WHERE user_id = ? AND status = 'active'
+        ORDER BY created_at DESC LIMIT 5
+    ''', (user_id,))
+    active_orders = cursor.fetchall()
+    
+    # Завершенные кампании
+    cursor.execute('''
+        SELECT campaign_number, start_date, end_date, final_price 
+        FROM campaigns 
+        WHERE user_id = ? AND status = 'completed'
+        ORDER BY created_at DESC LIMIT 5
+    ''', (user_id,))
+    completed_orders = cursor.fetchall()
+    
+    # Статистика
+    cursor.execute('''
+        SELECT COUNT(*), SUM(final_price), SUM(actual_reach)
+        FROM campaigns 
+        WHERE user_id = ? AND strftime('%Y', created_at) = '2025'
+    ''', (user_id,))
+    stats = cursor.fetchone()
     conn.close()
     
-    if orders:
-        orders_text = "📋 ПОСЛЕДНИЕ ЗАКАЗЫ:\n\n"
-        for order in orders:
-            orders_text += f"📋 {order[0]} | {order[1]} | {format_number(order[2])}₽ | {order[3][:10]}\n"
-    else:
-        orders_text = "📋 У вас пока нет заказов"
+    orders_text = "📋 ЛИЧНЫЙ КАБИНЕТ\n\n"
     
-    keyboard = [[InlineKeyboardButton("🔙 НАЗАД", callback_data="back_to_final")]]
+    if active_orders:
+        orders_text += "🚀 АКТИВНЫЕ КАМПАНИИ\n"
+        for order in active_orders:
+            orders_text += f"• {order[0]} | {order[1]}-{order[2]} | {format_number(order[3])}₽\n"
+        orders_text += "\n"
+    
+    if completed_orders:
+        orders_text += "📊 ЗАВЕРШЕННЫЕ КАМПАНИИ\n"
+        for order in completed_orders:
+            orders_text += f"• {order[0]} | {order[1]}-{order[2]} | {format_number(order[3])}₽\n"
+        orders_text += "\n"
+    
+    if stats and stats[0]:
+        orders_text += f"💎 СТАТИСТИКА ЗА 2025:\n"
+        orders_text += f"• {stats[0]} кампаний | {format_number(stats[1] or 0)}₽ | {format_number(stats[2] or 0)} охват\n"
+    
+    keyboard = [
+        [InlineKeyboardButton("📈 ДЕТАЛЬНАЯ СТАТИСТИКА", callback_data="detailed_stats")],
+        [InlineKeyboardButton("🚀 НОВАЯ КАМПАНИЯ", callback_data="new_campaign")],
+        [InlineKeyboardButton("🔙 НАЗАД", callback_data="back_to_main")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await query.edit_message_text(
-        f"📋 ЛИЧНЫЙ КАБИНЕТ\n\n"
-        f"{orders_text}\n\n"
-        f"Здесь отображается история ваших заказов",
-        reply_markup=reply_markup
-    )
-    return FINAL_ACTIONS
+    await query.edit_message_text(orders_text, reply_markup=reply_markup)
+    return MAIN_MENU
 
 async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     keyboard = [
-        [InlineKeyboardButton("🎯 ПОДОБРАТЬ СТАНЦИИ ПОД МОЙ БИЗНЕС", callback_data="create_campaign")],
+        [InlineKeyboardButton("🎯 ПОДОБРАТЬ ОПТИМАЛЬНЫЙ МИКС", callback_data="create_campaign")],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1739,52 +1675,38 @@ async def statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         "📊 ВОЗРАСТНАЯ СТРУКТУРА \n"
         "ЯЛУТОРОВСКА И ЗАВОДОУКОВСКА\n"
-        "— ГЛАВНЫЙ ФАКТОР ОХВАТА\n\n"
-        "🎯 КАК ЭТО РАБОТАЕТ:\n\n"
-        "\"Взрослые\" города =\n"
-        "⬇️ Меньше молодежи 16-35\n"
-        "⬆️ Больше взрослых 35-65+\n\n"
-        "📻 РЕАЛЬНЫЕ ОХВАТЫ С УЧЕТОМ \n"
-        "ВОЗРАСТНОЙ СТРУКТУРЫ:\n\n"
-        "• РЕТРО FM — 3,200-4,000 слушателей\n"
-        "  Идеально для возрастной структуры\n\n"
-        "• LOVE RADIO — 480-600 слушателей  \n"
-        "  Охват снижен на 40-50%\n\n"
-        "• АВТОРАДИО — 2,900-3,600\n"
-        "  Стабильно высокий универсальный охват\n\n"
-        "💡 ВЫВОД: Эффективнее всего работают\n"
-        "станции, совпадающие с возрастным \n"
-        "профилем населения",
+        "— КЛЮЧЕВОЙ ФАКТОР ВАШЕГО ОХВАТА\n\n"
+        "🎯 ПОНИМАЕМ РЕАЛЬНУЮ АУДИТОРИЮ:\n\n"
+        "Демография городов определяет \n"
+        "эффективность каждой радиостанции\n\n"
+        "📈 НАШ АНАЛИЗ ПОКАЗЫВАЕТ:\n\n"
+        "• Ялуторовск — выше доля 65+\n"
+        "• Заводоуковск — моложе Ялуторовска,\n"
+        "  но демография смещена в сторону\n"
+        "  старших возрастов\n"
+        "• Общий тренд — отток молодежи + высокая\n"
+        "  доля старшего поколения\n\n"
+        "📻 РЕАЛЬНЫЕ ЦИФРЫ ОХВАТА\n"
+        "С УЧЕТОМ ВОЗРАСТНОЙ СТРУКТУРЫ:\n\n"
+        "🎵 РЕТРО FM — 3,200-4,000 слушателей\n"
+        "   Идеально для аудитории 35-65 лет\n\n"
+        "🚗 АВТОРАДИО — 2,900-3,600 слушателей  \n"
+        "   Стабильный охват автомобилистов 25-55\n\n"
+        "💖 LOVE RADIO — 480-600 слушателей\n"
+        "   Молодежь 16-35, охват снижен на 40-50%\n\n"
+        "🎭 ЮМОР FM — 1,120-1,400 слушателей\n"
+        "   Смешанная аудитория 25-45 лет\n\n"
+        "🏠 РАДИО ДАЧА — 2,900-3,600 слушателей\n"
+        "   Семейная аудитория 35-60 лет\n\n"
+        "🎸 РАДИО ШАНСОН — 2,600-3,200 слушателей\n"
+        "   Мужчины 30-60+ лет\n\n"
+        "💡 ВАШЕ КОНКУРЕНТНОЕ ПРЕИМУЩЕСТВО:\n"
+        "Используйте станции, которые \n"
+        "естественно преобладают в регионе\n"
+        "— это даст максимальный охват\n"
+        "при оптимальном бюджете",
         reply_markup=reply_markup
     )
-    return MAIN_MENU
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    keyboard = [
-        [InlineKeyboardButton("📞 КОНТАКТЫ И РЕКВИЗИТЫ", callback_data="contacts_details")],
-        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    about_text = (
-        "🏆 О НАС\n\n"
-        "«Мы не продаём секунды эфира —\n"
-        "мы создаём истории, которые\n"
-        "слышит весь регион»\n\n"
-        "10 лет мы помогаем бизнесу\n"
-        "достигать своей аудитории\n"
-        "через силу радиоволн.\n\n"
-        "📻 6 федеральных станций\n"
-        "📍 Ялуторовск • Заводоуковск\n"  
-        "🎯 40 000+ слушателей\n\n"
-        "Наша миссия — делать рекламу,\n"
-        "которую слушают, а не пропускают."
-    )
-    
-    await query.edit_message_text(about_text, reply_markup=reply_markup)
     return MAIN_MENU
 
 async def contacts_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1792,7 +1714,7 @@ async def contacts_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     keyboard = [
-        [InlineKeyboardButton("◀️ НАЗАД В О НАС", callback_data="about")]
+        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_main")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1809,21 +1731,6 @@ async def contacts_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await query.edit_message_text(contacts_text, reply_markup=reply_markup)
     return MAIN_MENU
-
-async def handle_admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик админских кнопок"""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data.startswith("call_"):
-        phone = query.data.replace("call_", "")
-        await query.answer(f"📞 Телефон: {phone}")
-    
-    elif query.data.startswith("email_"):
-        email = query.data.replace("email_", "")
-        await query.answer(f"✉️ Email: {email}")
-    
-    return
 
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -1844,20 +1751,12 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "statistics":
         return await statistics(update, context)
     
-    elif query.data == "my_orders":
+    elif query.data == "personal_cabinet":
         return await personal_cabinet(update, context)
-    
-    elif query.data == "about":
-        return await about(update, context)
     
     elif query.data == "contacts_details":
         return await contacts_details(update, context)
     
-    # ОБРАБОТКА АДМИНСКИХ КНОПОК
-    elif query.data.startswith("call_") or query.data.startswith("email_"):
-        return await handle_admin_buttons(update, context)
-    
-    # НАВИГАЦИЯ
     elif query.data == "back_to_main":
         return await start(update, context)
     
@@ -1888,20 +1787,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif query.data == "back_to_production":
         return await production_option(update, context)
-    
-    elif query.data == "back_to_final":
-        keyboard = [
-            [InlineKeyboardButton("📊 СФОРМИРОВАТЬ EXCEL МЕДИАПЛАН", callback_data="generate_excel")],
-            [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")],
-            [InlineKeyboardButton("🚀 НОВЫЙ ЗАКАЗ", callback_data="new_order")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "Выберите дальнейшее действие:",
-            reply_markup=reply_markup
-        )
-        return FINAL_ACTIONS
     
     elif query.data == "skip_text":
         context.user_data['campaign_text'] = ''
@@ -2018,7 +1903,7 @@ def main():
     
     # Отдельный обработчик для админских кнопок
     application.add_handler(CallbackQueryHandler(
-        handle_admin_buttons, 
+        lambda update, context: update.callback_query.answer(), 
         pattern='^(call_|email_)'
     ))
     
