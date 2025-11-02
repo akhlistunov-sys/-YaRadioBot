@@ -341,9 +341,8 @@ def create_excel_file_from_db(campaign_number):
         row += 1
         ws[f'A{row}'] = f"• Выходов в день: {spots_per_day}"
         row += 1
-ws[f'A{row}'] = f"• Охват за 1 выход: ~{format_number(int(total_listeners * 0.15 / len(user_data.get('selected_time_slots', [1]))))} чел. (15% от аудитории)"        row += 1
-        
-    row += 1
+        ws[f'A{row}'] = f"• Охват за 1 выход: ~{format_number(int(total_listeners * 0.15 / len(user_data.get('selected_time_slots', [1]))))} чел. (15% от аудитории)"
+        row += 1
         ws[f'A{row}'] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
         row += 1
         ws[f'A{row}'] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
