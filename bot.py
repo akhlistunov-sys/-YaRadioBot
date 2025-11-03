@@ -1236,6 +1236,33 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
         return "WAITING_DURATION"  # ← ЭТО ИСПРАВЛЕНИЕ
+        }  # конец process_duration
+
+# ← ДОБАВИТЬ ЗДЕСЬ ↓
+
+async def contact_info_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """КОНТАКТНЫЕ ДАННЫЕ ИЗ СООБЩЕНИЯ"""
+    base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent = calculate_campaign_price_and_reach(context.user_data)
+    
+    keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_production")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    context.user_data["current_contact_field"] = "name"
+    
+    text = (
+        f"✨ ВАШ МЕДИАПЛАН СОСТАВЛЕН!\n\n"
+        f"Реклама будет работать на {format_number(total_reach)} человек\n"
+        f"Стоимость со скидкой: {format_number(final_price)}₽\n\n"
+        f"──────────────────\n"
+        f"👤 КАК ВАС ЗОВУТ?\n"
+        f"──────────────────\n"
+        f"Напишите ваше имя для оформления:"
+    )
+    
+    await update.message.reply_text(text, reply_markup=reply_markup)
+    return CONTACT_INFO
+
+# потом идет async def production_option...
 
 async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ШАГ 6/7 - ПРОИЗВОДСТВО РОЛИКА"""
