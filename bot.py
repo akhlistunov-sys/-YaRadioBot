@@ -708,61 +708,42 @@ async def process_start_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return "WAITING_START_DATE"
 
-async def process_end_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """ОБРАБОТКА ДАТЫ ОКОНЧАНИЯ"""
-    try:
-        date_text = update.message.text.strip()
+async def handle_campaign_dates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """ОБРАБОТЧИК ВЫБОРА ДАТ КАМПАНИИ"""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "back_to_radio":
+        return await radio_selection(update, context)
+    
+    elif query.data == "select_period":
+        keyboard = [[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_dates")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        if not validate_date(date_text):
-            await update.message.reply_text(
-                "❌ Неверная дата. Проверьте:\n"
-                "• Формат ДД.ММ.ГГГГ\n"
-                "• Дата не в прошлом\n"
-                "• Дата не более чем на 1 год вперед\n\n"
-                "Введите корректную дату:",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")]])
-            )
-            return "WAITING_END_DATE"
-        
-        if not context.user_data.get('start_date'):
-            await update.message.reply_text(
-                "❌ Сначала выберите дату начала. Введите дату окончания снова:",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")]])
-            )
-            return "WAITING_END_DATE"
-        
-        start_date = datetime.strptime(context.user_data['start_date'], '%d.%m.%Y')
-        end_date = datetime.strptime(date_text, '%d.%m.%Y')
-        
-        if end_date <= start_date:
-            await update.message.reply_text(
-                "❌ Дата окончания должна быть после даты начала. Введите корректную дату:",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")]])
-            )
-            return "WAITING_END_DATE"
-        
-        campaign_days = (end_date - start_date).days + 1
-        
-        if campaign_days < 15:
-            await update.message.reply_text(
-                "❌ Минимальный период кампании - 15 дней. Введите дату окончания снова:",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")]])
-            )
-            return "WAITING_END_DATE"
-        
-        context.user_data['end_date'] = date_text
-        context.user_data['campaign_days'] = campaign_days
-        
-        # Автоматический переход к выбору времени
-        return await time_slots_from_message(update, context)
-        
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ:\n\n"
-            "Пример: 30.01.2025",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_radio")]])
+        await query.edit_message_text(
+            "📅 Введите дату начала кампании в формате ДД.ММ.ГГГГ:\n\n"
+            "Пример: 15.01.2025\n\n"
+            "Отправьте дату сообщением:",
+            reply_markup=reply_markup
         )
-        return "WAITING_END_DATE"
+        return "WAITING_START_DATE"
+    
+    elif query.data == "to_time_slots":
+        if not context.user_data.get('start_date') or not context.user_data.get('end_date'):
+            await query.answer("❌ Выберите период кампании!", show_alert=True)
+            return CAMPAIGN_DATES
+        
+        campaign_days = context.user_data.get('campaign_days', 0)
+        if campaign_days < 15:
+            await query.answer("❌ Минимальный период кампании - 15 дней!", show_alert=True)
+            return CAMPAIGN_DATES
+            
+        return await time_slots(update, context)
+    
+    elif query.data == "cancel_period":
+        return await campaign_dates(update, context)
+    
+    return CAMPAIGN_DATES
 
 async def time_slots_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ПЕРЕХОД К ВЫБОРУ ВРЕМЕНИ ИЗ СООБЩЕНИЯ"""
