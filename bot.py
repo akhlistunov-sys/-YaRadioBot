@@ -1236,7 +1236,6 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
         return "WAITING_DURATION"  # ← ЭТО ИСПРАВЛЕНИЕ
-        }  # конец process_duration
 
 # ← ДОБАВИТЬ ЗДЕСЬ ↓
 
