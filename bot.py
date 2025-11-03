@@ -1261,7 +1261,6 @@ async def contact_info_from_message(update: Update, context: ContextTypes.DEFAUL
     
     await update.message.reply_text(text, reply_markup=reply_markup)
     return CONTACT_INFO
-
 # потом идет async def production_option...
 
 async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
