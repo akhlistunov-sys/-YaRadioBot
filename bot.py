@@ -1923,12 +1923,12 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ "ПРИШЛЮ СВОЙ РОЛИК"
     elif query.data == "provide_own_audio":
-    print("🔔 КНОПКА provide_own_audio НАЖАТА!")
-    logger.info("🔔 КНОПКА provide_own_audio НАЖАТА!")
-    # СРАЗУ переходим к вводу хронометража
-    context.user_data["provide_own_audio"] = True
-    context.user_data["campaign_text"] = ""  # Очищаем текст если был
-    return await enter_duration(update, context)
+        print("🔔 КНОПКА provide_own_audio НАЖАТА!")
+        logger.info("🔔 КНОПКА provide_own_audio НАЖАТА!")
+        # СРАЗУ переходим к вводу хронометража
+        context.user_data["provide_own_audio"] = True
+        context.user_data["campaign_text"] = ""  # Очищаем текст если был
+        return await enter_duration(update, context)
     
     elif query.data == "skip_text":
         context.user_data["campaign_text"] = ""
@@ -2053,4 +2053,3 @@ def main():
 
 if __name__ == "__main__":
     main()
- 
