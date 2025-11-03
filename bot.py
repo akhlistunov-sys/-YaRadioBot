@@ -1998,11 +1998,11 @@ def main():
             BRANDED_SECTIONS: [
                 CallbackQueryHandler(handle_branded_sections, pattern="^.*$")
             ],
-            CAMPAIGN_CREATOR: [
-                CallbackQueryHandler(handle_main_menu, pattern="^(back_to_|skip_text|cancel_text|to_production_option|enter_text|enter_duration)"),
-                CallbackQueryHandler(enter_campaign_text, pattern="^enter_text$"),
-                CallbackQueryHandler(enter_duration, pattern="^enter_duration$")
-            ],
+         CAMPAIGN_CREATOR: [
+    CallbackQueryHandler(handle_main_menu, pattern="^(back_to_|skip_text|cancel_text|to_production_option|enter_text|enter_duration|provide_own_audio)"),
+    CallbackQueryHandler(enter_campaign_text, pattern="^enter_text$"),
+    CallbackQueryHandler(enter_duration, pattern="^enter_duration$")
+],
             "WAITING_TEXT": [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_campaign_text),
                 CallbackQueryHandler(handle_main_menu, pattern="^back_to_creator$"),
