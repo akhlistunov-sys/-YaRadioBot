@@ -1235,7 +1235,7 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_creator")]
             ])
         )
-        return "WAITING_DURATION"
+        return "WAITING_DURATION"  # ← ЭТО ИСПРАВЛЕНИЕ
 
 async def production_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ШАГ 6/7 - ПРОИЗВОДСТВО РОЛИКА"""
