@@ -1226,7 +1226,7 @@ async def process_duration(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return "WAITING_DURATION"
         
         context.user_data["duration"] = duration
-        return await contact_info(update, context)
+        return await contact_info_from_message(update, context)
         
     except ValueError:
         await update.message.reply_text(
