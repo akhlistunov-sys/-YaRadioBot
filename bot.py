@@ -158,7 +158,7 @@ def check_rate_limit(user_id: int) -> bool:
         
         return count < 5
     except Exception as e:
-        logger.error(f"Ошибка проверки лимита: {e}")
+        logger.error(f"Ошибка проверки лимитa: {e}")
         return True
 
 def calculate_campaign_price_and_reach(user_data):
@@ -170,7 +170,7 @@ def calculate_campaign_price_and_reach(user_data):
         selected_time_slots = user_data.get("selected_time_slots", [])
         
         if not selected_radios or not selected_time_slots:
-            return 0, 0, MIN_BUDGET, 0, 0, 0
+            return 0, 0, MIN_BUDGET, 0, 0, 0, 0
             
         num_stations = len(selected_radios)
         spots_per_day = len(selected_time_slots) * num_stations
@@ -1101,7 +1101,7 @@ async def handle_branded_sections(update: Update, context: ContextTypes.DEFAULT_
     return BRANDED_SECTIONS
 
 async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """ШАГ 5/7 - СОЗДАНИЕ РОЛИКА"""
+    """ШАГ 5/7 - СОЗДАНИЕ РОЛИКА (ИСПРАВЛЕННАЯ ВЕРСИЯ)"""
     query = update.callback_query
     await query.answer()
     
@@ -1110,19 +1110,13 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["discount"] = discount
     context.user_data["final_price"] = final_price
     
-    provide_own = context.user_data.get("provide_own_audio", False)
     campaign_text = context.user_data.get("campaign_text", "")
     
-    keyboard = []
-    
-    if provide_own:
-        keyboard.append([InlineKeyboardButton("⏱️ Указать хронометраж", callback_data="enter_duration")])
-        keyboard.append([InlineKeyboardButton("✅ Пришлю свой ролик", callback_data="provide_own_audio")])
-    else:
-        keyboard.append([InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")])
-        keyboard.append([InlineKeyboardButton("⚪ Пришлю свой ролик", callback_data="provide_own_audio")])
-    
-    keyboard.append([InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")])
+    keyboard = [
+        [InlineKeyboardButton("📝 ВВЕСТИ ТЕКСТ РОЛИКА", callback_data="enter_text")],
+        [InlineKeyboardButton("🎵 ПРИШЛЮ СВОЙ РОЛИК", callback_data="provide_own_audio")],
+        [InlineKeyboardButton("◀️ НАЗАД", callback_data="back_to_branded")]
+    ]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -1139,7 +1133,6 @@ async def campaign_creator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"   Итоговая: {format_number(final_price)}₽\n\n"
         f"📊 Примерный охват кампании:\n"
         f"   ~{format_number(total_reach)} человек за период\n\n"
-        f"{'✅' if provide_own else '⚪'} Пришлю свой ролик\n\n"
         f"✅ Готово! Следующий шаг: контактные данные (30 сек)"
     )
     
@@ -1928,6 +1921,13 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["current_contact_field"] = "email"
         return await contact_info(update, context)
     
+    # ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ "ПРИШЛЮ СВОЙ РОЛИК"
+    elif query.data == "provide_own_audio":
+        # СРАЗУ переходим к вводу хронометража
+        context.user_data["provide_own_audio"] = True
+        context.user_data["campaign_text"] = ""  # Очищаем текст если был
+        return await enter_duration(update, context)
+    
     elif query.data == "skip_text":
         context.user_data["campaign_text"] = ""
         return await production_option(update, context)
@@ -1940,13 +1940,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif query.data == "cancel_period":
         return await campaign_dates(update, context)
-    
-    elif query.data == "provide_own_audio":
-        current_state = context.user_data.get("provide_own_audio", False)
-        campaign_text = context.user_data.get("campaign_text", "")
-        context.user_data["provide_own_audio"] = not current_state
-        context.user_data["campaign_text"] = campaign_text
-        return await campaign_creator(update, context)
     
     elif query.data == "to_production_option":
         return await production_option(update, context)
@@ -2006,7 +1999,7 @@ def main():
                 CallbackQueryHandler(handle_branded_sections, pattern="^.*$")
             ],
             CAMPAIGN_CREATOR: [
-                CallbackQueryHandler(handle_main_menu, pattern="^(back_to_|skip_text|cancel_text|to_production_option|provide_own_audio|enter_text|enter_duration)"),
+                CallbackQueryHandler(handle_main_menu, pattern="^(back_to_|skip_text|cancel_text|to_production_option|enter_text|enter_duration)"),
                 CallbackQueryHandler(enter_campaign_text, pattern="^enter_text$"),
                 CallbackQueryHandler(enter_duration, pattern="^enter_duration$")
             ],
