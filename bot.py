@@ -6,6 +6,7 @@ from datetime import datetime
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from flask import Flask, request
+from database import init_db, save_campaign_to_db, calculate_campaign_price_and_reach, STATION_COVERAGE, TIME_SLOTS_DATA, BRANDED_SECTION_PRICES, PRODUCTION_OPTIONS, format_number, get_branded_section_name, get_production_option_name
 
 # Настройка логирования
 logging.basicConfig(
@@ -22,50 +23,10 @@ ADMIN_TELEGRAM_ID = 174046571
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# Инициализация базы данных
-def init_db():
-    try:
-        conn = sqlite3.connect("campaigns.db")
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS campaigns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                campaign_number TEXT,
-                radio_stations TEXT,
-                start_date TEXT,
-                end_date TEXT,
-                campaign_days INTEGER,
-                time_slots TEXT,
-                branded_section TEXT,
-                contact_name TEXT,
-                company TEXT,
-                phone TEXT,
-                email TEXT,
-                base_price INTEGER,
-                discount INTEGER,
-                final_price INTEGER,
-                actual_reach INTEGER,
-                status TEXT DEFAULT "active",
-                source TEXT DEFAULT "webapp",
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        conn.commit()
-        conn.close()
-        logger.info("✅ База данных инициализирована")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Ошибка БД: {e}")
-        return False
-
 @bot.message_handler(commands=['start'])
 def start(message):
     """ГЛАВНОЕ МЕНЮ С WEBAPP"""
     
-    # ЯВНО указываем URL WebApp
     webapp_url = "https://telegram-radio-webapp.onrender.com"
     
     keyboard = InlineKeyboardMarkup()
@@ -77,11 +38,11 @@ def start(message):
     caption = (
         "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
         "📍 Ялуторовск • Заводоуковск\n\n"
-        "✨ **НОВЫЙ ИНТЕРАКТИВНЫЙ КОНСТРУКТОР!**\n\n"
-        "📱 • Визуальный подбор времени и станций\n"
-        "⚡ • Мгновенный расчет охвата и стоимости\n"
-        "💾 • Сохранение всех медиапланов\n"
-        "🎯 • Персональные рекомендации\n\n"
+        "✨ **ПОЛНЫЙ КОНСТРУКТОР РАДИОРЕКЛАМЫ!**\n\n"
+        "📱 • 6 радиостанций с реальным охватом\n"
+        "⚡ • Расчет стоимости и охвата онлайн\n"
+        "💾 • Брендированные рубрики\n"
+        "🎯 • Производство роликов\n\n"
         "🚀 Нажмите кнопку ниже чтобы открыть приложение 👇"
     )
     
@@ -97,7 +58,7 @@ def handle_webapp_data(message):
     try:
         data = json.loads(message.web_app_data.data)
         
-        logger.info(f"📱 Данные из WebApp от пользователя {message.chat.id}: {data}")
+        logger.info(f"📱 Данные из WebApp от пользователя {message.chat.id}")
         
         # Сохраняем кампанию в БД
         campaign_number = save_campaign_to_db(data)
@@ -106,14 +67,9 @@ def handle_webapp_data(message):
             # Отправляем уведомление админу
             send_admin_notification(data, campaign_number)
             
-            bot.send_message(
-                message.chat.id,
-                f"✅ **Заявка #{campaign_number} принята!**\n\n"
-                f"📊 Охват: {data.get('actual_reach', 0):,} человек\n"
-                f"💰 Стоимость: {data.get('final_price', 0):,}₽\n"
-                f"🎯 Радиостанции: {len(data.get('radio_stations', []))} шт\n\n"
-                "📞 Менеджер свяжется с вами в течение 15 минут!"
-            )
+            # Отправляем подтверждение пользователю
+            send_user_confirmation(message.chat.id, data, campaign_number)
+            
             logger.info(f"✅ Заявка {campaign_number} обработана")
         else:
             bot.send_message(
@@ -129,52 +85,24 @@ def handle_webapp_data(message):
             "❌ Ошибка обработки данных. Пожалуйста, попробуйте еще раз."
         )
 
-def save_campaign_to_db(data):
-    """Сохранение кампании в базу данных"""
-    try:
-        conn = sqlite3.connect("campaigns.db")
-        cursor = conn.cursor()
-        
-        campaign_number = f"WA-{datetime.now().strftime('%H%M%S')}"
-        
-        cursor.execute("""
-            INSERT INTO campaigns 
-            (user_id, campaign_number, radio_stations, start_date, end_date, 
-             campaign_days, time_slots, branded_section, contact_name,
-             company, phone, email, base_price, discount, final_price, actual_reach)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.get('user_id'),
-            campaign_number,
-            ",".join(data.get('radio_stations', [])),
-            data.get('start_date'),
-            data.get('end_date'),
-            data.get('campaign_days'),
-            ",".join(map(str, data.get('time_slots', []))),
-            data.get('branded_section'),
-            data.get('contact_name'),
-            data.get('company'),
-            data.get('phone'),
-            data.get('email'),
-            data.get('base_price', 0),
-            data.get('discount', 0),
-            data.get('final_price', 0),
-            data.get('actual_reach', 0)
-        ))
-        
-        conn.commit()
-        conn.close()
-        
-        logger.info(f"✅ Кампания {campaign_number} сохранена в БД")
-        return campaign_number
-        
-    except Exception as e:
-        logger.error(f"❌ Ошибка сохранения кампании: {e}")
-        return None
-
 def send_admin_notification(data, campaign_number):
     """Отправка уведомления админу"""
     try:
+        # Расчет стоимости для уведомления
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent = calculate_campaign_price_and_reach(data)
+        
+        stations_text = ""
+        for radio in data.get('radio_stations', []):
+            listeners = STATION_COVERAGE.get(radio, 0)
+            stations_text += f"• {radio}: ~{format_number(listeners)} слушателей\n"
+        
+        # Текст временных слотов
+        slots_text = ""
+        for slot_index in data.get('time_slots', []):
+            if 0 <= slot_index < len(TIME_SLOTS_DATA):
+                slot = TIME_SLOTS_DATA[slot_index]
+                slots_text += f"• {slot['time']} - {slot['label']}: {slot['coverage_percent']}%\n"
+        
         notification_text = f"""
 🔔 НОВАЯ ЗАЯВКА ИЗ WEBAPP #{campaign_number}
 
@@ -184,14 +112,30 @@ def send_admin_notification(data, campaign_number):
 Email: {data.get('email', 'Не указан')}
 Компания: {data.get('company', 'Не указана')}
 
-📊 ПАРАМЕТРЫ:
-Радиостанции: {', '.join(data.get('radio_stations', []))}
-Период: {data.get('start_date')} - {data.get('end_date')} ({data.get('campaign_days')} дней)
+📊 ПАРАМЕТРЫ КАМПАНИИ:
 
-💰 ФИНАНСЫ:
-Итоговая стоимость: {data.get('final_price', 0):,}₽
+📻 РАДИОСТАНЦИИ:
+{stations_text}
+📅 ПЕРИОД: {data.get('start_date')} - {data.get('end_date')} ({data.get('campaign_days')} дней)
 
-🎯 ОХВАТ: {data.get('actual_reach', 0):,} человек
+🕒 ВЫБРАННЫЕ СЛОТЫ:
+{slots_text}
+• Суммарный охват слотов: {total_coverage_percent}%
+
+🎙️ РУБРИКА: {get_branded_section_name(data.get('branded_section'))}
+⏱️ РОЛИК: {get_production_option_name(data.get('production_option'))}
+📏 ХРОНОМЕТРАЖ: {data.get('duration', 20)} сек
+
+🎯 РАСЧЕТНЫЙ ОХВАТ:
+• Выходов в день: {spots_per_day}
+• Всего выходов: {spots_per_day * data.get('campaign_days', 30)}
+• Уникальных слушателей в день: ~{format_number(daily_coverage)} чел.
+• Общий охват за период: ~{format_number(total_reach)} чел.
+
+💰 СТОИМОСТЬ:
+Базовая: {format_number(base_price)}₽
+Скидка 50%: -{format_number(discount)}₽
+Итоговая: {format_number(final_price)}₽
         """
         
         bot.send_message(ADMIN_TELEGRAM_ID, notification_text)
@@ -200,14 +144,45 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
+def send_user_confirmation(chat_id, data, campaign_number):
+    """Отправка подтверждения пользователю"""
+    try:
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent = calculate_campaign_price_and_reach(data)
+        
+        confirmation_text = f"""
+✅ **ВАША ЗАЯВКА #{campaign_number} ПРИНЯТА!**
+
+📊 **ПАРАМЕТРЫ КАМПАНИИ:**
+• Радиостанции: {len(data.get('radio_stations', []))} шт
+• Период: {data.get('start_date')} - {data.get('end_date')} ({data.get('campaign_days')} дней)
+• Выходов в день: {spots_per_day}
+• Всего выходов: {spots_per_day * data.get('campaign_days', 30)}
+
+🎯 **ОЖИДАЕМЫЙ ОХВАТ:**
+• Ежедневно: ~{format_number(daily_coverage)} чел.
+• За весь период: ~{format_number(total_reach)} чел.
+
+💰 **СТОИМОСТЬ:**
+• Итоговая: {format_number(final_price)}₽ (скидка 50%)
+
+📞 **ДАЛЬНЕЙШИЕ ДЕЙСТВИЯ:**
+Менеджер свяжется с вами в течение 15 минут для подтверждения деталей и запуска кампании.
+
+💎 **Спасибо, что выбрали нас!**
+        """
+        
+        bot.send_message(chat_id, confirmation_text)
+        logger.info(f"✅ Подтверждение отправлено пользователю {chat_id}")
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки подтверждения: {e}")
+
 @app.route('/')
 def index():
-    """Главная страница для проверки работы"""
     return '🤖 RadioPlanner Bot is running! 🚀'
 
 @app.route('/health')
 def health():
-    """Эндпоинт для проверки здоровья"""
     return {'status': 'healthy', 'service': 'telegram-bot'}
 
 @app.route('/webhook', methods=['POST'])
@@ -230,10 +205,7 @@ def set_webhook():
         webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/webhook"
         logger.info(f"🌐 Устанавливаем вебхук: {webhook_url}")
         
-        # Удаляем старый вебхук
         bot.remove_webhook()
-        
-        # Устанавливаем новый вебхук
         bot.set_webhook(url=webhook_url)
         
         logger.info("✅ Вебхук успешно установлен")
@@ -247,7 +219,7 @@ if __name__ == "__main__":
     if init_db():
         logger.info("✅ База данных готова")
     
-    # Всегда используем вебхук на Render
+    # Вебхук для Render
     logger.info("🚀 Настраиваем вебхук для Render...")
     
     if set_webhook():
