@@ -1,3 +1,5 @@
-python-telegram-bot[webhooks]==21.0
-reportlab
+python-telegram-bot==20.7
+sqlite3
 openpyxl
+flask==2.3.3
+gunicorn==21.2.0
