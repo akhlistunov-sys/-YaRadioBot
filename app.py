@@ -3,9 +3,13 @@ from flask_cors import CORS
 import sqlite3
 import os
 from datetime import datetime
+from api_routes import register_routes
 
 app = Flask(__name__)
 CORS(app)
+
+# Регистрируем все API routes
+register_routes(app)
 
 # Базовая инициализация БД (из вашего bot.py)
 def init_db():
