@@ -1,62 +1,56 @@
 // Инициализация Telegram WebApp
 const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation();
 
-// Состояние приложения
-let appState = {
-    userData: {},
-    campaignData: {}
-};
-
-// Навигация
-function navigateTo(screen) {
-    // Скрываем все экраны
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
+// Инициализация приложения
+function initApp() {
+    console.log('🚀 RadioPlanner WebApp запущен');
     
-    // Показываем целевой экран
-    const targetScreen = document.getElementById(screen + 'Screen');
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-    } else {
-        loadScreen(screen);
-    }
+    // Инициализация Telegram WebApp
+    tg.expand();
+    tg.enableClosingConfirmation();
+    tg.BackButton.hide();
+    
+    console.log('👤 User data:', tg.initDataUnsafe.user);
 }
 
-// Загрузка экранов
-async function loadScreen(screenName) {
-    try {
-        const response = await fetch(`screens/${screenName}.html`);
-        const html = await response.text();
-        
-        const screen = document.createElement('div');
-        screen.className = 'screen';
-        screen.id = screenName + 'Screen';
-        screen.innerHTML = html;
-        
-        document.getElementById('app').appendChild(screen);
-        screen.classList.add('active');
-        
-    } catch (error) {
-        console.error('Error loading screen:', error);
-    }
+// Демо-функции для тестирования
+function showDemoAlert() {
+    tg.showPopup({
+        title: 'Функция в разработке',
+        message: 'Этот раздел находится в активной разработке. Используйте демо-кнопку ниже для тестирования отправки заявки.',
+        buttons: [{ type: 'ok' }]
+    });
 }
 
-// Отправка данных в бот
-function submitCampaign(campaignData) {
-    const data = {
-        user_id: tg.initDataUnsafe.user.id,
-        campaign_data: campaignData,
-        timestamp: new Date().toISOString()
+function submitDemoCampaign() {
+    const demoData = {
+        user_id: tg.initDataUnsafe.user?.id || 123456,
+        radio_stations: ['LOVE RADIO', 'АВТОРАДИО'],
+        start_date: '15.01.2025',
+        end_date: '30.01.2025',
+        campaign_days: 15,
+        time_slots: [0, 1, 2],
+        branded_section: 'auto',
+        contact_name: 'Тестовый Пользователь',
+        company: 'Тестовая компания',
+        phone: '+79123456789',
+        email: 'test@example.com',
+        base_price: 15000,
+        discount: 7500,
+        final_price: 7500,
+        actual_reach: 125000
     };
     
-    tg.sendData(JSON.stringify(data));
-    tg.close();
+    console.log('📤 Отправка демо-данных:', demoData);
+    
+    tg.sendData(JSON.stringify(demoData));
+    
+    tg.showPopup({
+        title: '✅ Заявка отправлена!',
+        message: 'Тестовая заявка успешно отправлена в бота. Проверьте чат с ботом для подтверждения.',
+        buttons: [{ type: 'ok' }]
+    });
 }
 
 // Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('RadioPlanner WebApp started');
-});
+document.addEventListener('DOMContentLoaded', initApp);
