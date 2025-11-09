@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from flask import Flask, request
 
 # Настройка логирования
 logging.basicConfig(
@@ -17,8 +18,9 @@ logger = logging.getLogger(__name__)
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
-# Создаем бота
+# Создаем бота и Flask приложение
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
 # Инициализация базы данных
 def init_db():
@@ -83,7 +85,11 @@ def start(message):
         "🚀 Нажмите кнопку ниже чтобы открыть приложение 👇"
     )
     
-    bot.send_message(message.chat.id, caption, reply_markup=keyboard)
+    try:
+        bot.send_message(message.chat.id, caption, reply_markup=keyboard)
+        logger.info(f"✅ Отправлено меню пользователю {message.chat.id}")
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки меню: {e}")
 
 @bot.message_handler(content_types=['web_app_data'])
 def handle_webapp_data(message):
@@ -91,7 +97,7 @@ def handle_webapp_data(message):
     try:
         data = json.loads(message.web_app_data.data)
         
-        logger.info(f"📱 Данные из WebApp: {data}")
+        logger.info(f"📱 Данные из WebApp от пользователя {message.chat.id}: {data}")
         
         # Сохраняем кампанию в БД
         campaign_number = save_campaign_to_db(data)
@@ -108,11 +114,13 @@ def handle_webapp_data(message):
                 f"🎯 Радиостанции: {len(data.get('radio_stations', []))} шт\n\n"
                 "📞 Менеджер свяжется с вами в течение 15 минут!"
             )
+            logger.info(f"✅ Заявка {campaign_number} обработана")
         else:
             bot.send_message(
                 message.chat.id,
                 "❌ Ошибка сохранения заявки. Пожалуйста, попробуйте еще раз."
             )
+            logger.error("❌ Ошибка сохранения заявки в БД")
         
     except Exception as e:
         logger.error(f"❌ WebApp data error: {e}")
@@ -157,7 +165,7 @@ def save_campaign_to_db(data):
         conn.commit()
         conn.close()
         
-        logger.info(f"✅ Кампания {campaign_number} сохранена")
+        logger.info(f"✅ Кампания {campaign_number} сохранена в БД")
         return campaign_number
         
     except Exception as e:
@@ -192,38 +200,59 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
-def setup_bot():
-    """Настройка бота - удаление вебхука и запуск polling"""
+@app.route('/')
+def index():
+    """Главная страница для проверки работы"""
+    return '🤖 RadioPlanner Bot is running! 🚀'
+
+@app.route('/health')
+def health():
+    """Эндпоинт для проверки здоровья"""
+    return {'status': 'healthy', 'service': 'telegram-bot'}
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Обработчик вебхука от Telegram"""
+    if request.headers.get('content-type') == 'application/json':
+        try:
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return 'OK'
+        except Exception as e:
+            logger.error(f"❌ Ошибка обработки вебхука: {e}")
+            return 'Error', 500
+    return 'Invalid content-type', 400
+
+def set_webhook():
+    """Установка вебхука"""
     try:
-        # Удаляем вебхук перед запуском polling
-        logger.info("🗑️ Удаляем активный вебхук...")
+        webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/webhook"
+        logger.info(f"🌐 Устанавливаем вебхук: {webhook_url}")
+        
+        # Удаляем старый вебхук
         bot.remove_webhook()
-        logger.info("✅ Вебхук удален")
         
-        # Даем время на удаление вебхука
-        import time
-        time.sleep(2)
+        # Устанавливаем новый вебхук
+        bot.set_webhook(url=webhook_url)
         
+        logger.info("✅ Вебхук успешно установлен")
+        return True
     except Exception as e:
-        logger.error(f"❌ Ошибка при удалении вебхука: {e}")
+        logger.error(f"❌ Ошибка установки вебхука: {e}")
+        return False
 
 if __name__ == "__main__":
+    # Инициализация БД
     if init_db():
-        logger.info("✅ База данных инициализирована")
+        logger.info("✅ База данных готова")
     
-    # Всегда используем polling на Render
-    logger.info("🔍 Запускаем бота в режиме Polling...")
+    # Всегда используем вебхук на Render
+    logger.info("🚀 Настраиваем вебхук для Render...")
     
-    # Удаляем вебхук перед запуском
-    setup_bot()
-    
-    try:
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
-        logger.info("✅ Бот успешно запущен в режиме Polling")
-    except Exception as e:
-        logger.error(f"❌ Ошибка при запуске бота: {e}")
-        # Пробуем перезапустить через 10 секунд
-        import time
-        time.sleep(10)
-        logger.info("🔄 Перезапускаем бота...")
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    if set_webhook():
+        logger.info("🌈 Запускаем Flask сервер...")
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host="0.0.0.0", port=port, debug=False)
+    else:
+        logger.error("💥 Не удалось установить вебхук")
