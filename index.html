@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Главный экран -->
+        <div id="mainScreen" class="screen active">
+            <div class="header">
+                <div class="logo">🎙️</div>
+                <h1>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
+                <p>Ялуторовск • Заводоуковск</p>
+            </div>
+
+            <div class="card">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">6</div>
+                        <div class="stat-label">радиостанций</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">50%</div>
+                        <div class="stat-label">скидка</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">70+</div>
+                        <div class="stat-label">кампаний</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="showScreen('radioSelection')">
+                    🚀 НАЧАТЬ РАСЧЕТ
+                </button>
+                <button class="btn btn-secondary" onclick="showScreen('statistics')">
+                    📊 ВОЗРАСТНАЯ СТРУКТУРА
+                </button>
+                <button class="btn btn-secondary" onclick="showScreen('about')">
+                    🏆 О НАС
+                </button>
+                <button class="btn btn-secondary" onclick="showScreen('personalCabinet')">
+                    📋 ЛИЧНЫЙ КАБИНЕТ
+                </button>
+            </div>
+
+            <div class="footer">
+                <p>🤖 Рассчитайте рекламу за 2 минуты</p>
+                <p>✅ От 7 000₽ • Старт через 3 дня</p>
+            </div>
+        </div>
+
+        <!-- Шаг 1: Выбор радиостанций -->
+        <div id="radioSelection" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('mainScreen')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[1/7] ВЫБОР РАДИОСТАНЦИЙ</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~30 секунд</p>
+                    
+                    <div class="selection-stats">
+                        <div class="stat-badge">
+                            <span>Выбрано: </span>
+                            <strong id="selectedRadiosCount">0</strong>
+                            <span> станций</span>
+                        </div>
+                    </div>
+
+                    <div id="radioList" class="radio-list">
+                        <!-- Радиостанции загружаются через JS -->
+                    </div>
+
+                    <button class="btn btn-outline" onclick="selectAllRadios()" id="selectAllBtn">
+                        ⚪ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
+                    </button>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('mainScreen')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateRadios()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 2: Выбор дат -->
+        <div id="campaignDates" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('radioSelection')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[2/7] ВЫБОР ДАТ КАМПАНИИ</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~15 секунд</p>
+                    
+                    <div id="selectedStationsInfo" class="stations-info">
+                        <!-- Информация о выбранных станциях -->
+                    </div>
+
+                    <div class="date-inputs">
+                        <div class="input-group">
+                            <label>📅 Дата начала кампании</label>
+                            <input type="date" id="startDate" class="date-input" min="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>📅 Дата окончания кампании</label>
+                            <input type="date" id="endDate" class="date-input" min="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                    </div>
+
+                    <div id="dateSummary" class="summary-card">
+                        <div class="summary-item">
+                            <span>Период:</span>
+                            <strong id="campaignDays">0 дней</strong>
+                        </div>
+                        <div class="summary-note">⚠️ Минимальный период: 15 дней</div>
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('radioSelection')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateDates()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 3: Временные слоты -->
+        <div id="timeSlots" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('campaignDates')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[3/7] ВЫБОР ВРЕМЕНИ ВЫХОДА</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~30 секунд</p>
+                    
+                    <div class="selection-stats">
+                        <div class="stat-badge">
+                            <span>Выбрано слотов: </span>
+                            <strong id="selectedSlotsCount">0</strong>
+                        </div>
+                        <div class="stat-badge">
+                            <span>Выходов в день: </span>
+                            <strong id="outputsPerDay">0</strong>
+                        </div>
+                    </div>
+
+                    <div id="timeSlotsList" class="time-slots-list">
+                        <!-- Временные слоты загружаются через JS -->
+                    </div>
+
+                    <button class="btn btn-outline" onclick="selectAllTimeSlots()">
+                        ✅ ВЫБРАТЬ ВСЕ СЛОТЫ
+                    </button>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('campaignDates')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateTimeSlots()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 4: Брендированные рубрики -->
+        <div id="brandedSections" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('timeSlots')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[4/7] БРЕНДИРОВАННЫЕ РУБРИКИ</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~15 секунд</p>
+                    
+                    <div id="brandedOptions" class="branded-options">
+                        <!-- Опции рубрик -->
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('timeSlots')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateBrandedSection()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 5: Создание ролика -->
+        <div id="campaignCreator" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('brandedSections')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[5/7] СОЗДАНИЕ РОЛИКА</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~60 секунд</p>
+                    
+                    <div class="input-group">
+                        <label>📝 Текст для радиоролика (до 500 знаков)</label>
+                        <textarea id="campaignText" class="text-input" placeholder="Введите текст вашего ролика..." maxlength="500" rows="4"></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/500 знаков
+                        </div>
+                    </div>
+
+                    <div class="duration-selector">
+                        <label>⏱️ Длительность ролика</label>
+                        <select id="durationSelect" class="select-input">
+                            <option value="15">15 секунд</option>
+                            <option value="20" selected>20 секунд</option>
+                            <option value="25">25 секунд</option>
+                        </select>
+                    </div>
+
+                    <div id="pricePreview" class="price-preview">
+                        <!-- Предпросмотр стоимости -->
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('brandedSections')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateCampaignText()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 6: Производство ролика -->
+        <div id="productionOption" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('campaignCreator')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step"></div>
+                </div>
+                <div class="step-title">[6/7] ПРОИЗВОДСТВО РОЛИКА</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <p class="step-info">⏱️ Этот шаг займет ~15 секунд</p>
+                    
+                    <div id="productionOptions" class="production-options">
+                        <!-- Опции производства -->
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('campaignCreator')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-primary" onclick="validateProduction()">
+                        ➡️ ДАЛЕЕ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Шаг 7: Контактные данные -->
+        <div id="contactInfo" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" onclick="showScreen('productionOption')">←</button>
+                <div class="progress-steps">
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                    <div class="step active"></div>
+                </div>
+                <div class="step-title">[7/7] КОНТАКТНЫЕ ДАННЫЕ</div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <div class="success-header">
+                        <div class="success-icon">✨</div>
+                        <h3>ВАШ МЕДИАПЛАН СОСТАВЛЕН!</h3>
+                    </div>
+                    
+                    <div id="finalSummary" class="final-summary">
+                        <!-- Финальная сводка -->
+                    </div>
+
+                    <div class="contact-form">
+                        <div class="input-group">
+                            <label>👤 Ваше имя</label>
+                            <input type="text" id="contactName" class="text-input" placeholder="Введите ваше имя">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>📞 Телефон</label>
+                            <input type="tel" id="contactPhone" class="text-input" placeholder="+7 (XXX) XXX-XX-XX">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>📧 Email</label>
+                            <input type="email" id="contactEmail" class="text-input" placeholder="your@email.com">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>🏢 Компания</label>
+                            <input type="text" id="contactCompany" class="text-input" placeholder="Название компании">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="showScreen('productionOption')">
+                        ◀️ НАЗАД
+                    </button>
+                    <button class="btn btn-success" onclick="submitCampaign()">
+                        📤 ОТПРАВИТЬ ЗАЯВКУ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран подтверждения -->
+        <div id="confirmation" class="screen">
+            <div class="confirmation-content">
+                <div class="success-animation">🎉</div>
+                <h2>ЗАЯВКА ПРИНЯТА!</h2>
+                <div id="confirmationDetails" class="confirmation-details">
+                    <!-- Детали заявки -->
+                </div>
+                
+                <div class="confirmation-actions">
+                    <button class="btn btn-primary" onclick="generateExcel()">
+                        📊 СКАЧАТЬ EXCEL МЕДИАПЛАН
+                    </button>
+                    <button class="btn btn-outline" onclick="showScreen('mainScreen')">
+                        🚀 НОВАЯ КАМПАНИЯ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительные экраны -->
+        <div id="statistics" class="screen">
+            <!-- Контент возрастной структуры -->
+        </div>
+
+        <div id="about" class="screen">
+            <!-- Контент "О нас" -->
+        </div>
+
+        <div id="personalCabinet" class="screen">
+            <!-- Личный кабинет -->
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="calculator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
