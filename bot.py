@@ -3,8 +3,8 @@ import logging
 import json
 import sqlite3
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters, CallbackContext
+import telebot
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 # Настройка логирования
 logging.basicConfig(
@@ -17,8 +17,11 @@ logger = logging.getLogger(__name__)
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
+# Создаем бота
+bot = telebot.TeleBot(TOKEN)
+
+# Инициализация базы данных
 def init_db():
-    """Инициализация базы данных"""
     try:
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
@@ -56,34 +59,37 @@ def init_db():
         logger.error(f"❌ Ошибка БД: {e}")
         return False
 
-def start(update, context):
+@bot.message_handler(commands=['start'])
+def start(message):
     """ГЛАВНОЕ МЕНЮ С WEBAPP"""
     
     # Получаем URL WebApp из переменных окружения
     webapp_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-webapp')}.onrender.com"
     
-    keyboard = [
-        [InlineKeyboardButton(
-            "🚀 ОТКРЫТЬ RADIOPLANNER APP", 
-            web_app=WebAppInfo(url=webapp_url)
-        )]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(
+        "🚀 ОТКРЫТЬ RADIOPLANNER APP", 
+        web_app=WebAppInfo(url=webapp_url)
+    ))
     
     caption = (
         "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
         "📍 Ялуторовск • Заводоуковск\n\n"
         "✨ **НОВЫЙ ИНТЕРАКТИВНЫЙ КОНСТРУКТОР!**\n\n"
+        "📱 • Визуальный подбор времени и станций\n"
+        "⚡ • Мгновенный расчет охвата и стоимости\n"
+        "💾 • Сохранение всех медиапланов\n"
+        "🎯 • Персональные рекомендации\n\n"
         "🚀 Нажмите кнопку ниже чтобы открыть приложение 👇"
     )
     
-    update.message.reply_text(caption, reply_markup=reply_markup)
+    bot.send_message(message.chat.id, caption, reply_markup=keyboard)
 
-def handle_webapp_data(update, context):
+@bot.message_handler(content_types=['web_app_data'])
+def handle_webapp_data(message):
     """Обработка данных из WebApp"""
     try:
-        webapp_data = update.effective_message.web_app_data
-        data = json.loads(webapp_data.data)
+        data = json.loads(message.web_app_data.data)
         
         logger.info(f"📱 Данные из WebApp: {data}")
         
@@ -92,22 +98,26 @@ def handle_webapp_data(update, context):
         
         if campaign_number:
             # Отправляем уведомление админу
-            send_admin_notification(context, data, campaign_number)
+            send_admin_notification(data, campaign_number)
             
-            update.message.reply_text(
+            bot.send_message(
+                message.chat.id,
                 f"✅ **Заявка #{campaign_number} принята!**\n\n"
                 f"📊 Охват: {data.get('actual_reach', 0):,} человек\n"
-                f"💰 Стоимость: {data.get('final_price', 0):,}₽\n\n"
+                f"💰 Стоимость: {data.get('final_price', 0):,}₽\n"
+                f"🎯 Радиостанции: {len(data.get('radio_stations', []))} шт\n\n"
                 "📞 Менеджер свяжется с вами в течение 15 минут!"
             )
         else:
-            update.message.reply_text(
+            bot.send_message(
+                message.chat.id,
                 "❌ Ошибка сохранения заявки. Пожалуйста, попробуйте еще раз."
             )
         
     except Exception as e:
         logger.error(f"❌ WebApp data error: {e}")
-        update.message.reply_text(
+        bot.send_message(
+            message.chat.id,
             "❌ Ошибка обработки данных. Пожалуйста, попробуйте еще раз."
         )
 
@@ -154,7 +164,7 @@ def save_campaign_to_db(data):
         logger.error(f"❌ Ошибка сохранения кампании: {e}")
         return None
 
-def send_admin_notification(context, data, campaign_number):
+def send_admin_notification(data, campaign_number):
     """Отправка уведомления админу"""
     try:
         notification_text = f"""
@@ -172,57 +182,55 @@ Email: {data.get('email', 'Не указан')}
 
 💰 ФИНАНСЫ:
 Итоговая стоимость: {data.get('final_price', 0):,}₽
+
+🎯 ОХВАТ: {data.get('actual_reach', 0):,} человек
         """
         
-        context.bot.send_message(
-            chat_id=ADMIN_TELEGRAM_ID,
-            text=notification_text
-        )
+        bot.send_message(ADMIN_TELEGRAM_ID, notification_text)
         logger.info(f"✅ Уведомление админу отправлено для #{campaign_number}")
         
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
-def error_handler(update, context):
-    """Обработчик ошибок"""
-    logger.error(f"Ошибка при обработке обновления: {context.error}")
-
-def main():
-    """ЗАПУСК БОТА С WEBAPP"""
+if __name__ == "__main__":
     if init_db():
         logger.info("✅ Бот с WebApp запущен успешно")
     
-    # Создаем Updater
-    updater = Updater(TOKEN, use_context=True)
-    
-    # Получаем диспетчер для регистрации обработчиков
-    dp = updater.dispatcher
-    
-    # Обработчики
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.status_update.web_app_data, handle_webapp_data))
-    
-    # Обработчик ошибок
-    dp.add_error_handler(error_handler)
-    
-    # Запуск на Render
+    # Запуск бота
     if "RENDER" in os.environ:
-        # Webhook режим для Render
-        PORT = int(os.environ.get("PORT", 8443))
-        updater.start_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=TOKEN,
-            webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
-        )
-        logger.info(f"🌐 Бот запущен в режиме Webhook на порту {PORT}")
+        # Webhook для Render
+        import flask
+        from flask import request
+        
+        app = flask.Flask(__name__)
+        
+        @app.route('/' + TOKEN, methods=['POST'])
+        def webhook():
+            if request.headers.get('content-type') == 'application/json':
+                json_string = request.get_data().decode('utf-8')
+                update = telebot.types.Update.de_json(json_string)
+                bot.process_new_updates([update])
+                return ''
+            return 'OK'
+        
+        @app.route('/')
+        def index():
+            return 'Bot is running!'
+        
+        # Удаляем предыдущие вебхуки
+        bot.remove_webhook()
+        
+        # Устанавливаем вебхук
+        webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
+        bot.set_webhook(url=webhook_url)
+        
+        logger.info(f"🌐 Бот запущен в режиме Webhook: {webhook_url}")
+        
+        # Запускаем Flask
+        port = int(os.environ.get("PORT", 8443))
+        app.run(host="0.0.0.0", port=port)
+        
     else:
-        # Polling режим для локальной разработки
-        updater.start_polling()
+        # Polling для локальной разработки
         logger.info("🔍 Бот запущен в режиме Polling")
-    
-    # Запускаем бота
-    updater.idle()
-
-if __name__ == "__main__":
-    main()
+        bot.infinity_polling()
