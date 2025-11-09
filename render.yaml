@@ -1,15 +1,27 @@
 services:
+  # Веб-приложение (Frontend)
+  - type: web
+    name: telegram-radio-webapp
+    env: static
+    buildCommand: cd webapp && npm install
+    staticPublishPath: ./webapp
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+
+  # Бот (Backend)
   - type: web
     name: telegram-radio-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
+    buildCommand: pip install -r bot/requirements.txt
+    startCommand: cd bot && python webapp_bot.py
     envVars:
       - key: RENDER
         value: true
       - key: RENDER_SERVICE_NAME
         fromService:
+          name: telegram-radio-webapp
           type: web
-          name: telegram-radio-bot
-          property: name
+          property: hostname
