@@ -4,14 +4,18 @@ import sqlite3
 import os
 from datetime import datetime
 from api_routes import register_routes
+from static_server import register_static_routes
 
 app = Flask(__name__)
 CORS(app)
 
-# Регистрируем все API routes
+# Регистрируем API routes
 register_routes(app)
 
-# Базовая инициализация БД (из вашего bot.py)
+# Регистрируем статические routes для фронтенда
+register_static_routes(app)
+
+# Базовая инициализация БД
 def init_db():
     try:
         conn = sqlite3.connect("campaigns.db")
@@ -48,35 +52,6 @@ def init_db():
     except Exception as e:
         print(f"Ошибка инициализации БД: {e}")
         return False
-
-@app.route('/')
-def home():
-    return jsonify({
-        "status": "success", 
-        "message": "YaRadioBot API работает!",
-        "timestamp": datetime.now().isoformat()
-    })
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        "status": "healthy",
-        "database": "connected" if init_db() else "error",
-        "timestamp": datetime.now().isoformat()
-    })
-
-@app.route('/api/radio-stations', methods=['GET'])
-def get_radio_stations():
-    """Получить список радиостанций (данные из вашего bot.py)"""
-    stations = {
-        "LOVE RADIO": 540,
-        "АВТОРАДИО": 3250,
-        "РАДИО ДАЧА": 3250,
-        "РАДИО ШАНСОН": 2900,
-        "РЕТРО FM": 3600,
-        "ЮМОР FM": 1260
-    }
-    return jsonify({"stations": stations})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
