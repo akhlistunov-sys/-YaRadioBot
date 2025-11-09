@@ -1,452 +1,405 @@
-// Конфигурация API
-const API_BASE_URL = '/api';
-
-// Глобальное состояние приложения
-let appState = {
-    currentStep: 1,
-    selectedRadios: [],
-    selectedTimeSlots: [0, 1, 2, 3],
-    userData: {
-        contactName: '',
-        contactPhone: '',
-        contactEmail: '',
-        contactCompany: '',
-        duration: 20,
-        campaignDays: 30,
-        brandedSection: 'auto',
-        productionOption: 'standard'
-    },
-    calculation: null,
-    timeSlots: []
-};
-
-// Инициализация Telegram Web App
-let tg = window.Telegram.WebApp;
-
-// Основная функция инициализации
-async function initApp() {
-    console.log('🚀 Инициализация Mini App...');
-    
-    if (tg && tg.expand) {
-        tg.expand();
-    }
-    
-    await Promise.all([
-        loadRadioStations(),
-        loadTimeSlots()
-    ]);
-    
-    showStep(1);
-}
-
-// Загрузка радиостанций с API
-async function loadRadioStations() {
-    try {
-        showLoading('radioStationsList', 'Загрузка радиостанций...');
-        
-        const response = await fetch(`${API_BASE_URL}/radio-stations`);
-        const data = await response.json();
-        
-        if (data.stations) {
-            renderRadioStations(data.stations);
-        } else {
-            showError('Не удалось загрузить список радиостанций');
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-    } catch (error) {
-        console.error('Ошибка загрузки радиостанций:', error);
-        const demoStations = {
-            "LOVE RADIO": 540,
-            "АВТОРАДИО": 3250,
-            "РАДИО ДАЧА": 3250,
-            "РАДИО ШАНСОН": 2900,
-            "РЕТРО FM": 3600,
-            "ЮМОР FM": 1260
-        };
-        renderRadioStations(demoStations);
-    }
-}
-
-// Загрузка временных слотов с API
-async function loadTimeSlots() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/time-slots`);
-        const data = await response.json();
         
-        if (data.success && data.time_slots) {
-            appState.timeSlots = data.time_slots;
-            renderTimeSlots(data.time_slots);
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-    } catch (error) {
-        console.error('Ошибка загрузки временных слотов:', error);
-        appState.timeSlots = [
-            {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
-            {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
-            {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
-            {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8}
-        ];
-        renderTimeSlots(appState.timeSlots);
-    }
-}
-
-// Показать загрузку
-function showLoading(elementId, message = 'Загрузка...') {
-    const container = document.getElementById(elementId);
-    if (container) {
-        container.innerHTML = `
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>${message}</p>
-            </div>
-        `;
-    }
-}
-
-// Отрисовка списка радиостанций
-function renderRadioStations(stations) {
-    const container = document.getElementById('radioStationsList');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    Object.entries(stations).forEach(([name, listeners]) => {
-        const isSelected = appState.selectedRadios.includes(name);
-        const stationElement = document.createElement('div');
-        stationElement.className = `radio-station ${isSelected ? 'selected' : ''}`;
-        stationElement.innerHTML = `
-            <div class="radio-name">${name}</div>
-            <div class="radio-listeners">~${formatNumber(listeners)} слушателей в день</div>
-        `;
         
-        stationElement.addEventListener('click', () => toggleRadioStation(name, stationElement));
-        container.appendChild(stationElement);
-    });
-    
-    updateSelectionStats();
-}
-
-// Отрисовка временных слотов
-function renderTimeSlots(slots) {
-    const container = document.getElementById('timeSlotsList');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    slots.forEach((slot, index) => {
-        const isSelected = appState.selectedTimeSlots.includes(index);
-        const slotElement = document.createElement('div');
-        slotElement.className = `time-slot ${isSelected ? 'selected' : ''}`;
-        slotElement.innerHTML = `
-            <div class="slot-time">${slot.time}</div>
-            <div class="slot-label">${slot.label} • ${slot.coverage_percent}% охвата</div>
-        `;
-        
-        slotElement.addEventListener('click', () => toggleTimeSlot(index, slotElement));
-        container.appendChild(slotElement);
-    });
-}
-
-// Переключение выбора радиостанции
-function toggleRadioStation(name, element) {
-    const index = appState.selectedRadios.indexOf(name);
-    
-    if (index === -1) {
-        appState.selectedRadios.push(name);
-        element.classList.add('selected');
-    } else {
-        appState.selectedRadios.splice(index, 1);
-        element.classList.remove('selected');
-    }
-    
-    updateSelectionStats();
-}
-
-// Переключение выбора временного слота
-function toggleTimeSlot(index, element) {
-    const slotIndex = appState.selectedTimeSlots.indexOf(index);
-    
-    if (slotIndex === -1) {
-        appState.selectedTimeSlots.push(index);
-        element.classList.add('selected');
-    } else {
-        appState.selectedTimeSlots.splice(slotIndex, 1);
-        element.classList.remove('selected');
-    }
-}
-
-// Обновление статистики выбора
-function updateSelectionStats() {
-    const selectedCountElement = document.getElementById('selectedCount');
-    const totalListenersElement = document.getElementById('totalListeners');
-    
-    if (selectedCountElement) {
-        selectedCountElement.textContent = appState.selectedRadios.length;
-    }
-    
-    const stationListeners = {
-        'LOVE RADIO': 540,
-        'АВТОРАДИО': 3250,
-        'РАДИО ДАЧА': 3250,
-        'РАДИО ШАНСОН': 2900,
-        'РЕТРО FM': 3600,
-        'ЮМОР FM': 1260
-    };
-    
-    const totalListeners = appState.selectedRadios.reduce((total, radio) => {
-        return total + (stationListeners[radio] || 0);
-    }, 0);
-    
-    if (totalListenersElement) {
-        totalListenersElement.textContent = formatNumber(totalListeners);
-    }
-}
-
-// Форматирование чисел с пробелами
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
-
-// Навигация по шагам
-function showStep(stepNumber) {
-    document.querySelectorAll('.step-content').forEach(step => {
-        step.classList.add('hidden');
-    });
-    
-    const stepElement = document.getElementById(`step${stepNumber}`);
-    if (stepElement) {
-        stepElement.classList.remove('hidden');
-    }
-    
-    appState.currentStep = stepNumber;
-    
-    switch(stepNumber) {
-        case 2:
-            calculateCampaign();
-            break;
-        case 5:
-            updateConfirmationData();
-            break;
-    }
-    
-    updateStepIndicator(stepNumber);
-}
-
-// Обновление индикатора шагов
-function updateStepIndicator(currentStep) {
-    const steps = document.querySelectorAll('.step');
-    steps.forEach((step, index) => {
-        const stepNumber = index + 1;
-        step.classList.remove('active', 'completed');
-        
-        if (stepNumber === currentStep) {
-            step.classList.add('active');
-        } else if (stepNumber < currentStep) {
-            step.classList.add('completed');
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-    });
-}
-
-function nextStep(step) {
-    switch(step) {
-        case 2:
-            if (appState.selectedRadios.length === 0) {
-                showError('Выберите хотя бы одну радиостанцию');
-                return;
-            }
-            break;
-        case 3:
-            if (appState.selectedTimeSlots.length === 0) {
-                showError('Выберите хотя бы один временной слот');
-                return;
-            }
-            break;
-        case 4:
-            if (!validateContactData()) {
-                return;
-            }
-            break;
-    }
-    
-    showStep(step);
-}
-
-function prevStep(step) {
-    showStep(step);
-}
-
-// Валидация контактных данных
-function validateContactData() {
-    const name = document.getElementById('contactName').value.trim();
-    const phone = document.getElementById('contactPhone').value.trim();
-    
-    if (!name) {
-        showError('Введите ваше имя');
-        return false;
-    }
-    
-    if (!phone) {
-        showError('Введите ваш телефон');
-        return false;
-    }
-    
-    appState.userData.contactName = name;
-    appState.userData.contactPhone = phone;
-    appState.userData.contactEmail = document.getElementById('contactEmail').value.trim();
-    appState.userData.contactCompany = document.getElementById('contactCompany').value.trim();
-    
-    return true;
-}
-
-// Расчет стоимости кампании
-async function calculateCampaign() {
-    try {
-        showLoading('calculationResult', 'Рассчитываем стоимость...');
         
-        const response = await fetch(`${API_BASE_URL}/calculate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                selected_radios: appState.selectedRadios,
-                selected_time_slots: appState.selectedTimeSlots,
-                duration: appState.userData.duration,
-                campaign_days: appState.userData.campaignDays,
-                branded_section: appState.userData.brandedSection,
-                production_cost: 2000
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            appState.calculation = data.calculation;
-            displayCalculationResult(data.calculation);
-        } else {
-            showError('Ошибка расчета: ' + (data.error || 'Неизвестная ошибка'));
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
         }
-    } catch (error) {
-        console.error('Ошибка расчета:', error);
-        const demoCalculation = {
-            base_price: 14000,
-            discount: 7000,
-            final_price: 7000,
-            total_reach: 150000,
-            daily_coverage: 5000,
-            spots_per_day: 10,
-            total_coverage_percent: 45
-        };
-        appState.calculation = demoCalculation;
-        displayCalculationResult(demoCalculation);
-    }
-}
-
-// Отображение результатов расчета
-function displayCalculationResult(calc) {
-    const container = document.getElementById('calculationResult');
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="stats">
-            <div class="stat-item">
-                <span>Базовая стоимость:</span>
-                <span>${formatNumber(calc.base_price)} ₽</span>
+        
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 25px 20px;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 5px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .step.completed {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
+        .stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .radio-station {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .radio-station.selected {
+            border-color: #3498db;
+            background: #ebf5fb;
+        }
+        
+        .radio-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .radio-listeners {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .time-slot {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .time-slot.selected {
+            border-color: #3498db;
+            background: #ebf5fb;
+        }
+        
+        .slot-time {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .slot-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #27ae60, #219653);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
+            <p>Ялуторовск • Заводоуковск</p>
+        </div>
+        
+        <div class="content">
+            <!-- Шаг 1: Выбор радиостанций -->
+            <div id="step1" class="step-content">
+                <div class="step-indicator">
+                    <div class="step active">1</div>
+                    <div class="step">2</div>
+                    <div class="step">3</div>
+                    <div class="step">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">📻 ВЫБОР РАДИОСТАНЦИЙ</h2>
+                
+                <div id="radioStationsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка радиостанций...</p>
+                    </div>
+                </div>
+                
+                <div class="stats" id="selectionStats">
+                    <div class="stat-item">
+                        <span>Выбрано станций:</span>
+                        <span id="selectedCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Общий охват:</span>
+                        <span id="totalListeners">0</span>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="nextStep(2)">➡️ ДАЛЕЕ</button>
             </div>
-            <div class="stat-item">
-                <span>Скидка 50%:</span>
-                <span style="color: #27ae60;">-${formatNumber(calc.discount)} ₽</span>
+            
+            <!-- Шаг 2: Расчет стоимости -->
+            <div id="step2" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step active">2</div>
+                    <div class="step">3</div>
+                    <div class="step">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">💰 РАСЧЕТ СТОИМОСТИ</h2>
+                
+                <div id="calculationResult">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Рассчитываем стоимость...</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="prevStep(1)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(3)">➡️ ДАЛЕЕ</button>
+                </div>
             </div>
-            <div class="stat-item" style="font-weight: bold; font-size: 16px; border-top: 1px solid #ddd; padding-top: 10px;">
-                <span>Итоговая стоимость:</span>
-                <span style="color: #e74c3c;">${formatNumber(calc.final_price)} ₽</span>
+            
+            <!-- Шаг 3: Временные слоты -->
+            <div id="step3" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step active">3</div>
+                    <div class="step">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">🕒 ВЫБОР ВРЕМЕНИ ВЫХОДА</h2>
+                
+                <div id="timeSlotsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка временных слотов...</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="prevStep(2)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(4)">➡️ ДАЛЕЕ</button>
+                </div>
             </div>
-            <div class="stat-item">
-                <span>Охват за период:</span>
-                <span>~${formatNumber(calc.total_reach)} чел.</span>
+            
+            <!-- Шаг 4: Контактные данные -->
+            <div id="step4" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step completed">3</div>
+                    <div class="step active">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">👤 ВАШИ КОНТАКТЫ</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Ваше имя *</label>
+                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Телефон *</label>
+                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Название компании</label>
+                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(5)">➡️ ДАЛЕЕ</button>
+                </div>
             </div>
-            <div class="stat-item">
-                <span>Выходов в день:</span>
-                <span>${calc.spots_per_day}</span>
+            
+            <!-- Шаг 5: Подтверждение -->
+            <div id="step5" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step completed">3</div>
+                    <div class="step completed">4</div>
+                    <div class="step active">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">✅ ПОДТВЕРЖДЕНИЕ ЗАЯВКИ</h2>
+                
+                <div class="success-message">
+                    <h3>🎉 ВСЕ ГОТОВО!</h3>
+                    <p>Ваша рекламная кампания настроена</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Станции:</span>
+                        <span id="confirmStations">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Стоимость:</span>
+                        <span id="confirmPrice">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Охват:</span>
+                        <span id="confirmReach">-</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="submitCampaign()">📤 ОТПРАВИТЬ ЗАЯВКУ</button>
+                <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
             </div>
         </div>
-    `;
-}
+    </div>
 
-// Обновление данных подтверждения
-function updateConfirmationData() {
-    const stationsElement = document.getElementById('confirmStations');
-    const priceElement = document.getElementById('confirmPrice');
-    const reachElement = document.getElementById('confirmReach');
-    
-    if (stationsElement) {
-        stationsElement.textContent = appState.selectedRadios.join(', ');
-    }
-    
-    if (priceElement && appState.calculation) {
-        priceElement.textContent = formatNumber(appState.calculation.final_price) + ' ₽';
-    }
-    
-    if (reachElement && appState.calculation) {
-        reachElement.textContent = '~' + formatNumber(appState.calculation.total_reach) + ' чел.';
-    }
-}
-
-// Отправка заявки
-async function submitCampaign() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/create-campaign`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
-                selected_radios: appState.selectedRadios,
-                selected_time_slots: appState.selectedTimeSlots,
-                contact_name: appState.userData.contactName,
-                phone: appState.userData.contactPhone,
-                email: appState.userData.contactEmail,
-                company: appState.userData.contactCompany,
-                duration: appState.userData.duration,
-                campaign_days: appState.userData.campaignDays,
-                branded_section: appState.userData.brandedSection,
-                base_price: appState.calculation?.base_price || 0,
-                discount: appState.calculation?.discount || 0,
-                final_price: appState.calculation?.final_price || 0,
-                total_reach: appState.calculation?.total_reach || 0
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showSuccess('Заявка успешно отправлена! Номер вашей заявки: ' + data.campaign_number);
-            
-            if (tg && tg.close) {
-                setTimeout(() => {
-                    tg.close();
-                }, 3000);
-            }
-            
-        } else {
-            showError('Ошибка отправки заявки: ' + (data.error || 'Попробуйте еще раз'));
-        }
-    } catch (error) {
-        console.error('Ошибка отправки заявки:', error);
-        showSuccess('Демо: Заявка успешно отправлена! (в демо-режиме)');
-    }
-}
-
-// Показать ошибку
-function showError(message) {
-    alert('❌ ' + message);
-}
-
-// Показать успех
-function showSuccess(message) {
-    alert('✅ ' + message);
-}
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
-    initApp();
-});
+    <script src="js/app.js"></script>
+</body>
+</html>
