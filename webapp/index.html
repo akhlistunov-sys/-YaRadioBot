@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioPlanner Pro</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Главный экран -->
+        <div class="screen active" id="mainScreen">
+            <header class="app-header">
+                <div class="logo">🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</div>
+                <div class="location">📍 Ялуторовск • Заводоуковск</div>
+            </header>
+
+            <main class="grid-2x2">
+                <div class="card" onclick="navigateTo('radio-selection')">
+                    <div class="icon">🚀</div>
+                    <h3>РАССЧИТАТЬ КАМПАНИЮ</h3>
+                    <p>3 простых шага → готовый медиаплан</p>
+                    <div class="badge">~2 минуты</div>
+                </div>
+
+                <div class="card" onclick="navigateTo('statistics')">
+                    <div class="icon">📊</div>
+                    <h3>ВОЗРАСТНАЯ СТРУКТУРА</h3>
+                    <p>Анализ аудитории городов</p>
+                    <div class="badge">70+ кампаний</div>
+                </div>
+
+                <div class="card" onclick="navigateTo('about')">
+                    <div class="icon">🏆</div>
+                    <h3>О НАС</h3>
+                    <p>10 лет на рынке радиорекламы</p>
+                    <div class="badge">2025</div>
+                </div>
+
+                <div class="card" onclick="navigateTo('personal-cabinet')">
+                    <div class="icon">📋</div>
+                    <h3>ЛИЧНЫЙ КАБИНЕТ</h3>
+                    <p>Мои кампании и статистика</p>
+                    <div class="badge" id="activeCampaigns">0 активных</div>
+                </div>
+            </main>
+
+            <footer class="app-footer">
+                <div class="stats-bar">
+                    <span>🎯 6 радиостанций</span>
+                    <span>💰 От 7 000₽</span>
+                    <span>⏱ Старт за 3 дня</span>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Другие экраны будут подгружаться динамически -->
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
