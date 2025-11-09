@@ -1,13 +1,7 @@
 import os
 import logging
-import sqlite3
-from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-import io
-import openpyxl
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 # Настройка логирования
 logging.basicConfig(
@@ -18,19 +12,8 @@ logger = logging.getLogger(__name__)
 
 # Импорт констант и функций из database.py
 from database import (
-    TOKEN, ADMIN_TELEGRAM_ID, BASE_PRICE_PER_SECOND, MIN_PRODUCTION_COST, MIN_BUDGET,
-    TIME_SLOTS_DATA, STATION_COVERAGE, BRANDED_SECTION_PRICES, PRODUCTION_OPTIONS,
-    init_db, validate_phone, validate_date, format_number, check_rate_limit,
-    calculate_campaign_price_and_reach, get_branded_section_name, 
-    get_time_slots_text, get_time_slots_detailed_text,
-    create_excel_file_from_db, send_admin_notification
+    TOKEN, init_db
 )
-
-# Состояния разговора (оставляем как есть для совместимости)
-MAIN_MENU, RADIO_SELECTION, CAMPAIGN_DATES, TIME_SLOTS, BRANDED_SECTIONS, CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, CONFIRMATION, FINAL_ACTIONS = range(10)
-
-# Инициализация базы данных при запуске
-init_db()
 
 # Импорт обработчиков из webapp
 from webapp.handlers import (
@@ -46,6 +29,9 @@ from webapp.handlers import (
     handle_final_actions, personal_cabinet, detailed_statistics,
     statistics, contacts_details, handle_main_menu, cancel
 )
+
+# Состояния разговора
+MAIN_MENU, RADIO_SELECTION, CAMPAIGN_DATES, TIME_SLOTS, BRANDED_SECTIONS, CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, CONFIRMATION, FINAL_ACTIONS = range(10)
 
 def main():
     """ОСНОВНАЯ ФУНКЦИЯ - упрощенная версия для веб-приложения"""
@@ -132,4 +118,5 @@ def main():
         application.run_polling()
 
 if __name__ == "__main__":
+    init_db()
     main()
