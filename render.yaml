@@ -3,15 +3,12 @@ services:
   - type: web
     name: telegram-radio-webapp
     env: static
-    buildCommand: echo "Building static WebApp..."
+    buildCommand: echo "Building WebApp..."
     staticPublishPath: ./webapp
     headers:
       - path: /*
         name: Cache-Control
         value: public, max-age=3600
-    envVars:
-      - key: RENDER
-        value: true
 
   # Telegram Bot (Python Backend)
   - type: web
@@ -28,4 +25,3 @@ services:
           name: telegram-radio-webapp
           type: web
           property: hostname
-    pythonVersion: "3.11"  # Явно указываем Python 3.11
