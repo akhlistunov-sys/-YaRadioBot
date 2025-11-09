@@ -7,6 +7,25 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
+# ... (все ваши константы и функции остаются БЕЗ ИЗМЕНЕНИЙ) ...
+
+# 🔥 ДОБАВЛЯЕМ ЭТОТ МАРШРУТ ПЕРВЫМ:
+@app.route('/')
+def serve_main():
+    """Главная страница для Telegram Mini App"""
+    return send_from_directory('frontend', 'index.html')
+
+# ... (все остальные маршруты остаются БЕЗ ИЗМЕНЕНИЙ) ...
+
+# Статические файлы (оставляем для совместимости)
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('frontend', filename)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
 # Константы из вашего bot.py
 BASE_PRICE_PER_SECOND = 2.0
 MIN_PRODUCTION_COST = 2000
