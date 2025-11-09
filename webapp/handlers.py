@@ -56,6 +56,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     
     return MAIN_MENU
+    async def webapp_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Запуск веб-приложения"""
+    try:
+        # Просто запускаем обычный старт бота
+        return await start(update, context)
+    except Exception as e:
+        logger.error(f"Ошибка запуска веб-приложения: {e}")
+        await update.message.reply_text(
+            "❌ Ошибка загрузки. Пожалуйста, используйте команду /start для начала работы с ботом."
+        )
+        return ConversationHandler.END
 
 # ... и так далее для всех остальных обработчиков
 # Полный код всех функций будет в отдельном файле handlers.py
