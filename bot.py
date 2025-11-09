@@ -65,8 +65,8 @@ def init_db():
 def start(message):
     """ГЛАВНОЕ МЕНЮ С WEBAPP"""
     
-    # Получаем URL WebApp из переменных окружения
-    webapp_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-webapp')}.onrender.com"
+    # ЯВНО указываем URL WebApp
+    webapp_url = "https://telegram-radio-webapp.onrender.com"
     
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(
