@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
-# Инициализация базы данных
 def init_db():
+    """Инициализация базы данных"""
     try:
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
@@ -56,7 +56,7 @@ def init_db():
         logger.error(f"❌ Ошибка БД: {e}")
         return False
 
-def start(update: Update, context: CallbackContext):
+def start(update, context):
     """ГЛАВНОЕ МЕНЮ С WEBAPP"""
     
     # Получаем URL WebApp из переменных окружения
@@ -66,10 +66,7 @@ def start(update: Update, context: CallbackContext):
         [InlineKeyboardButton(
             "🚀 ОТКРЫТЬ RADIOPLANNER APP", 
             web_app=WebAppInfo(url=webapp_url)
-        )],
-        [InlineKeyboardButton("📊 ВОЗРАСТНАЯ СТРУКТУРА", callback_data="statistics")],
-        [InlineKeyboardButton("🏆 О НАС", callback_data="about")],
-        [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")]
+        )]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -77,21 +74,12 @@ def start(update: Update, context: CallbackContext):
         "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
         "📍 Ялуторовск • Заводоуковск\n\n"
         "✨ **НОВЫЙ ИНТЕРАКТИВНЫЙ КОНСТРУКТОР!**\n\n"
-        "📱 • Визуальный подбор времени и станций\n"
-        "⚡ • Мгновенный расчет охвата и стоимости\n"
-        "💾 • Сохранение всех медиапланов\n"
-        "🎯 • Персональные рекомендации\n\n"
         "🚀 Нажмите кнопку ниже чтобы открыть приложение 👇"
     )
     
-    if update.message:
-        update.message.reply_text(caption, reply_markup=reply_markup)
-    else:
-        query = update.callback_query
-        query.answer()
-        query.edit_message_text(caption, reply_markup=reply_markup)
+    update.message.reply_text(caption, reply_markup=reply_markup)
 
-def handle_webapp_data(update: Update, context: CallbackContext):
+def handle_webapp_data(update, context):
     """Обработка данных из WebApp"""
     try:
         webapp_data = update.effective_message.web_app_data
@@ -109,8 +97,7 @@ def handle_webapp_data(update: Update, context: CallbackContext):
             update.message.reply_text(
                 f"✅ **Заявка #{campaign_number} принята!**\n\n"
                 f"📊 Охват: {data.get('actual_reach', 0):,} человек\n"
-                f"💰 Стоимость: {data.get('final_price', 0):,}₽\n"
-                f"🎯 Радиостанции: {len(data.get('radio_stations', []))} шт\n\n"
+                f"💰 Стоимость: {data.get('final_price', 0):,}₽\n\n"
                 "📞 Менеджер свяжется с вами в течение 15 минут!"
             )
         else:
@@ -185,8 +172,6 @@ Email: {data.get('email', 'Не указан')}
 
 💰 ФИНАНСЫ:
 Итоговая стоимость: {data.get('final_price', 0):,}₽
-
-🎯 ОХВАТ: {data.get('actual_reach', 0):,} человек
         """
         
         context.bot.send_message(
@@ -198,49 +183,9 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
-def handle_callback(update: Update, context: CallbackContext):
-    """Обработка callback кнопок"""
-    query = update.callback_query
-    query.answer()
-    
-    if query.data == "statistics":
-        query.edit_message_text(
-            "📊 ВОЗРАСТНАЯ СТРУКТУРА\n\n"
-            "Откройте WebApp для просмотра детальной статистики "
-            "и аналитики аудитории по городам Ялуторовск и Заводоуковск.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🚀 ОТКРЫТЬ APP", 
-                    web_app=WebAppInfo(url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-webapp')}.onrender.com"))
-            ]])
-        )
-    elif query.data == "about":
-        query.edit_message_text(
-            "🏆 О НАС\n\n"
-            "10 лет мы помогаем бизнесу достигать своей аудитории "
-            "через силу радиоволн.\n\n"
-            "📻 6 федеральных станций\n"
-            "📍 Ялуторовск • Заводоуковск\n"  
-            "🎯 40 000+ слушателей\n\n"
-            "Откройте WebApp для полной информации.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🚀 ОТКРЫТЬ APP", 
-                    web_app=WebAppInfo(url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-webapp')}.onrender.com"))
-            ]])
-        )
-    elif query.data == "personal_cabinet":
-        query.edit_message_text(
-            "📋 ЛИЧНЫЙ КАБИНЕТ\n\n"
-            "Просматривайте историю заявок, статистику кампаний "
-            "и управляйте своими медиапланами в WebApp.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🚀 ОТКРЫТЬ APP", 
-                    web_app=WebAppInfo(url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-webapp')}.onrender.com"))
-            ]])
-        )
-
-def error_handler(update: Update, context: CallbackContext):
+def error_handler(update, context):
     """Обработчик ошибок"""
-    logger.error(f"Ошибка при обработке обновления {update}: {context.error}")
+    logger.error(f"Ошибка при обработке обновления: {context.error}")
 
 def main():
     """ЗАПУСК БОТА С WEBAPP"""
@@ -255,11 +200,7 @@ def main():
     
     # Обработчики
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(
-        Filters.status_update.web_app_data, 
-        handle_webapp_data
-    ))
-    dp.add_handler(CallbackQueryHandler(handle_callback))
+    dp.add_handler(MessageHandler(Filters.status_update.web_app_data, handle_webapp_data))
     
     # Обработчик ошибок
     dp.add_error_handler(error_handler)
@@ -280,7 +221,7 @@ def main():
         updater.start_polling()
         logger.info("🔍 Бот запущен в режиме Polling")
     
-    # Запускаем бота (блокирующий вызов)
+    # Запускаем бота
     updater.idle()
 
 if __name__ == "__main__":
