@@ -5,7 +5,6 @@ import sqlite3
 from datetime import datetime
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from flask import Flask, request
 
 # Настройка логирования
 logging.basicConfig(
@@ -18,9 +17,8 @@ logger = logging.getLogger(__name__)
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
-# Создаем бота и Flask приложение
+# Создаем бота
 bot = telebot.TeleBot(TOKEN)
-app = Flask(__name__)
 
 # Инициализация базы данных
 def init_db():
@@ -194,38 +192,38 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
-@app.route('/')
-def index():
-    return 'Bot is running!'
-
-@app.route('/' + TOKEN, methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    return 'OK'
+def setup_bot():
+    """Настройка бота - удаление вебхука и запуск polling"""
+    try:
+        # Удаляем вебхук перед запуском polling
+        logger.info("🗑️ Удаляем активный вебхук...")
+        bot.remove_webhook()
+        logger.info("✅ Вебхук удален")
+        
+        # Даем время на удаление вебхука
+        import time
+        time.sleep(2)
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка при удалении вебхука: {e}")
 
 if __name__ == "__main__":
     if init_db():
-        logger.info("✅ Бот с WebApp запущен успешно")
+        logger.info("✅ База данных инициализирована")
     
-    # Запуск на Render
-    if "RENDER" in os.environ:
-        # Webhook режим для Render
-        bot.remove_webhook()
-        
-        webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
-        bot.set_webhook(url=webhook_url)
-        
-        logger.info(f"🌐 Бот запущен в режиме Webhook: {webhook_url}")
-        
-        # Запускаем Flask
-        port = int(os.environ.get("PORT", 8443))
-        app.run(host="0.0.0.0", port=port)
-        
-    else:
-        # Polling для локальной разработки
-        logger.info("🔍 Бот запущен в режиме Polling")
-        bot.infinity_polling()
+    # Всегда используем polling на Render
+    logger.info("🔍 Запускаем бота в режиме Polling...")
+    
+    # Удаляем вебхук перед запуском
+    setup_bot()
+    
+    try:
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+        logger.info("✅ Бот успешно запущен в режиме Polling")
+    except Exception as e:
+        logger.error(f"❌ Ошибка при запуске бота: {e}")
+        # Пробуем перезапустить через 10 секунд
+        import time
+        time.sleep(10)
+        logger.info("🔄 Перезапускаем бота...")
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
