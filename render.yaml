@@ -3,7 +3,7 @@ services:
   - type: web
     name: telegram-radio-webapp
     env: static
-    buildCommand: echo "Building static site..."
+    buildCommand: echo "Building static WebApp..."
     staticPublishPath: ./webapp
     headers:
       - path: /*
