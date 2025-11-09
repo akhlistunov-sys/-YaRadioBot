@@ -1,13 +1,9 @@
 {
   "name": "telegram-radio-webapp",
   "version": "1.0.0",
-  "description": "Telegram WebApp for radio advertising campaigns",
+  "description": "Telegram WebApp for radio advertising",
   "type": "module",
   "scripts": {
-    "build": "echo 'No build process needed for static site'",
-    "start": "echo 'Static site served by Render'"
-  },
-  "keywords": ["telegram", "webapp", "radio", "advertising"],
-  "author": "Radio Tyumen",
-  "license": "MIT"
+    "build": "echo 'Static site - no build needed'"
+  }
 }
