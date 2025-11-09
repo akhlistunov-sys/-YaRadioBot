@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from flask import Flask, request
 
 # Настройка логирования
 logging.basicConfig(
@@ -17,8 +18,9 @@ logger = logging.getLogger(__name__)
 TOKEN = "8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU"
 ADMIN_TELEGRAM_ID = 174046571
 
-# Создаем бота
+# Создаем бота и Flask приложение
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
 # Инициализация базы данных
 def init_db():
@@ -192,10 +194,38 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
+@app.route('/')
+def index():
+    return 'Bot is running!'
+
+@app.route('/' + TOKEN, methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    return 'OK'
+
 if __name__ == "__main__":
     if init_db():
         logger.info("✅ Бот с WebApp запущен успешно")
     
-    # Простой запуск - используем polling вместо webhook
-    logger.info("🔍 Бот запущен в режиме Polling")
-    bot.infinity_polling()
+    # Запуск на Render
+    if "RENDER" in os.environ:
+        # Webhook режим для Render
+        bot.remove_webhook()
+        
+        webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
+        bot.set_webhook(url=webhook_url)
+        
+        logger.info(f"🌐 Бот запущен в режиме Webhook: {webhook_url}")
+        
+        # Запускаем Flask
+        port = int(os.environ.get("PORT", 8443))
+        app.run(host="0.0.0.0", port=port)
+        
+    else:
+        # Polling для локальной разработки
+        logger.info("🔍 Бот запущен в режиме Polling")
+        bot.infinity_polling()
