@@ -1,17 +1,13 @@
 services:
-  # Web Application (Static Site)
+  # WebApp (уже создан вручную)
   - type: web
     name: telegram-radio-webapp
     env: static
     buildCommand: echo "Building WebApp..."
     staticPublishPath: ./webapp
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=3600
 
-  # Telegram Bot (Python Backend) - ВАЖНО: тип web, не worker!
-  - type: web
+  # Bot (уже создан)
+  - type: web  
     name: telegram-radio-bot
     env: python
     plan: free
