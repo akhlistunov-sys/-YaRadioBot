@@ -34,13 +34,10 @@ def init_db():
                 campaign_days INTEGER,
                 time_slots TEXT,
                 branded_section TEXT,
-                campaign_text TEXT,
-                production_option TEXT,
                 contact_name TEXT,
                 company TEXT,
                 phone TEXT,
                 email TEXT,
-                duration INTEGER,
                 base_price INTEGER,
                 discount INTEGER,
                 final_price INTEGER,
@@ -118,7 +115,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
         else:
             await update.message.reply_text(
-                "❌ Ошибка сохранения заявки. Пожалуйста, попробуйте еще раз или свяжитесь с менеджером: @AlexeyKhlistunov"
+                "❌ Ошибка сохранения заявки. Пожалуйста, попробуйте еще раз."
             )
         
     except Exception as e:
@@ -139,8 +136,8 @@ def save_campaign_to_db(data):
             INSERT INTO campaigns 
             (user_id, campaign_number, radio_stations, start_date, end_date, 
              campaign_days, time_slots, branded_section, contact_name,
-             company, phone, email, base_price, discount, final_price, actual_reach, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             company, phone, email, base_price, discount, final_price, actual_reach)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             data.get('user_id'),
             campaign_number,
@@ -157,8 +154,7 @@ def save_campaign_to_db(data):
             data.get('base_price', 0),
             data.get('discount', 0),
             data.get('final_price', 0),
-            data.get('actual_reach', 0),
-            "webapp"
+            data.get('actual_reach', 0)
         ))
         
         conn.commit()
@@ -186,12 +182,9 @@ Email: {data.get('email', 'Не указан')}
 📊 ПАРАМЕТРЫ:
 Радиостанции: {', '.join(data.get('radio_stations', []))}
 Период: {data.get('start_date')} - {data.get('end_date')} ({data.get('campaign_days')} дней)
-Слотов: {len(data.get('time_slots', []))}
 
 💰 ФИНАНСЫ:
-Базовая: {data.get('base_price', 0):,}₽
-Скидка: {data.get('discount', 0):,}₽
-Итоговая: {data.get('final_price', 0):,}₽
+Итоговая стоимость: {data.get('final_price', 0):,}₽
 
 🎯 ОХВАТ: {data.get('actual_reach', 0):,} человек
         """
@@ -237,7 +230,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "personal_cabinet":
         await query.edit_message_text(
             "📋 ЛИЧНЫЙ КАБИНЕТ\n\n"
-            "Просматривайте историе заявок, статистику кампаний "
+            "Просматривайте историю заявок, статистику кампаний "
             "и управляйте своими медиапланами в WebApp.",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("🚀 ОТКРЫТЬ APP", 
