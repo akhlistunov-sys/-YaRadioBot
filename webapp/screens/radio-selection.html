@@ -270,4 +270,35 @@ function selectAllStations() {
         });
     } else {
         // Выбираем все
-        appState.campaignData.radio_st
+        appState.campaignData.radio_stations = [...allStations];
+        allStations.forEach(station => {
+            document.getElementById(station + 'Checkbox').textContent = '✅';
+        });
+    }
+    
+    updateSelectionStats();
+}
+
+function updateSelectionStats() {
+    const stationData = {
+        'love': 540, 'auto': 3250, 'dacha': 3250, 
+        'chanson': 2900, 'retro': 3600, 'humor': 1260
+    };
+    
+    const selectedCount = appState.campaignData.radio_stations.length;
+    const totalListeners = appState.campaignData.radio_stations.reduce((sum, station) => 
+        sum + stationData[station], 0);
+    
+    document.getElementById('selectedCount').textContent = selectedCount;
+    document.getElementById('totalListeners').textContent = formatNumber(totalListeners);
+    document.getElementById('nextBtn').disabled = selectedCount === 0;
+    document.getElementById('selectAllCheckbox').textContent = 
+        selectedCount === 6 ? '✅' : '⚪';
+}
+
+function proceedToDates() {
+    if (appState.campaignData.radio_stations.length > 0) {
+        showScreen('campaign-dates');
+    }
+}
+</script>
