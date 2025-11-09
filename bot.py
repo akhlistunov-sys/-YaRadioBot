@@ -19,36 +19,38 @@ from database import (
 from webapp.handlers import (
     start, about_section, radio_selection, handle_radio_selection,
     campaign_dates, handle_campaign_dates, process_start_date, process_end_date,
-    time_slots, time_slots_from_message, handle_time_slots,
+    time_slots, handle_time_slots,
     branded_sections, handle_branded_sections,
     campaign_creator, enter_campaign_text, process_campaign_text,
-    enter_duration, process_duration, contact_info_from_message,
+    enter_duration, process_duration,
     production_option, handle_production_option,
     contact_info, process_contact_info,
-    show_confirmation, show_confirmation_from_message, handle_confirmation,
+    show_confirmation, handle_confirmation,
     handle_final_actions, personal_cabinet, detailed_statistics,
     statistics, contacts_details, handle_main_menu, cancel
 )
 
-# Состояния разговора
-MAIN_MENU, RADIO_SELECTION, CAMPAIGN_DATES, TIME_SLOTS, BRANDED_SECTIONS, CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, CONFIRMATION, FINAL_ACTIONS = range(10)
-
 def main():
-    """ОСНОВНАЯ ФУНКЦИЯ - упрощенная версия для веб-приложения"""
-    logger.info("Бот запущен в режиме веб-приложения")
+    """ОСНОВНАЯ ФУНКЦИЯ - обычный Telegram бот"""
+    logger.info("Бот запущен")
+    
+    if init_db():
+        logger.info("База данных инициализирована")
+    else:
+        logger.error("Ошибка инициализации БД")
     
     application = Application.builder().token(TOKEN).build()
     
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            MAIN_MENU: [
+            "MAIN_MENU": [
                 CallbackQueryHandler(handle_main_menu, pattern="^.*$")
             ],
-            RADIO_SELECTION: [
+            "RADIO_SELECTION": [
                 CallbackQueryHandler(handle_radio_selection, pattern="^.*$")
             ],
-            CAMPAIGN_DATES: [
+            "CAMPAIGN_DATES": [
                 CallbackQueryHandler(handle_campaign_dates, pattern="^.*$")
             ],
             "WAITING_START_DATE": [
@@ -59,13 +61,13 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_end_date),
                 CallbackQueryHandler(handle_main_menu, pattern="^back_to_radio$")
             ],
-            TIME_SLOTS: [
+            "TIME_SLOTS": [
                 CallbackQueryHandler(handle_time_slots, pattern="^.*$")
             ],
-            BRANDED_SECTIONS: [
+            "BRANDED_SECTIONS": [
                 CallbackQueryHandler(handle_branded_sections, pattern="^.*$")
             ],
-            CAMPAIGN_CREATOR: [
+            "CAMPAIGN_CREATOR": [
                 CallbackQueryHandler(handle_main_menu, pattern="^(back_to_|skip_text|cancel_text|to_production_option|enter_text|enter_duration|provide_own_audio)"),
                 CallbackQueryHandler(enter_campaign_text, pattern="^enter_text$"),
                 CallbackQueryHandler(enter_duration, pattern="^enter_duration$")
@@ -80,18 +82,18 @@ def main():
                 CallbackQueryHandler(handle_main_menu, pattern="^back_to_creator$"),
                 CallbackQueryHandler(handle_main_menu, pattern="^cancel_duration$")
             ],
-            PRODUCTION_OPTION: [
+            "PRODUCTION_OPTION": [
                 CallbackQueryHandler(handle_production_option, pattern="^.*$")
             ],
-            CONTACT_INFO: [
+            "CONTACT_INFO": [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_contact_info),
                 CallbackQueryHandler(handle_main_menu, pattern="^(back_to_production|back_to_contact_name|back_to_contact_phone|back_to_contact_email)$"),
                 CommandHandler("cancel", cancel)
             ],
-            CONFIRMATION: [
+            "CONFIRMATION": [
                 CallbackQueryHandler(handle_confirmation, pattern="^.*$")
             ],
-            FINAL_ACTIONS: [
+            "FINAL_ACTIONS": [
                 CallbackQueryHandler(handle_final_actions, pattern="^.*$")
             ]
         },
@@ -101,6 +103,7 @@ def main():
     
     application.add_handler(conv_handler)
     
+    # Обработчики для кнопок контактов
     application.add_handler(CallbackQueryHandler(
         lambda update, context: update.callback_query.answer(), 
         pattern="^(call_|email_)"
@@ -108,6 +111,7 @@ def main():
     
     # Запуск в зависимости от среды
     if "RENDER" in os.environ:
+        logger.info("Запуск в режиме webhook на Render")
         application.run_webhook(
             listen="0.0.0.0",
             port=int(os.environ.get("PORT", 8443)),
@@ -115,8 +119,8 @@ def main():
             webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
         )
     else:
+        logger.info("Запуск в режиме polling")
         application.run_polling()
 
 if __name__ == "__main__":
-    init_db()
     main()
