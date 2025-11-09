@@ -10,7 +10,7 @@ services:
         name: Cache-Control
         value: public, max-age=3600
 
-  # Telegram Bot (Python Backend)
+  # Telegram Bot (Python Backend) - ВАЖНО: тип web, не worker!
   - type: web
     name: telegram-radio-bot
     env: python
