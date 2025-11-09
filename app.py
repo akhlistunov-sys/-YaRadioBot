@@ -152,9 +152,9 @@ def serve_frontend():
     return send_from_directory('frontend', 'index.html')
 
 # 🔥 Маршруты для статических файлов
-@app.route('/js/<path:filename>')
-def serve_js(filename):
-    return send_from_directory('frontend/js', filename)
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('frontend', filename)
 
 # API маршруты
 @app.route('/api/health')
