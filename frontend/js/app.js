@@ -5,7 +5,7 @@ const API_BASE_URL = '/api';
 let appState = {
     currentStep: 1,
     selectedRadios: [],
-    selectedTimeSlots: [0, 1, 2, 3], // Выбраны первые 4 слота по умолчанию
+    selectedTimeSlots: [0, 1, 2, 3],
     userData: {
         contactName: '',
         contactPhone: '',
@@ -27,18 +27,15 @@ let tg = window.Telegram.WebApp;
 async function initApp() {
     console.log('🚀 Инициализация Mini App...');
     
-    // Расширяем приложение на весь экран
     if (tg && tg.expand) {
         tg.expand();
     }
     
-    // Загружаем начальные данные
     await Promise.all([
         loadRadioStations(),
         loadTimeSlots()
     ]);
     
-    // Показываем первый шаг
     showStep(1);
 }
 
@@ -57,7 +54,6 @@ async function loadRadioStations() {
         }
     } catch (error) {
         console.error('Ошибка загрузки радиостанций:', error);
-        // Используем демо-данные если API не доступно
         const demoStations = {
             "LOVE RADIO": 540,
             "АВТОРАДИО": 3250,
@@ -82,7 +78,6 @@ async function loadTimeSlots() {
         }
     } catch (error) {
         console.error('Ошибка загрузки временных слотов:', error);
-        // Используем демо-данные если API не доступно
         appState.timeSlots = [
             {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
             {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
@@ -191,7 +186,7 @@ function updateSelectionStats() {
         'LOVE RADIO': 540,
         'АВТОРАДИО': 3250,
         'РАДИО ДАЧА': 3250,
-        'РАДИО ШАНСON': 2900,
+        'РАДИО ШАНСОН': 2900,
         'РЕТРО FM': 3600,
         'ЮМОР FM': 1260
     };
@@ -317,7 +312,7 @@ async function calculateCampaign() {
                 duration: appState.userData.duration,
                 campaign_days: appState.userData.campaignDays,
                 branded_section: appState.userData.brandedSection,
-                production_cost: 2000 // стандартное производство
+                production_cost: 2000
             })
         });
         
@@ -331,7 +326,6 @@ async function calculateCampaign() {
         }
     } catch (error) {
         console.error('Ошибка расчета:', error);
-        // Демо-данные если API не доступно
         const demoCalculation = {
             base_price: 14000,
             discount: 7000,
