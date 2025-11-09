@@ -1,6 +1,6 @@
 import os
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 # Настройка логирования
@@ -29,6 +29,11 @@ from webapp.handlers import (
     handle_final_actions, personal_cabinet, detailed_statistics,
     statistics, contacts_details, handle_main_menu, cancel
 )
+
+async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка данных из WebApp - просто запускаем обычный старт"""
+    logger.info("Получены данные из WebApp, запускаем обычный бот")
+    return await start(update, context)
 
 def main():
     """ОСНОВНАЯ ФУНКЦИЯ - обычный Telegram бот"""
@@ -102,6 +107,9 @@ def main():
     )
     
     application.add_handler(conv_handler)
+    
+    # Обработчик для WebApp данных
+    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
     
     # Обработчики для кнопок контактов
     application.add_handler(CallbackQueryHandler(
