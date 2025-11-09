@@ -1,3 +1,4 @@
+<!-- [file name]: frontend/index.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -103,6 +104,10 @@
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
         }
         
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
         .stats {
             background: #f8f9fa;
             padding: 15px;
@@ -167,6 +172,66 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .time-slot {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .time-slot.selected {
+            border-color: #3498db;
+            background: #ebf5fb;
+        }
+        
+        .slot-time {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .slot-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #27ae60, #219653);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -222,18 +287,10 @@
                 
                 <h2 style="text-align: center; margin-bottom: 20px;">💰 РАСЧЕТ СТОИМОСТИ</h2>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Базовая стоимость:</span>
-                        <span id="basePrice">0 ₽</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Скидка 50%:</span>
-                        <span id="discount">0 ₽</span>
-                    </div>
-                    <div class="stat-item" style="font-weight: bold; font-size: 16px;">
-                        <span>Итоговая стоимость:</span>
-                        <span id="finalPrice">0 ₽</span>
+                <div id="calculationResult">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Рассчитываем стоимость...</p>
                     </div>
                 </div>
                 
@@ -241,6 +298,105 @@
                     <button class="btn btn-secondary" onclick="prevStep(1)">◀️ НАЗАД</button>
                     <button class="btn" onclick="nextStep(3)">➡️ ДАЛЕЕ</button>
                 </div>
+            </div>
+            
+            <!-- Шаг 3: Временные слоты -->
+            <div id="step3" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step active">3</div>
+                    <div class="step">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">🕒 ВЫБОР ВРЕМЕНИ ВЫХОДА</h2>
+                
+                <div id="timeSlotsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка временных слотов...</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="prevStep(2)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(4)">➡️ ДАЛЕЕ</button>
+                </div>
+            </div>
+            
+            <!-- Шаг 4: Контактные данные -->
+            <div id="step4" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step completed">3</div>
+                    <div class="step active">4</div>
+                    <div class="step">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">👤 ВАШИ КОНТАКТЫ</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Ваше имя *</label>
+                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Телефон *</label>
+                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Название компании</label>
+                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(5)">➡️ ДАЛЕЕ</button>
+                </div>
+            </div>
+            
+            <!-- Шаг 5: Подтверждение -->
+            <div id="step5" class="step-content hidden">
+                <div class="step-indicator">
+                    <div class="step completed">1</div>
+                    <div class="step completed">2</div>
+                    <div class="step completed">3</div>
+                    <div class="step completed">4</div>
+                    <div class="step active">5</div>
+                </div>
+                
+                <h2 style="text-align: center; margin-bottom: 20px;">✅ ПОДТВЕРЖДЕНИЕ ЗАЯВКИ</h2>
+                
+                <div class="success-message">
+                    <h3>🎉 ВСЕ ГОТОВО!</h3>
+                    <p>Ваша рекламная кампания настроена</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Станции:</span>
+                        <span id="confirmStations">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Стоимость:</span>
+                        <span id="confirmPrice">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Охват:</span>
+                        <span id="confirmReach">-</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="submitCampaign()">📤 ОТПРАВИТЬ ЗАЯВКУ</button>
+                <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
             </div>
         </div>
     </div>
