@@ -1,24 +1,3 @@
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler
-from database import (
-    format_number, calculate_campaign_price_and_reach, get_branded_section_name,
-    get_time_slots_text, get_time_slots_detailed_text, STATION_COVERAGE,
-    TIME_SLOTS_DATA, PRODUCTION_OPTIONS, BRANDED_SECTION_PRICES, check_rate_limit,
-    send_admin_notification, validate_date
-)
-import sqlite3
-from datetime import datetime
-
-logger = logging.getLogger(__name__)
-
-# Состояния разговора
-MAIN_MENU, RADIO_SELECTION, CAMPAIGN_DATES, TIME_SLOTS, BRANDED_SECTIONS, CAMPAIGN_CREATOR, PRODUCTION_OPTION, CONTACT_INFO, CONFIRMATION, FINAL_ACTIONS = range(10)
-
-# Здесь размещаются ВСЕ обработчики из оригинального bot.py
-# (start, about_section, radio_selection, handle_radio_selection, и т.д.)
-# Код слишком длинный для полного включения здесь, но это точные копии функций из оригинального файла
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ГЛАВНОЕ МЕНЮ"""
     keyboard = [
@@ -55,18 +34,4 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     
-    return MAIN_MENU
-    async def webapp_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Запуск веб-приложения"""
-    try:
-        # Просто запускаем обычный старт бота
-        return await start(update, context)
-    except Exception as e:
-        logger.error(f"Ошибка запуска веб-приложения: {e}")
-        await update.message.reply_text(
-            "❌ Ошибка загрузки. Пожалуйста, используйте команду /start для начала работы с ботом."
-        )
-        return ConversationHandler.END
-
-# ... и так далее для всех остальных обработчиков
-# Полный код всех функций будет в отдельном файле handlers.py
+    return "MAIN_MENU"
