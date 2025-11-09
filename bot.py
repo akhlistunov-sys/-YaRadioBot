@@ -4,7 +4,7 @@ import json
 import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 # Настройка логирования
 logging.basicConfig(
@@ -56,7 +56,7 @@ def init_db():
         logger.error(f"❌ Ошибка БД: {e}")
         return False
 
-def start(update: Update, context: CallbackContext):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ГЛАВНОЕ МЕНЮ С WEBAPP"""
     
     # Получаем URL WebApp из переменных окружения
@@ -85,13 +85,13 @@ def start(update: Update, context: CallbackContext):
     )
     
     if update.message:
-        update.message.reply_text(caption, reply_markup=reply_markup)
+        await update.message.reply_text(caption, reply_markup=reply_markup)
     else:
         query = update.callback_query
-        query.answer()
-        query.edit_message_text(caption, reply_markup=reply_markup)
+        await query.answer()
+        await query.edit_message_text(caption, reply_markup=reply_markup)
 
-def handle_webapp_data(update: Update, context: CallbackContext):
+async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка данных из WebApp"""
     try:
         webapp_data = update.effective_message.web_app_data
@@ -104,9 +104,9 @@ def handle_webapp_data(update: Update, context: CallbackContext):
         
         if campaign_number:
             # Отправляем уведомление админу
-            send_admin_notification(context, data, campaign_number)
+            await send_admin_notification(context, data, campaign_number)
             
-            update.message.reply_text(
+            await update.message.reply_text(
                 f"✅ **Заявка #{campaign_number} принята!**\n\n"
                 f"📊 Охват: {data.get('actual_reach', 0):,} человек\n"
                 f"💰 Стоимость: {data.get('final_price', 0):,}₽\n"
@@ -114,13 +114,13 @@ def handle_webapp_data(update: Update, context: CallbackContext):
                 "📞 Менеджер свяжется с вами в течение 15 минут!"
             )
         else:
-            update.message.reply_text(
+            await update.message.reply_text(
                 "❌ Ошибка сохранения заявки. Пожалуйста, попробуйте еще раз."
             )
         
     except Exception as e:
         logger.error(f"❌ WebApp data error: {e}")
-        update.message.reply_text(
+        await update.message.reply_text(
             "❌ Ошибка обработки данных. Пожалуйста, попробуйте еще раз."
         )
 
@@ -167,7 +167,7 @@ def save_campaign_to_db(data):
         logger.error(f"❌ Ошибка сохранения кампании: {e}")
         return None
 
-def send_admin_notification(context, data, campaign_number):
+async def send_admin_notification(context, data, campaign_number):
     """Отправка уведомления админу"""
     try:
         notification_text = f"""
@@ -189,7 +189,7 @@ Email: {data.get('email', 'Не указан')}
 🎯 ОХВАТ: {data.get('actual_reach', 0):,} человек
         """
         
-        context.bot.send_message(
+        await context.bot.send_message(
             chat_id=ADMIN_TELEGRAM_ID,
             text=notification_text
         )
@@ -198,13 +198,13 @@ Email: {data.get('email', 'Не указан')}
     except Exception as e:
         logger.error(f"❌ Ошибка отправки админу: {e}")
 
-def handle_callback(update: Update, context: CallbackContext):
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка callback кнопок"""
     query = update.callback_query
-    query.answer()
+    await query.answer()
     
     if query.data == "statistics":
-        query.edit_message_text(
+        await query.edit_message_text(
             "📊 ВОЗРАСТНАЯ СТРУКТУРА\n\n"
             "Откройте WebApp для просмотра детальной статистики "
             "и аналитики аудитории по городам Ялуторовск и Заводоуковск.",
@@ -214,7 +214,7 @@ def handle_callback(update: Update, context: CallbackContext):
             ]])
         )
     elif query.data == "about":
-        query.edit_message_text(
+        await query.edit_message_text(
             "🏆 О НАС\n\n"
             "10 лет мы помогаем бизнесу достигать своей аудитории "
             "через силу радиоволн.\n\n"
@@ -228,7 +228,7 @@ def handle_callback(update: Update, context: CallbackContext):
             ]])
         )
     elif query.data == "personal_cabinet":
-        query.edit_message_text(
+        await query.edit_message_text(
             "📋 ЛИЧНЫЙ КАБИНЕТ\n\n"
             "Просматривайте историю заявок, статистику кампаний "
             "и управляйте своими медиапланами в WebApp.",
@@ -238,7 +238,7 @@ def handle_callback(update: Update, context: CallbackContext):
             ]])
         )
 
-def error_handler(update: Update, context: CallbackContext):
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик ошибок"""
     logger.error(f"Ошибка при обработке обновления {update}: {context.error}")
 
@@ -247,41 +247,34 @@ def main():
     if init_db():
         logger.info("✅ Бот с WebApp запущен успешно")
     
-    # Создаем Updater и передаем ему токен
-    updater = Updater(TOKEN, use_context=True)
-    
-    # Получаем диспетчер для регистрации обработчиков
-    dp = updater.dispatcher
+    # Создаем Application
+    application = Application.builder().token(TOKEN).build()
     
     # Обработчики
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(
-        Filters.status_update.web_app_data, 
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(
+        filters.StatusUpdate.WEB_APP_DATA, 
         handle_webapp_data
     ))
-    dp.add_handler(CallbackQueryHandler(handle_callback))
+    application.add_handler(CallbackQueryHandler(handle_callback))
     
     # Обработчик ошибок
-    dp.add_error_handler(error_handler)
+    application.add_error_handler(error_handler)
     
     # Запуск на Render
     if "RENDER" in os.environ:
         # Webhook режим для Render
-        PORT = int(os.environ.get("PORT", 8443))
-        updater.start_webhook(
+        application.run_webhook(
             listen="0.0.0.0",
-            port=PORT,
+            port=int(os.environ.get("PORT", 8443)),
             url_path=TOKEN,
             webhook_url=f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
         )
-        logger.info(f"🌐 Бот запущен в режиме Webhook на порту {PORT}")
+        logger.info("🌐 Бот запущен в режиме Webhook на Render")
     else:
         # Polling режим для локальной разработки
-        updater.start_polling()
+        application.run_polling()
         logger.info("🔍 Бот запущен в режиме Polling")
-    
-    # Запускаем бота (блокирующий вызов)
-    updater.idle()
 
 if __name__ == "__main__":
     main()
