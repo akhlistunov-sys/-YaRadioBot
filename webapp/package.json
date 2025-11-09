@@ -2,7 +2,6 @@
   "name": "telegram-radio-webapp",
   "version": "1.0.0",
   "description": "Telegram WebApp for radio advertising",
-  "type": "module",
   "scripts": {
     "build": "echo 'Static site - no build needed'"
   }
