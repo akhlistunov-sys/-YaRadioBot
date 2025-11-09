@@ -1,5 +1,5 @@
 services:
-  # Веб-приложение (Frontend)
+  # Web Application (Static Site)
   - type: web
     name: telegram-radio-webapp
     env: static
@@ -9,8 +9,11 @@ services:
       - path: /*
         name: Cache-Control
         value: no-cache
+    envVars:
+      - key: RENDER
+        value: true
 
-  # Бот (Backend)
+  # Telegram Bot (Python Backend)
   - type: web
     name: telegram-radio-bot
     env: python
