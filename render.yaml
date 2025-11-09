@@ -3,12 +3,11 @@ services:
   - type: web
     name: telegram-radio-webapp
     env: static
-    buildCommand: cd webapp && npm install
     staticPublishPath: ./webapp
     headers:
       - path: /*
         name: Cache-Control
-        value: no-cache
+        value: public, max-age=3600
     envVars:
       - key: RENDER
         value: true
