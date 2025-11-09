@@ -30,10 +30,33 @@ from webapp.handlers import (
     statistics, contacts_details, handle_main_menu, cancel
 )
 
-async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка данных из WebApp - просто запускаем обычный старт"""
-    logger.info("Получены данные из WebApp, запускаем обычный бот")
-    return await start(update, context)
+async def webapp_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик для Web App - отправляем обычное меню бота"""
+    logger.info("Web App opened, sending bot menu")
+    
+    keyboard = [
+        [InlineKeyboardButton("🚀 НАЧАТЬ РАСЧЕТ", callback_data="create_campaign")],
+        [InlineKeyboardButton("📊 ВОЗРАСТНАЯ СТРУКТУРА", callback_data="statistics")],
+        [InlineKeyboardButton("🏆 О НАС", callback_data="about")],
+        [InlineKeyboardButton("📋 ЛИЧНЫЙ КАБИНЕТ", callback_data="personal_cabinet")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    caption = (
+        "🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ\n"
+        "📍 Ялуторовск • Заводоуковск\n\n"
+        "🤖 **Рассчитайте рекламу за 2 минуты**\n"
+        "3 простых шага → готовый медиаплан\n\n"
+        "• 6 федеральных радиостанций\n"
+        "• Скидка 50% на первую кампанию\n"
+        "• Старт через 3 дня\n"
+        "• Персональный медиаплан\n\n"
+        "🏆 70+ кампаний в 2025 году\n"
+        "✅ От 7 000₽"
+    )
+    
+    await update.message.reply_text(caption, reply_markup=reply_markup)
+    return "MAIN_MENU"
 
 def main():
     """ОСНОВНАЯ ФУНКЦИЯ - обычный Telegram бот"""
@@ -47,7 +70,10 @@ def main():
     application = Application.builder().token(TOKEN).build()
     
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_handler)
+        ],
         states={
             "MAIN_MENU": [
                 CallbackQueryHandler(handle_main_menu, pattern="^.*$")
@@ -107,9 +133,6 @@ def main():
     )
     
     application.add_handler(conv_handler)
-    
-    # Обработчик для WebApp данных
-    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
     
     # Обработчики для кнопок контактов
     application.add_handler(CallbackQueryHandler(
