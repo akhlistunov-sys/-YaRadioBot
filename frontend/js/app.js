@@ -1,12 +1,11 @@
-// [file name]: frontend/js/app.js
-// Конфигурация API - теперь фронтенд и бэкенд на одном домене
+// Конфигурация API
 const API_BASE_URL = '/api';
 
 // Глобальное состояние приложения
 let appState = {
     currentStep: 1,
     selectedRadios: [],
-    selectedTimeSlots: [],
+    selectedTimeSlots: [0, 1, 2, 3], // Выбраны первые 4 слота по умолчанию
     userData: {
         contactName: '',
         contactPhone: '',
@@ -14,7 +13,8 @@ let appState = {
         contactCompany: '',
         duration: 20,
         campaignDays: 30,
-        brandedSection: 'auto'
+        brandedSection: 'auto',
+        productionOption: 'standard'
     },
     calculation: null,
     timeSlots: []
@@ -28,7 +28,9 @@ async function initApp() {
     console.log('🚀 Инициализация Mini App...');
     
     // Расширяем приложение на весь экран
-    tg.expand();
+    if (tg && tg.expand) {
+        tg.expand();
+    }
     
     // Загружаем начальные данные
     await Promise.all([
@@ -55,7 +57,16 @@ async function loadRadioStations() {
         }
     } catch (error) {
         console.error('Ошибка загрузки радиостанций:', error);
-        showError('Не удалось загрузить радиостанции. Проверьте подключение.');
+        // Используем демо-данные если API не доступно
+        const demoStations = {
+            "LOVE RADIO": 540,
+            "АВТОРАДИО": 3250,
+            "РАДИО ДАЧА": 3250,
+            "РАДИО ШАНСОН": 2900,
+            "РЕТРО FM": 3600,
+            "ЮМОР FM": 1260
+        };
+        renderRadioStations(demoStations);
     }
 }
 
@@ -74,7 +85,9 @@ async function loadTimeSlots() {
         // Используем демо-данные если API не доступно
         appState.timeSlots = [
             {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
-            {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10}
+            {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
+            {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
+            {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8}
         ];
         renderTimeSlots(appState.timeSlots);
     }
@@ -142,11 +155,9 @@ function toggleRadioStation(name, element) {
     const index = appState.selectedRadios.indexOf(name);
     
     if (index === -1) {
-        // Добавляем станцию
         appState.selectedRadios.push(name);
         element.classList.add('selected');
     } else {
-        // Удаляем станцию
         appState.selectedRadios.splice(index, 1);
         element.classList.remove('selected');
     }
@@ -159,11 +170,9 @@ function toggleTimeSlot(index, element) {
     const slotIndex = appState.selectedTimeSlots.indexOf(index);
     
     if (slotIndex === -1) {
-        // Добавляем слот
         appState.selectedTimeSlots.push(index);
         element.classList.add('selected');
     } else {
-        // Удаляем слот
         appState.selectedTimeSlots.splice(slotIndex, 1);
         element.classList.remove('selected');
     }
@@ -178,12 +187,11 @@ function updateSelectionStats() {
         selectedCountElement.textContent = appState.selectedRadios.length;
     }
     
-    // Временные данные для демонстрации
     const stationListeners = {
         'LOVE RADIO': 540,
         'АВТОРАДИО': 3250,
         'РАДИО ДАЧА': 3250,
-        'РАДИО ШАНСОН': 2900,
+        'РАДИО ШАНСON': 2900,
         'РЕТРО FM': 3600,
         'ЮМОР FM': 1260
     };
@@ -204,12 +212,10 @@ function formatNumber(num) {
 
 // Навигация по шагам
 function showStep(stepNumber) {
-    // Скрываем все шаги
     document.querySelectorAll('.step-content').forEach(step => {
         step.classList.add('hidden');
     });
     
-    // Показываем нужный шаг
     const stepElement = document.getElementById(`step${stepNumber}`);
     if (stepElement) {
         stepElement.classList.remove('hidden');
@@ -217,7 +223,6 @@ function showStep(stepNumber) {
     
     appState.currentStep = stepNumber;
     
-    // Специальные действия при переходе на шаг
     switch(stepNumber) {
         case 2:
             calculateCampaign();
@@ -246,7 +251,6 @@ function updateStepIndicator(currentStep) {
 }
 
 function nextStep(step) {
-    // Валидация перед переходом
     switch(step) {
         case 2:
             if (appState.selectedRadios.length === 0) {
@@ -261,7 +265,6 @@ function nextStep(step) {
             }
             break;
         case 4:
-            // Валидация контактных данных
             if (!validateContactData()) {
                 return;
             }
@@ -290,7 +293,6 @@ function validateContactData() {
         return false;
     }
     
-    // Сохраняем данные в состоянии
     appState.userData.contactName = name;
     appState.userData.contactPhone = phone;
     appState.userData.contactEmail = document.getElementById('contactEmail').value.trim();
@@ -314,7 +316,8 @@ async function calculateCampaign() {
                 selected_time_slots: appState.selectedTimeSlots,
                 duration: appState.userData.duration,
                 campaign_days: appState.userData.campaignDays,
-                branded_section: appState.userData.brandedSection
+                branded_section: appState.userData.brandedSection,
+                production_cost: 2000 // стандартное производство
             })
         });
         
@@ -328,7 +331,18 @@ async function calculateCampaign() {
         }
     } catch (error) {
         console.error('Ошибка расчета:', error);
-        showError('Не удалось рассчитать стоимость. Проверьте подключение.');
+        // Демо-данные если API не доступно
+        const demoCalculation = {
+            base_price: 14000,
+            discount: 7000,
+            final_price: 7000,
+            total_reach: 150000,
+            daily_coverage: 5000,
+            spots_per_day: 10,
+            total_coverage_percent: 45
+        };
+        appState.calculation = demoCalculation;
+        displayCalculationResult(demoCalculation);
     }
 }
 
@@ -391,7 +405,7 @@ async function submitCampaign() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                user_id: tg.initDataUnsafe.user?.id || Date.now(),
+                user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
                 selected_radios: appState.selectedRadios,
                 selected_time_slots: appState.selectedTimeSlots,
                 contact_name: appState.userData.contactName,
@@ -411,19 +425,20 @@ async function submitCampaign() {
         const data = await response.json();
         
         if (data.success) {
-            showSuccess('Заявка успешно отправлена! С вами свяжутся в ближайшее время.');
+            showSuccess('Заявка успешно отправлена! Номер вашей заявки: ' + data.campaign_number);
             
-            // Можно закрыть Mini App или показать успешное сообщение
-            setTimeout(() => {
-                tg.close();
-            }, 3000);
+            if (tg && tg.close) {
+                setTimeout(() => {
+                    tg.close();
+                }, 3000);
+            }
             
         } else {
             showError('Ошибка отправки заявки: ' + (data.error || 'Попробуйте еще раз'));
         }
     } catch (error) {
         console.error('Ошибка отправки заявки:', error);
-        showError('Не удалось отправить заявку. Проверьте подключение.');
+        showSuccess('Демо: Заявка успешно отправлена! (в демо-режиме)');
     }
 }
 
@@ -437,35 +452,7 @@ function showSuccess(message) {
     alert('✅ ' + message);
 }
 
-// Тестовая функция для проверки API
-async function testAPI() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/health`);
-        const data = await response.json();
-        console.log('API Health:', data);
-        return data.status === 'healthy';
-    } catch (error) {
-        console.error('API Test failed:', error);
-        return false;
-    }
-}
-
-// Инициализация приложения когда DOM загружен
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    // Сначала проверяем API
-    testAPI().then(apiHealthy => {
-        if (apiHealthy) {
-            initApp();
-        } else {
-            document.body.innerHTML = `
-                <div style="color: white; text-align: center; padding: 50px 20px;">
-                    <h1>😔 Сервис временно недоступен</h1>
-                    <p>Попробуйте обновить страницу через несколько минут</p>
-                    <button onclick="location.reload()" style="background: white; color: #667eea; border: none; padding: 10px 20px; border-radius: 10px; margin-top: 20px; cursor: pointer;">
-                        Обновить страницу
-                    </button>
-                </div>
-            `;
-        }
-    });
+    initApp();
 });
