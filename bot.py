@@ -196,41 +196,6 @@ if __name__ == "__main__":
     if init_db():
         logger.info("✅ Бот с WebApp запущен успешно")
     
-    # Запуск бота
-    if "RENDER" in os.environ:
-        # Webhook для Render
-        import flask
-        from flask import request
-        
-        app = flask.Flask(__name__)
-        
-        @app.route('/' + TOKEN, methods=['POST'])
-        def webhook():
-            if request.headers.get('content-type') == 'application/json':
-                json_string = request.get_data().decode('utf-8')
-                update = telebot.types.Update.de_json(json_string)
-                bot.process_new_updates([update])
-                return ''
-            return 'OK'
-        
-        @app.route('/')
-        def index():
-            return 'Bot is running!'
-        
-        # Удаляем предыдущие вебхуки
-        bot.remove_webhook()
-        
-        # Устанавливаем вебхук
-        webhook_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'telegram-radio-bot')}.onrender.com/{TOKEN}"
-        bot.set_webhook(url=webhook_url)
-        
-        logger.info(f"🌐 Бот запущен в режиме Webhook: {webhook_url}")
-        
-        # Запускаем Flask
-        port = int(os.environ.get("PORT", 8443))
-        app.run(host="0.0.0.0", port=port)
-        
-    else:
-        # Polling для локальной разработки
-        logger.info("🔍 Бот запущен в режиме Polling")
-        bot.infinity_polling()
+    # Простой запуск - используем polling вместо webhook
+    logger.info("🔍 Бот запущен в режиме Polling")
+    bot.infinity_polling()
