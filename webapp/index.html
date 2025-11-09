@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RadioPlanner Pro</title>
+    <title>RadioPlanner Pro - Конструктор радиорекламы</title>
     <link rel="stylesheet" href="styles/main.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -16,33 +16,49 @@
                 <div class="location">📍 Ялуторовск • Заводоуковск</div>
             </header>
 
-            <main class="grid-2x2">
-                <div class="card" onclick="navigateTo('radio-selection')">
-                    <div class="icon">🚀</div>
-                    <h3>РАССЧИТАТЬ КАМПАНИЮ</h3>
-                    <p>3 простых шага → готовый медиаплан</p>
-                    <div class="badge">~2 минуты</div>
+            <main class="main-content">
+                <div class="welcome-section">
+                    <h1>RadioPlanner Pro</h1>
+                    <p class="subtitle">Конструктор эффективной радиорекламы</p>
                 </div>
 
-                <div class="card" onclick="navigateTo('statistics')">
-                    <div class="icon">📊</div>
-                    <h3>ВОЗРАСТНАЯ СТРУКТУРА</h3>
-                    <p>Анализ аудитории городов</p>
-                    <div class="badge">70+ кампаний</div>
+                <div class="grid-2x2">
+                    <div class="card" onclick="showDemoAlert()">
+                        <div class="icon">🚀</div>
+                        <h3>РАССЧИТАТЬ КАМПАНИЮ</h3>
+                        <p>3 простых шага → готовый медиаплан</p>
+                        <div class="badge">~2 минуты</div>
+                    </div>
+
+                    <div class="card" onclick="showDemoAlert()">
+                        <div class="icon">📊</div>
+                        <h3>ВОЗРАСТНАЯ СТРУКТУРА</h3>
+                        <p>Анализ аудитории городов</p>
+                        <div class="badge">70+ кампаний</div>
+                    </div>
+
+                    <div class="card" onclick="showDemoAlert()">
+                        <div class="icon">🏆</div>
+                        <h3>О НАС</h3>
+                        <p>10 лет на рынке радиорекламы</p>
+                        <div class="badge">2025</div>
+                    </div>
+
+                    <div class="card" onclick="showDemoAlert()">
+                        <div class="icon">📋</div>
+                        <h3>ЛИЧНЫЙ КАБИНЕТ</h3>
+                        <p>Мои кампании и статистика</p>
+                        <div class="badge">0 активных</div>
+                    </div>
                 </div>
 
-                <div class="card" onclick="navigateTo('about')">
-                    <div class="icon">🏆</div>
-                    <h3>О НАС</h3>
-                    <p>10 лет на рынке радиорекламы</p>
-                    <div class="badge">2025</div>
-                </div>
-
-                <div class="card" onclick="navigateTo('personal-cabinet')">
-                    <div class="icon">📋</div>
-                    <h3>ЛИЧНЫЙ КАБИНЕТ</h3>
-                    <p>Мои кампании и статистика</p>
-                    <div class="badge" id="activeCampaigns">0 активных</div>
+                <!-- Демо-форма для тестирования -->
+                <div class="demo-section">
+                    <h3>🚀 Демо-отправка заявки</h3>
+                    <button class="btn btn-primary" onclick="submitDemoCampaign()">
+                        📤 ОТПРАВИТЬ ТЕСТОВУЮ ЗАЯВКУ
+                    </button>
+                    <p class="demo-note">Эта кнопка отправит тестовые данные в бота</p>
                 </div>
             </main>
 
@@ -54,8 +70,6 @@
                 </div>
             </footer>
         </div>
-
-        <!-- Другие экраны будут подгружаться динамически -->
     </div>
 
     <script src="js/app.js"></script>
