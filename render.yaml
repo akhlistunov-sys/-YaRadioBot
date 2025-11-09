@@ -3,6 +3,7 @@ services:
   - type: web
     name: telegram-radio-webapp
     env: static
+    buildCommand: echo "Building static site..."
     staticPublishPath: ./webapp
     headers:
       - path: /*
@@ -17,8 +18,8 @@ services:
     name: telegram-radio-bot
     env: python
     plan: free
-    buildCommand: pip install -r bot/requirements.txt
-    startCommand: cd bot && python webapp_bot.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python webapp_bot.py
     envVars:
       - key: RENDER
         value: true
