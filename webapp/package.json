@@ -1,0 +1,11 @@
+{
+  "name": "telegram-radio-webapp",
+  "version": "1.0.0",
+  "description": "Telegram WebApp for radio advertising",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step needed'",
+    "start": "echo 'Static site'"
+  },
+  "dependencies": {}
+}
