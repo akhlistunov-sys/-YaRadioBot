@@ -17,6 +17,9 @@ MAIN_MENU, RADIO_SELECTION, CAMPAIGN_DATES, TIME_SLOTS, BRANDED_SECTIONS, CAMPAI
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ГЛАВНОЕ МЕНЮ"""
+    # Очищаем данные пользователя при каждом старте
+    context.user_data.clear()
+    
     keyboard = [
         [InlineKeyboardButton("🚀 НАЧАТЬ РАСЧЕТ", callback_data="create_campaign")],
         [InlineKeyboardButton("📊 ВОЗРАСТНАЯ СТРУКТУРА", callback_data="statistics")],
@@ -44,6 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     else:
+        # Если это callback (возврат из другого меню)
         query = update.callback_query
         await query.answer()
         await query.edit_message_text(
@@ -51,7 +55,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     
-    return MAIN_MENU
+    return "MAIN_MENU"
 
 async def about_section(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """РАЗДЕЛ О НАС"""
