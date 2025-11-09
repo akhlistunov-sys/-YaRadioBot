@@ -4,170 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RadioPlanner Pro</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #366092, #4a7bb9);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .app-container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-        
-        .logo {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            color: #366092;
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 25px 0;
-            padding: 20px 0;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #366092;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .demo-btn {
-            background: #366092;
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s;
-        }
-        
-        .demo-btn:hover {
-            background: #4a7bb9;
-        }
-        
-        .demo-note {
-            font-size: 12px;
-            color: #888;
-            margin-top: 12px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles/main.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <div class="logo">🎙️</div>
-        <h1>RadioPlanner Pro</h1>
-        <p class="subtitle">Конструктор эффективной радиорекламы</p>
-        
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-value">6</div>
-                <div class="stat-label">радиостанций</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">7 000₽</div>
-                <div class="stat-label">от</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">3 дня</div>
-                <div class="stat-label">старт</div>
-            </div>
+    <div id="app">
+        <!-- Главный экран -->
+        <div class="screen active" id="mainScreen">
+            <header class="app-header">
+                <div class="logo">🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</div>
+                <div class="location">📍 Ялуторовск • Заводоуковск</div>
+            </header>
+
+            <main class="main-content">
+                <div class="welcome-section">
+                    <h1>RadioPlanner Pro</h1>
+                    <p class="subtitle">Конструктор эффективной радиорекламы</p>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-steps">
+                        <div class="step active">1</div>
+                        <div class="step">2</div>
+                        <div class="step">3</div>
+                        <div class="step">4</div>
+                        <div class="step">5</div>
+                        <div class="step">6</div>
+                        <div class="step">7</div>
+                    </div>
+                    <div class="progress-text">● ○ ○ ○ ○ ○ ○ [1/7] НАЧАЛО РАБОТЫ</div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="startNewCampaign()">
+                        🚀 НАЧАТЬ РАСЧЕТ КАМПАНИИ
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="showStatistics()">
+                        📊 ВОЗРАСТНАЯ СТРУКТУРА
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="showAbout()">
+                        🏆 О НАС
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="showPersonalCabinet()">
+                        📋 ЛИЧНЫЙ КАБИНЕТ
+                    </button>
+                </div>
+
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-info">
+                            <div class="stat-value">6</div>
+                            <div class="stat-label">радиостанций</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <div class="stat-value">7 000₽</div>
+                            <div class="stat-label">от</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-info">
+                            <div class="stat-value">3 дня</div>
+                            <div class="stat-label">старт</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="app-footer">
+                <div class="stats-bar">
+                    <span>✨ 70+ кампаний в 2025</span>
+                    <span>🎯 40 000+ слушателей</span>
+                </div>
+            </footer>
         </div>
-        
-        <button class="demo-btn" onclick="submitDemoCampaign()">
-            📤 ОТПРАВИТЬ ТЕСТОВУЮ ЗАЯВКУ
-        </button>
-        <p class="demo-note">Тестовая отправка данных в бота</p>
+
+        <!-- Контейнер для загружаемых экранов -->
+        <div id="screenContainer"></div>
     </div>
 
-    <script>
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        
-        // Инициализация
-        tg.expand();
-        tg.enableClosingConfirmation();
-        tg.BackButton.hide();
-        
-        console.log('🚀 RadioPlanner WebApp запущен!');
-        console.log('User:', tg.initDataUnsafe.user);
-        
-        function submitDemoCampaign() {
-            const demoData = {
-                user_id: tg.initDataUnsafe.user?.id || 123456,
-                radio_stations: ['LOVE RADIO', 'АВТОРАДИО'],
-                start_date: '15.01.2025',
-                end_date: '30.01.2025',
-                campaign_days: 15,
-                time_slots: [0, 1, 2],
-                branded_section: 'auto',
-                contact_name: 'Тестовый Пользователь',
-                company: 'Тестовая компания',
-                phone: '+79123456789',
-                email: 'test@example.com',
-                base_price: 15000,
-                discount: 7500,
-                final_price: 7500,
-                actual_reach: 125000
-            };
-            
-            console.log('📤 Отправляем данные:', demoData);
-            
-            // Отправляем данные в бота
-            tg.sendData(JSON.stringify(demoData));
-            
-            // Показываем подтверждение
-            tg.showPopup({
-                title: '✅ Успешно!',
-                message: 'Тестовая заявка отправлена в бота. Проверьте чат для подтверждения.',
-                buttons: [{ type: 'ok' }]
-            });
-        }
-    </script>
+    <script src="js/app.js"></script>
 </body>
 </html>
