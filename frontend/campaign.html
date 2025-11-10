@@ -869,46 +869,66 @@
         }
 
         // 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ
-        function loadTimeSlots() {
-            fetch('/api/time-slots')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        renderTimeSlots(data.time_slots);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки слотов:', error);
-                    // Используем дефолтные данные
-                    const defaultSlots = [
-                        {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
-                        {"time": "07:00-08:00", "label": "Утренние поездки", "premium": True, "coverage_percent": 10},
-                        // ... остальные слоты
-                    ];
-                    renderTimeSlots(defaultSlots);
-                });
-        }
+        // В файле campaign.html исправляем функцию loadTimeSlots:
 
-        function renderTimeSlots(slots) {
-            const container = document.getElementById('timeSlotsList');
-            let html = '';
-            
-            slots.forEach((slot, index) => {
-                const isSelected = campaignState.selectedTimeSlots.includes(index);
-                const premiumEmoji = slot.premium ? '🚀' : '📊';
-                html += `
-                    <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
-                        <div class="radio-name">
-                            <span class="radio-emoji">${premiumEmoji}</span>
-                            ${slot.time} - ${slot.label}
-                        </div>
-                        <div class="radio-listeners">${slot.coverage_percent}% охвата</div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            updateTimeSlotsStats();
+        function loadTimeSlots() {
+    fetch('/api/time-slots')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderTimeSlots(data.time_slots);
+            } else {
+                // Используем дефолтные данные если API не вернул success
+                renderTimeSlots(TIME_SLOTS_DATA);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки слотов:', error);
+            // Используем дефолтные данные при ошибке
+            renderTimeSlots(TIME_SLOTS_DATA);
+        });
+}
+
+// Добавляем глобальную переменную с дефолтными слотами
+const TIME_SLOTS_DATA = [
+    {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
+    {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
+    {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
+    {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8},
+    {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": true, "coverage_percent": 7},
+    {"time": "11:00-12:00", "label": "Предобеденное время", "premium": true, "coverage_percent": 6},
+    {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": true, "coverage_percent": 5},
+    {"time": "13:00-14:00", "label": "После обеда", "premium": true, "coverage_percent": 5},
+    {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": true, "coverage_percent": 5},
+    {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": true, "coverage_percent": 6},
+    {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": true, "coverage_percent": 7},
+    {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": true, "coverage_percent": 10},
+    {"time": "18:00-19:00", "label": "Пик трафика", "premium": true, "coverage_percent": 8},
+    {"time": "19:00-20:00", "label": "Домашний вечер", "premium": true, "coverage_percent": 4},
+    {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": true, "coverage_percent": 4}
+];
+
+function renderTimeSlots(slots) {
+    const container = document.getElementById('timeSlotsList');
+    let html = '';
+    
+    slots.forEach((slot, index) => {
+        const isSelected = campaignState.selectedTimeSlots.includes(index);
+        const premiumEmoji = slot.premium ? '🚀' : '📊';
+        html += `
+            <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
+                <div class="radio-name">
+                    <span class="radio-emoji">${premiumEmoji}</span>
+                    ${slot.time} - ${slot.label}
+                </div>
+                <div class="radio-listeners">${slot.coverage_percent}% охвата</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    updateTimeSlotsStats();
+}
         }
 
         function selectAllTimeSlots() {
