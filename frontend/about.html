@@ -1,3 +1,5 @@
+<!-- [file name]: about.html -->
+<!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -119,6 +121,33 @@
             text-align: center;
         }
         
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
         @media (min-width: 768px) {
             .container {
                 max-width: 400px;
@@ -149,10 +178,24 @@
 
             <div class="info-section">
                 <h3>📊 МЫ В ЦИФРАХ</h3>
-                <p>• 10+ лет на рынке</p>
-                <p>• 70+ кампаний в 2025</p>
-                <p>• 6 федеральных станций</p>
-                <p>• 40,000+ слушателей</p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">10+ лет</div>
+                        <div class="stat-label">на рынке</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">200+</div>
+                        <div class="stat-label">кампаний в 2025</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">6</div>
+                        <div class="stat-label">федеральных станций</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">15,100+</div>
+                        <div class="stat-label">слушателей</div>
+                    </div>
+                </div>
             </div>
 
             <div class="info-section">
@@ -161,6 +204,7 @@
                 <p>• Скидка 50% на первую кампанию</p>
                 <p>• Старт рекламы через 3 дня</p>
                 <p>• Персональный медиаплан для каждого клиента</p>
+                <p>• Гибкие цены при заказе 3+ радиостанций</p>
             </div>
 
             <div class="contact-info">
@@ -213,3 +257,4 @@
     </script>
 </body>
 </html>
+<!-- [file content end] -->
