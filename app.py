@@ -1,4 +1,5 @@
 # [file name]: app.py
+# [file content begin]
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 import sqlite3
@@ -22,50 +23,16 @@ CORS(app)
 # 📊 КОНСТАНТЫ
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
 ADMIN_TELEGRAM_ID = os.getenv('ADMIN_TELEGRAM_ID', '174046571')
-BASE_PRICE_PER_SECOND = float(os.getenv('BASE_PRICE_PER_SECOND', '2.0'))
-MIN_PRODUCTION_COST = int(os.getenv('MIN_PRODUCTION_COST', '2000'))
-MIN_BUDGET = int(os.getenv('MIN_BUDGET', '7000'))
 
-# 🎯 ДАННЫЕ СЛОТОВ И РАДИОСТАНЦИЙ
-TIME_SLOTS_DATA = [
-    {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
-    {"time": "07:00-08:00", "label": "Утренние поездки", "premium": True, "coverage_percent": 10},
-    {"time": "08:00-09:00", "label": "Пик трафика", "premium": True, "coverage_percent": 12},
-    {"time": "09:00-10:00", "label": "Начало работы", "premium": True, "coverage_percent": 8},
-    {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": True, "coverage_percent": 7},
-    {"time": "11:00-12:00", "label": "Предобеденное время", "premium": True, "coverage_percent": 6},
-    {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": True, "coverage_percent": 5},
-    {"time": "13:00-14:00", "label": "После обеда", "premium": True, "coverage_percent": 5},
-    {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": True, "coverage_percent": 5},
-    {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": True, "coverage_percent": 6},
-    {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": True, "coverage_percent": 7},
-    {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": True, "coverage_percent": 10},
-    {"time": "18:00-19:00", "label": "Пик трафика", "premium": True, "coverage_percent": 8},
-    {"time": "19:00-20:00", "label": "Домашний вечер", "premium": True, "coverage_percent": 4},
-    {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": True, "coverage_percent": 4}
-]
-
-# 🎯 ОБНОВЛЕННЫЕ ОХВАТЫ РАДИОСТАНЦИЙ
-STATION_COVERAGE = {
-    "LOVE RADIO": 700,
-    "АВТОРАДИО": 3250,
-    "РАДИО ДАЧА": 3250, 
-    "РАДИО ШАНСОН": 2900,
-    "РЕТРО FM": 3600,
-    "ЮМОР FM": 1600
-}
-
-BRANDED_SECTION_PRICES = {
-    "auto": 1.2,
-    "realty": 1.15,
-    "medical": 1.25,
-    "custom": 1.3
-}
-
-PRODUCTION_OPTIONS = {
-    "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"},
-    "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"}
-}
+# Импорт функций расчета
+from campaign_calculator import (
+    calculate_campaign_price_and_reach,
+    STATION_COVERAGE,
+    TIME_SLOTS_DATA,
+    BRANDED_SECTION_PRICES,
+    PRODUCTION_OPTIONS,
+    format_number
+)
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -114,73 +81,6 @@ def init_db():
         logger.error(f"❌ Ошибка инициализации БД: {e}")
         return False
 
-# 🧮 ФУНКЦИИ РАСЧЕТА
-def format_number(num):
-    """Форматирование чисел с пробелами"""
-    return f"{num:,}".replace(",", " ")
-
-def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С НОВОЙ МЕТОДИКОЙ"""
-    try:
-        base_duration = user_data.get("duration", 20)
-        campaign_days = user_data.get("campaign_days", 30)
-        selected_radios = user_data.get("selected_radios", [])
-        selected_time_slots = user_data.get("selected_time_slots", [])
-        
-        if not selected_radios or not selected_time_slots:
-            return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
-            
-        num_stations = len(selected_radios)
-        spots_per_day = len(selected_time_slots) * num_stations
-        
-        # БАЗОВАЯ СТОИМОСТЬ
-        cost_per_spot = base_duration * BASE_PRICE_PER_SECOND
-        base_air_cost = cost_per_spot * spots_per_day * campaign_days
-        
-        # 🆕 НОВАЯ МЕТОДИКА ПРЕМИУМ-СЛОТОВ: +5% ЗА КАЖДЫЙ
-        premium_count = 0
-        for slot_index in selected_time_slots:
-            if 0 <= slot_index < len(TIME_SLOTS_DATA):
-                slot = TIME_SLOTS_DATA[slot_index]
-                if slot["premium"]:
-                    premium_count += 1
-        
-        time_multiplier = 1.0 + (premium_count * 0.05)
-        
-        # БРЕНДИРОВАННЫЕ РУБРИКИ
-        branded_multiplier = 1.0
-        branded_section = user_data.get("branded_section")
-        if branded_section in BRANDED_SECTION_PRICES:
-            branded_multiplier = BRANDED_SECTION_PRICES[branded_section]
-        
-        # ПРОИЗВОДСТВО РОЛИКА
-        production_cost = user_data.get("production_cost", 0)
-        air_cost = int(base_air_cost * time_multiplier * branded_multiplier)
-        base_price = air_cost + production_cost
-        
-        # СКИДКА И ИТОГ
-        discount = int(base_price * 0.5)
-        discounted_price = base_price - discount
-        final_price = max(discounted_price, MIN_BUDGET)
-        
-        # 🆕 НОВАЯ ФОРМУЛА ОХВАТА С НАСЫЩЕНИЕМ
-        total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
-        
-        total_coverage_percent = 0
-        for slot_index in selected_time_slots:
-            if 0 <= slot_index < len(TIME_SLOTS_DATA):
-                slot = TIME_SLOTS_DATA[slot_index]
-                total_coverage_percent += slot["coverage_percent"]
-        
-        unique_daily_coverage = int(total_listeners * (1 - 0.7 ** (total_coverage_percent / 100)))
-        total_reach = int(unique_daily_coverage * campaign_days)
-        
-        return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent, premium_count
-        
-    except Exception as e:
-        logger.error(f"❌ Ошибка расчета стоимости: {e}")
-        return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
-
 def send_telegram_to_admin(campaign_number, user_data):
     """ОТПРАВКА УВЕДОМЛЕНИЯ АДМИНУ В TELEGRAM"""
     try:
@@ -228,7 +128,7 @@ Email: {user_data.get('email', 'Не указан')}
         return False
 
 def create_excel_file_from_db(campaign_number):
-    """СОЗДАНИЕ EXCEL ФАЙЛА ДЛЯ КАМПАНИИ"""
+    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА ПО ШАБЛОНУ"""
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
@@ -242,7 +142,7 @@ def create_excel_file_from_db(campaign_number):
             logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
             return None
             
-        # Подготовка данных пользователя
+        # Подготовка данных
         user_data = {
             "selected_radios": campaign_data[3].split(",") if campaign_data[3] else [],
             "start_date": campaign_data[4],
@@ -257,11 +157,11 @@ def create_excel_file_from_db(campaign_number):
             "phone": campaign_data[13],
             "email": campaign_data[14],
             "duration": campaign_data[15],
-            "production_cost": PRODUCTION_OPTIONS.get(campaign_data[10], {}).get("price", 0)
+            "base_price": campaign_data[16],
+            "discount": campaign_data[17],
+            "final_price": campaign_data[18],
+            "actual_reach": campaign_data[19]
         }
-        
-        # Расчет стоимости
-        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(user_data)
         
         # Создание Excel файла
         wb = Workbook()
@@ -272,16 +172,213 @@ def create_excel_file_from_db(campaign_number):
         header_font = Font(bold=True, size=14, color="FFFFFF")
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         title_font = Font(bold=True, size=12)
+        normal_font = Font(size=10)
         
         # Заголовок
-        ws.merge_cells("A1:G1")
+        ws.merge_cells("A1:B1")
         ws["A1"] = f"МЕДИАПЛАН КАМПАНИИ #{campaign_number}"
         ws["A1"].font = header_font
         ws["A1"].fill = header_fill
         ws["A1"].alignment = Alignment(horizontal="center")
         
-        # Заполнение данными...
-        # (полный код создания Excel остается как в вашем оригинале)
+        ws.merge_cells("A2:B2")
+        ws["A2"] = "РАДИО ТЮМЕНСКОЙ ОБЛАСТИ"
+        ws["A2"].font = title_font
+        ws["A2"].alignment = Alignment(horizontal="center")
+        
+        # Пустая строка
+        ws.append([])
+        
+        # Подтверждение
+        ws.merge_cells("A4:B4")
+        ws["A4"] = "✅ Ваша заявка принята! Спасибо за доверие!"
+        ws["A4"].font = Font(bold=True, size=11)
+        
+        # Пустая строка
+        ws.append([])
+        
+        # Параметры кампании
+        ws.merge_cells("A6:B6")
+        ws["A6"] = "📊 ПАРАМЕТРЫ КАМПАНИИ:"
+        ws["A6"].font = title_font
+        
+        ws["A7"] = "• Радиостанции: " + ", ".join(user_data["selected_radios"])
+        ws["A8"] = f"• Период: {user_data['start_date']} - {user_data['end_date']} ({user_data['campaign_days']} дней)"
+        ws["A9"] = f"• Выходов в день: {len(user_data['selected_time_slots']) * len(user_data['selected_radios'])}"
+        ws["A10"] = f"• Всего выходов за период: {len(user_data['selected_time_slots']) * len(user_data['selected_radios']) * user_data['campaign_days']}"
+        ws["A11"] = f"• Хронометраж ролика: {user_data['duration']} сек"
+        
+        branded_section_name = "Не выбрана"
+        if user_data["branded_section"]:
+            section_names = {"auto": "Авторубрики", "realty": "Недвижимость", "medical": "Медицинские", "custom": "Индивидуальная"}
+            branded_section_name = section_names.get(user_data["branded_section"], "Не выбрана")
+        ws["A12"] = f"• Брендированная рубрика: {branded_section_name}"
+        
+        production_name = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("name", "Не выбрано")
+        ws["A13"] = f"• Производство: {production_name}"
+        
+        # Пустая строка
+        ws.append([])
+        
+        # Радиостанции
+        ws.merge_cells("A15:B15")
+        ws["A15"] = "📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ:"
+        ws["A15"].font = title_font
+        
+        row = 16
+        total_listeners = 0
+        for radio in user_data["selected_radios"]:
+            listeners = STATION_COVERAGE.get(radio, 0)
+            total_listeners += listeners
+            ws[f"A{row}"] = f"• {radio}: ~{format_number(listeners)} слушателей"
+            row += 1
+        
+        ws[f"A{row}"] = f"• ИТОГО: ~{format_number(total_listeners)} слушателей"
+        
+        # Пустая строка
+        ws.append([])
+        row += 2
+        
+        # Временные слоты
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        for slot_index in user_data["selected_time_slots"]:
+            if 0 <= slot_index < len(TIME_SLOTS_DATA):
+                slot = TIME_SLOTS_DATA[slot_index]
+                ws[f"A{row}"] = f"• {slot['time']} - {slot['label']}"
+                row += 1
+        
+        # Пустая строка
+        ws.append([])
+        row += 1
+        
+        # Расчет охвата
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        ws[f"A{row}"] = f"• Выходов в день: {len(user_data['selected_time_slots']) * len(user_data['selected_radios'])}"
+        row += 1
+        
+        # Расчет охвата
+        daily_outputs = len(user_data["selected_time_slots"]) * len(user_data["selected_radios"])
+        coverage_per_output = int(total_listeners * 0.15)  # Пример: 15% от аудитории за выход
+        daily_coverage = int(daily_outputs * coverage_per_output * 0.7)  # Уникальный охват
+        total_coverage = daily_coverage * user_data["campaign_days"]
+        
+        ws[f"A{row}"] = f"• Охват за 1 выход: ~{format_number(coverage_per_output)} чел. (15% от аудитории)"
+        row += 1
+        ws[f"A{row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
+        row += 1
+        ws[f"A{row}"] = f"• Общий охват за период: ~{format_number(total_coverage)} чел."
+        
+        # Пустая строка
+        ws.append([])
+        row += 2
+        
+        # Финансовая информация
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        # Таблица финансов
+        ws[f"A{row}"] = "Позиция"
+        ws[f"B{row}"] = "Сумма (₽)"
+        row += 1
+        
+        ws[f"A{row}"] = "Эфирное время"
+        ws[f"B{row}"] = user_data["base_price"] - user_data.get("production_cost", 0)
+        row += 1
+        
+        if user_data["production_option"]:
+            production_cost = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("price", 0)
+            ws[f"A{row}"] = "Производство ролика"
+            ws[f"B{row}"] = production_cost
+            row += 1
+        
+        # Пустая строка в таблице
+        ws.append([])
+        row += 1
+        
+        ws[f"A{row}"] = "Базовая стоимость"
+        ws[f"B{row}"] = user_data["base_price"]
+        row += 1
+        
+        ws[f"A{row}"] = "Скидка 50%"
+        ws[f"B{row}"] = f"-{user_data['discount']}"
+        row += 1
+        
+        # Пустая строка
+        ws.append([])
+        row += 1
+        
+        ws[f"A{row}"] = "ИТОГО"
+        ws[f"B{row}"] = user_data["final_price"]
+        ws[f"A{row}"].font = Font(bold=True)
+        ws[f"B{row}"].font = Font(bold=True)
+        
+        # Пустые строки
+        for i in range(2):
+            ws.append([])
+            row += 1
+        
+        # Контакты клиента
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "👤 ВАШИ КОНТАКТЫ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        ws[f"A{row}"] = f"• Имя: {user_data['contact_name']}"
+        row += 1
+        ws[f"A{row}"] = f"• Телефон: {user_data['phone']}"
+        row += 1
+        ws[f"A{row}"] = f"• Email: {user_data['email']}"
+        row += 1
+        ws[f"A{row}"] = f"• Компания: {user_data['company']}"
+        
+        # Пустая строка
+        ws.append([])
+        row += 2
+        
+        # Наши контакты
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "📞 НАШИ КОНТАКТЫ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        ws[f"A{row}"] = "• Email: a.khlistunov@gmail.com"
+        row += 1
+        ws[f"A{row}"] = "• Telegram: t.me/AlexeyKhlistunov"
+        
+        # Пустая строка
+        ws.append([])
+        row += 2
+        
+        # Старт кампании
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = "🎯 СТАРТ КАМПАНИИ:"
+        ws[f"A{row}"].font = title_font
+        row += 1
+        
+        ws[f"A{row}"] = "В течение 3 рабочих дней после подтверждения"
+        
+        # Пустая строка
+        ws.append([])
+        row += 2
+        
+        # Дата формирования
+        ws.merge_cells(f"A{row}:B{row}")
+        ws[f"A{row}"] = f"📅 Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        ws[f"A{row}"].font = Font(size=9, italic=True)
+        
+        # Настройка ширины колонок
+        ws.column_dimensions['A'].width = 50
+        ws.column_dimensions['B'].width = 15
         
         buffer = io.BytesIO()
         wb.save(buffer)
@@ -311,7 +408,80 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-# 🆕 API ДЛЯ СОЗДАНИЯ КАМПАНИИ
+# 🆕 API ДЛЯ КАМПАНИЙ
+@app.route('/api/calculate', methods=['POST'])
+def calculate_campaign():
+    """Расчет стоимости кампании"""
+    try:
+        data = request.json
+        user_data = {
+            "selected_radios": data.get('selected_radios', []),
+            "start_date": data.get('start_date'),
+            "end_date": data.get('end_date'),
+            "campaign_days": data.get('campaign_days', 30),
+            "selected_time_slots": data.get('selected_time_slots', []),
+            "branded_section": data.get('branded_section'),
+            "duration": data.get('duration', 20),
+            "production_option": data.get('production_option'),
+            "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
+        }
+        
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(user_data)
+        
+        return jsonify({
+            "success": True,
+            "calculation": {
+                "base_price": base_price,
+                "discount": discount,
+                "final_price": final_price,
+                "total_reach": total_reach,
+                "daily_coverage": daily_coverage,
+                "spots_per_day": spots_per_day,
+                "total_coverage_percent": total_coverage_percent,
+                "premium_count": premium_count
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Ошибка расчета стоимости: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/time-slots', methods=['GET'])
+def get_time_slots():
+    """Получить временные слоты"""
+    try:
+        return jsonify({
+            "success": True,
+            "time_slots": TIME_SLOTS_DATA
+        })
+    except Exception as e:
+        logger.error(f"Ошибка получения временных слотов: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/branded-sections', methods=['GET'])
+def get_branded_sections():
+    """Получить брендированные рубрики"""
+    return jsonify({
+        "success": True,
+        "branded_sections": BRANDED_SECTION_PRICES
+    })
+
+@app.route('/api/production-options', methods=['GET'])
+def get_production_options():
+    """Получить варианты производства"""
+    return jsonify({
+        "success": True,
+        "production_options": PRODUCTION_OPTIONS
+    })
+
+@app.route('/api/radio-stations', methods=['GET'])
+def get_radio_stations():
+    """Получить список радиостанций с охватами"""
+    return jsonify({
+        "success": True,
+        "stations": STATION_COVERAGE
+    })
+
 @app.route('/api/create-campaign', methods=['POST'])
 def create_campaign():
     """СОЗДАНИЕ НОВОЙ КАМПАНИИ"""
@@ -396,7 +566,6 @@ def create_campaign():
         logger.error(f"❌ Ошибка создания кампании: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-# 🆕 API ДЛЯ ПОЛУЧЕНИЯ ИСТОРИИ КАМПАНИЙ
 @app.route('/api/user-campaigns/<int:user_id>')
 def get_user_campaigns(user_id):
     """ПОЛУЧЕНИЕ ИСТОРИИ КАМПАНИЙ ПОЛЬЗОВАТЕЛЯ"""
@@ -434,7 +603,6 @@ def get_user_campaigns(user_id):
         logger.error(f"❌ Ошибка получения кампаний: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-# 🆕 ЭНДПОИНТ ДЛЯ СКАЧИВАНИЯ EXCEL
 @app.route('/api/campaign-excel/<campaign_number>')
 def download_campaign_excel(campaign_number):
     """СКАЧИВАНИЕ EXCEL МЕДИАПЛАНА КАМПАНИИ"""
@@ -461,3 +629,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"🚀 Запуск приложения на порту {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
+# [file content end]
