@@ -1,3 +1,5 @@
+<!-- [file name]: frontend/cabinet.html -->
+<!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -71,6 +73,14 @@
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
         }
         
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
+        .btn-excel {
+            background: linear-gradient(135deg, #1e8449, #186a3b);
+        }
+        
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -97,6 +107,125 @@
             padding-bottom: 5px;
         }
         
+        .campaign-list {
+            margin: 20px 0;
+        }
+        
+        .campaign-item {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .campaign-item:hover {
+            border-color: #3498db;
+        }
+        
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .campaign-number {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .campaign-status {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .campaign-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .campaign-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .campaign-actions .btn {
+            flex: 1;
+            margin: 0;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
         @media (min-width: 768px) {
             .container {
                 max-width: 400px;
@@ -114,20 +243,27 @@
         
         <div class="content">
             <div class="info-section">
-                <h3>👤 ИНФОРМАЦИЯ</h3>
-                <p>Для доступа к личному кабинету нужно создать первую кампанию</p>
+                <h3>👤 ВАША СТАТИСТИКА</h3>
+                <div id="userStats" class="stats-grid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка статистики...</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="empty-state">
-                <div class="empty-icon">📭</div>
-                <div>У вас пока нет кампаний</div>
-                <div style="font-size: 14px; margin-top: 10px;">
-                    Создайте первую кампанию чтобы увидеть статистику
+            <div class="info-section">
+                <h3>🚀 ВАШИ КАМПАНИИ</h3>
+                <div id="campaignsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка кампаний...</p>
+                    </div>
                 </div>
             </div>
 
             <button class="btn" onclick="goToCampaign()">
-                🚀 СОЗДАТЬ ПЕРВУЮ КАМПАНИЮ
+                🚀 СОЗДАТЬ НОВУЮ КАМПАНИЮ
             </button>
             <button class="btn btn-secondary" onclick="goToMain()">
                 ◀️ НАЗАД В ГЛАВНОЕ МЕНЮ
@@ -136,6 +272,17 @@
     </div>
 
     <script>
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+        let tg = window.Telegram.WebApp;
+        
+        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        let userState = {
+            userId: null,
+            campaigns: [],
+            stats: null
+        };
+
+        // 🚀 ФУНКЦИИ НАВИГАЦИИ
         function goToCampaign() {
             window.location.href = '/campaign.html';
         }
@@ -143,16 +290,189 @@
         function goToMain() {
             window.location.href = '/index.html';
         }
-        
-        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
-        let tg = window.Telegram.WebApp;
-        
+
+        function downloadExcel(campaignNumber) {
+            window.open(`/api/campaign-excel/${campaignNumber}`, '_blank');
+        }
+
+        function viewCampaignDetails(campaignNumber) {
+            alert(`Детали кампании ${campaignNumber} - в разработке`);
+        }
+
+        // 📊 ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
+        function loadUserData() {
+            const userId = tg?.initDataUnsafe?.user?.id || getUserIdFromStorage();
+            
+            if (!userId) {
+                showEmptyState();
+                return;
+            }
+
+            userState.userId = userId;
+            
+            // Загрузка кампаний пользователя
+            fetch(`/api/user-campaigns/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        userState.campaigns = data.campaigns;
+                        renderCampaigns();
+                        calculateStats();
+                    } else {
+                        showEmptyState();
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки кампаний:', error);
+                    showEmptyState();
+                });
+        }
+
+        function calculateStats() {
+            const campaigns = userState.campaigns;
+            const currentYear = new Date().getFullYear();
+            
+            const stats = {
+                totalCampaigns: campaigns.length,
+                totalSpent: campaigns.reduce((sum, campaign) => sum + (campaign.final_price || 0), 0),
+                totalReach: campaigns.reduce((sum, campaign) => sum + (campaign.actual_reach || 0), 0),
+                yearlyCampaigns: campaigns.filter(campaign => {
+                    const campaignYear = new Date(campaign.created_at).getFullYear();
+                    return campaignYear === currentYear;
+                }).length
+            };
+            
+            userState.stats = stats;
+            renderStats();
+        }
+
+        function renderStats() {
+            const stats = userState.stats;
+            const container = document.getElementById('userStats');
+            
+            if (!stats || stats.totalCampaigns === 0) {
+                container.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">кампаний</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">0 ₽</div>
+                        <div class="stat-label">потрачено</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalCampaigns}</div>
+                    <div class="stat-label">всего кампаний</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${formatNumber(stats.totalSpent)} ₽</div>
+                    <div class="stat-label">общие расходы</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${formatNumber(stats.totalReach)}</div>
+                    <div class="stat-label">общий охват</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.yearlyCampaigns}</div>
+                    <div class="stat-label">в ${new Date().getFullYear()}</div>
+                </div>
+            `;
+        }
+
+        function renderCampaigns() {
+            const campaigns = userState.campaigns;
+            const container = document.getElementById('campaignsList');
+            
+            if (!campaigns || campaigns.length === 0) {
+                showEmptyState();
+                return;
+            }
+            
+            let html = '';
+            campaigns.forEach(campaign => {
+                const statusClass = campaign.status === 'active' ? 'status-active' : 'status-completed';
+                const statusText = campaign.status === 'active' ? 'АКТИВНА' : 'ЗАВЕРШЕНА';
+                
+                html += `
+                    <div class="campaign-item">
+                        <div class="campaign-header">
+                            <div class="campaign-number">${campaign.campaign_number}</div>
+                            <div class="campaign-status ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="campaign-details">
+                            <div>📅 ${formatDate(campaign.start_date)} - ${formatDate(campaign.end_date)}</div>
+                            <div>💰 ${formatNumber(campaign.final_price)} ₽</div>
+                            <div>👥 ${formatNumber(campaign.actual_reach || 0)} охват</div>
+                            <div>🕐 ${new Date(campaign.created_at).toLocaleDateString('ru-RU')}</div>
+                        </div>
+                        <div class="campaign-actions">
+                            <button class="btn btn-excel" onclick="downloadExcel('${campaign.campaign_number}')">
+                                📊 Excel
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewCampaignDetails('${campaign.campaign_number}')">
+                                📋 Детали
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function showEmptyState() {
+            const container = document.getElementById('campaignsList');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div>У вас пока нет кампаний</div>
+                    <div style="font-size: 14px; margin-top: 10px;">
+                        Создайте первую кампанию чтобы увидеть статистику
+                    </div>
+                </div>
+            `;
+        }
+
+        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '—';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU');
+        }
+
+        function getUserIdFromStorage() {
+            // Попытка получить ID из localStorage или сгенерировать временный
+            let userId = localStorage.getItem('telegram_user_id');
+            if (!userId) {
+                userId = 'temp_' + Date.now();
+                localStorage.setItem('telegram_user_id', userId);
+            }
+            return userId;
+        }
+
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Личный кабинет запущен!');
+            
+            // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
                 tg.expand();
             }
+            
+            // Загрузка данных пользователя
+            loadUserData();
         });
     </script>
 </body>
 </html>
+<!-- [file content end] -->
