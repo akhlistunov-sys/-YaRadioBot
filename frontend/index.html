@@ -1,3 +1,5 @@
+<!-- [file name]: index.html -->
+<!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -14,7 +16,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             min-height: 100vh;
             width: 100%;
         }
@@ -28,145 +30,117 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: white;
-            padding: 25px 20px;
+            padding: 30px 20px;
             text-align: center;
             flex-shrink: 0;
         }
         
-        .header h1 {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .header .location {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-bottom: 15px;
-        }
-        
-        .header .description {
-            font-size: 15px;
-            line-height: 1.4;
-            margin-bottom: 15px;
-            opacity: 0.95;
-        }
-        
-        .content {
-            flex: 1;
-            padding: 25px 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .features {
-            background: #f8f9fa;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #3498db;
-            border-radius: 0 12px 12px 0;
-        }
-        
-        .feature-item {
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             display: flex;
             align-items: center;
-            margin: 12px 0;
-            font-size: 14px;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
         }
         
-        .feature-item::before {
-            content: "•";
-            color: #3498db;
-            font-weight: bold;
-            margin-right: 10px;
+        .location {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            margin: 0 20px 20px;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .hero-title {
             font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        
+        .hero-subtitle {
+            font-size: 14px;
+            color: #64748b;
         }
         
         .stats {
-            background: linear-gradient(135deg, #27ae60, #219653);
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             padding: 15px;
             border-radius: 12px;
             text-align: center;
-            margin: 20px 0;
+            margin: 0 20px 25px;
         }
         
         .stats h3 {
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 8px;
         }
         
-        .menu-buttons {
-            display: flex;
-            flex-direction: column;
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-top: auto;
+            padding: 0 20px;
+            margin-bottom: 20px;
         }
         
         .menu-btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
             border: none;
-            padding: 18px 20px;
+            padding: 20px 15px;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            text-align: left;
             transition: all 0.3s ease;
             display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 80px;
         }
         
         .menu-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
         }
         
         .menu-btn i {
-            font-size: 20px;
-            margin-right: 12px;
-            width: 24px;
-            text-align: center;
+            font-size: 24px;
+            margin-bottom: 8px;
         }
         
         .btn-statistics { 
-            background: linear-gradient(135deg, #9b59b6, #8e44ad); 
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed); 
         }
         
         .btn-about { 
-            background: linear-gradient(135deg, #e67e22, #d35400); 
+            background: linear-gradient(135deg, #f59e0b, #d97706); 
         }
         
         .btn-cabinet { 
-            background: linear-gradient(135deg, #34495e, #2c3e50); 
+            background: linear-gradient(135deg, #64748b, #475569); 
         }
         
         .hidden {
             display: none !important;
-        }
-
-        /* Адаптивность */
-        @media (max-width: 480px) {
-            .header {
-                padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-            
-            .content {
-                padding: 20px 15px;
-            }
-            
-            .menu-btn {
-                padding: 16px 18px;
-                font-size: 15px;
-            }
         }
 
         @media (min-width: 768px) {
@@ -174,59 +148,47 @@
                 max-width: 400px;
                 margin: 0 auto;
                 min-height: 100vh;
-                border-radius: 0;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 🏠 ГЛАВНАЯ СТРАНИЦА -->
-        <div id="mainPage">
-            <div class="header">
-                <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
-                <div class="location">📍 Ялуторовск • Заводоуковск</div>
-                
-                <div class="description">
-                    🤖 <strong>Рассчитайте рекламу за 2 минуты</strong><br>
-                    3 простых шага → готовый медиаплан
-                </div>
-            </div>
+        <div class="header">
+            <div class="logo">📻</div>
+            <div class="location">📍 Ялуторовск • Заводоуковск</div>
+        </div>
+        
+        <div class="hero">
+            <div class="hero-title">🤖 Рассчитайте рекламу за 2 минуты</div>
+            <div class="hero-subtitle">🎯 9 шагов → готовый медиаплан</div>
+        </div>
+
+        <div class="stats">
+            <h3>🏆 200+ кампаний в 2025</h3>
+            <div>💰 От 7 000₽</div>
+        </div>
+
+        <div class="menu-grid">
+            <button class="menu-btn" onclick="showPage('campaign')">
+                <i>🚀</i>
+                НАЧАТЬ РАСЧЕТ
+            </button>
             
-            <div class="content">
-                <!-- 📋 ПРЕИМУЩЕСТВА -->
-                <div class="features">
-                    <div class="feature-item">6 федеральных радиостанций</div>
-                    <div class="feature-item">Скидка 50% на первую кампанию</div>
-                    <div class="feature-item">Старт через 3 дня</div>
-                    <div class="feature-item">Персональный медиаплан</div>
-                </div>
-                
-                <!-- 📊 СТАТИСТИКА -->
-                <div class="stats">
-                    <h3>🏆 70+ кампаний в 2025 году</h3>
-                    <div>✅ От 7 000₽</div>
-                </div>
-                
-                <!-- 🔘 МЕНЮ -->
-                <div class="menu-buttons">
-                    <button class="menu-btn" onclick="showPage('campaign')">
-                        <i>🚀</i> НАЧАТЬ РАСЧЕТ
-                    </button>
-                    
-                    <button class="menu-btn btn-statistics" onclick="showPage('statistics')">
-                        <i>📊</i> ВОЗРАСТНАЯ СТРУКТУРА
-                    </button>
-                    
-                    <button class="menu-btn btn-about" onclick="showPage('about')">
-                        <i>🏆</i> О НАС
-                    </button>
-                    
-                    <button class="menu-btn btn-cabinet" onclick="showPage('cabinet')">
-                        <i>📋</i> ЛИЧНЫЙ КАБИНЕТ
-                    </button>
-                </div>
-            </div>
+            <button class="menu-btn btn-statistics" onclick="showPage('statistics')">
+                <i>📊</i>
+                СТАТИСТИКА АУДИТОРИИ
+            </button>
+            
+            <button class="menu-btn btn-about" onclick="showPage('about')">
+                <i>🏆</i>
+                О НАС
+            </button>
+            
+            <button class="menu-btn btn-cabinet" onclick="showPage('cabinet')">
+                <i>📋</i>
+                ЛИЧНЫЙ КАБИНЕТ
+            </button>
         </div>
     </div>
 
@@ -272,3 +234,4 @@
     </script>
 </body>
 </html>
+<!-- [file content end] -->
