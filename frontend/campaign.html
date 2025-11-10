@@ -701,86 +701,112 @@
         }
 
         // 🎯 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ
-        function loadStepData(stepNumber) {
-            switch(stepNumber) {
-                case 1:
-                    loadRadioStations();
-                    break;
-                case 3:
-                    loadTimeSlots();
-                    break;
-                case 4:
-                    loadBrandedSections();
-                    break;
-                case 8:
-                    loadProductionOptions();
-                    break;
-                case 9:
-                    loadFinalCalculation();
-                    break;
-            }
-        }
+        // В campaign.html исправляем функцию loadStepData:
 
-        function loadRadioStations() {
-            const stationsList = document.getElementById('radioStationsList');
-            
-            const stations = [
-                {
-                    name: "LOVE RADIO",
-                    listeners: 700,
-                    description: "👩 Молодёжь 16-35 лет",
-                    emoji: "💖"
-                },
-                {
-                    name: "АВТОРАДИО", 
-                    listeners: 3250,
-                    description: "👨 Автомобилисты 25-55 лет",
-                    emoji: "🚗"
-                },
-                {
-                    name: "РАДИО ДАЧА",
-                    listeners: 3250,
-                    description: "👨👩 Семья 35-60 лет", 
-                    emoji: "🏠"
-                },
-                {
-                    name: "РАДИО ШАНСОН",
-                    listeners: 2900,
-                    description: "👨 Мужчины 30-60+ лет",
-                    emoji: "🎸"
-                },
-                {
-                    name: "РЕТРО FM",
-                    listeners: 3600,
-                    description: "👴👵 Взрослые 35-65 лет",
-                    emoji: "🎵"
-                },
-                {
-                    name: "ЮМОР FM",
-                    listeners: 1600,
-                    description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
-                    emoji: "🎭"
-                }
-            ];
-            
-            let html = '';
-            stations.forEach(station => {
-                const isSelected = campaignState.selectedRadios.includes(station.name);
-                html += `
-                    <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
-                        <div class="radio-name">
-                            <span class="radio-emoji">${station.emoji}</span>
-                            ${station.name}
-                        </div>
-                        <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
-                        <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
-                    </div>
-                `;
-            });
-            
-            stationsList.innerHTML = html;
-            updateRadioStats();
+        function loadStepData(stepNumber) {
+        switch(stepNumber) {
+        case 1:
+            loadRadioStations();
+            break;
+        case 3:
+            loadTimeSlots();
+            break;
+        case 4:
+            loadBrandedSections();
+            break;
+        case 8:
+            loadProductionOptions();
+            break;
+        case 9:
+            loadFinalCalculation();
+            break;
+    }
+}
+
+// Убедимся что loadRadioStations() вызывается при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Campaign App запущен!');
+    
+    // Инициализация Telegram Web App
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+    
+    // Устанавливаем минимальные даты для календаря
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').min = today;
+    
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
+    document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
+    
+    // Показываем первый шаг и загружаем данные
+    showStep(1);
+});
+
+// Также проверяем что функция loadRadioStations() корректно работает:
+function loadRadioStations() {
+    const stationsList = document.getElementById('radioStationsList');
+    
+    const stations = [
+        {
+            name: "LOVE RADIO",
+            listeners: 700,
+            description: "👩 Молодёжь 16-35 лет",
+            emoji: "💖"
+        },
+        {
+            name: "АВТОРАДИО", 
+            listeners: 3250,
+            description: "👨 Автомобилисты 25-55 лет",
+            emoji: "🚗"
+        },
+        {
+            name: "РАДИО ДАЧА",
+            listeners: 3250,
+            description: "👨👩 Семья 35-60 лет", 
+            emoji: "🏠"
+        },
+        {
+            name: "РАДИО ШАНСОН",
+            listeners: 2900,
+            description: "👨 Мужчины 30-60+ лет",
+            emoji: "🎸"
+        },
+        {
+            name: "РЕТРО FM",
+            listeners: 3600,
+            description: "👴👵 Взрослые 35-65 лет",
+            emoji: "🎵"
+        },
+        {
+            name: "ЮМОР FM",
+            listeners: 1600,
+            description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
+            emoji: "🎭"
         }
+    ];
+    
+    let html = '';
+    stations.forEach(station => {
+        const isSelected = campaignState.selectedRadios.includes(station.name);
+        html += `
+            <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
+                <div class="radio-name">
+                    <span class="radio-emoji">${station.emoji}</span>
+                    ${station.name}
+                </div>
+                <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
+                <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
+            </div>
+        `;
+    });
+    
+    stationsList.innerHTML = html;
+    updateRadioStats();
+}
 
         function selectAllRadios() {
             const allRadios = ["LOVE RADIO", "АВТОРАДИО", "РАДИО ДАЧА", "РАДИО ШАНСОН", "РЕТРО FM", "ЮМОР FM"];
