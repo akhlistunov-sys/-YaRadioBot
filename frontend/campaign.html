@@ -1,4 +1,4 @@
-<!-- [file name]: frontend/campaign.html -->
+<!-- [file name]: campaign.html -->
 <!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
@@ -501,7 +501,7 @@
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
-                    <button class="btn hidden" id="continueBtn" onclick="continueFromStep5()">➡️ ДАЛЕЕ</button>
+                    <button class="btn" id="continueBtn" onclick="continueFromStep5()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
@@ -701,112 +701,83 @@
         }
 
         // 🎯 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ
-        // В campaign.html исправляем функцию loadStepData:
-
         function loadStepData(stepNumber) {
-        switch(stepNumber) {
-        case 1:
-            loadRadioStations();
-            break;
-        case 3:
-            loadTimeSlots();
-            break;
-        case 4:
-            loadBrandedSections();
-            break;
-        case 8:
-            loadProductionOptions();
-            break;
-        case 9:
-            loadFinalCalculation();
-            break;
-    }
-}
-
-// Убедимся что loadRadioStations() вызывается при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Campaign App запущен!');
-    
-    // Инициализация Telegram Web App
-    if (tg) {
-        tg.ready();
-        tg.expand();
-    }
-    
-    // Устанавливаем минимальные даты для календаря
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('startDate').min = today;
-    
-    const nextYear = new Date();
-    nextYear.setFullYear(nextYear.getFullYear() + 1);
-    document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
-    document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
-    
-    // Показываем первый шаг и загружаем данные
-    showStep(1);
-});
-
-// Также проверяем что функция loadRadioStations() корректно работает:
-function loadRadioStations() {
-    const stationsList = document.getElementById('radioStationsList');
-    
-    const stations = [
-        {
-            name: "LOVE RADIO",
-            listeners: 700,
-            description: "👩 Молодёжь 16-35 лет",
-            emoji: "💖"
-        },
-        {
-            name: "АВТОРАДИО", 
-            listeners: 3250,
-            description: "👨 Автомобилисты 25-55 лет",
-            emoji: "🚗"
-        },
-        {
-            name: "РАДИО ДАЧА",
-            listeners: 3250,
-            description: "👨👩 Семья 35-60 лет", 
-            emoji: "🏠"
-        },
-        {
-            name: "РАДИО ШАНСОН",
-            listeners: 2900,
-            description: "👨 Мужчины 30-60+ лет",
-            emoji: "🎸"
-        },
-        {
-            name: "РЕТРО FM",
-            listeners: 3600,
-            description: "👴👵 Взрослые 35-65 лет",
-            emoji: "🎵"
-        },
-        {
-            name: "ЮМОР FM",
-            listeners: 1600,
-            description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
-            emoji: "🎭"
+            switch(stepNumber) {
+                case 3:
+                    loadTimeSlots();
+                    break;
+                case 4:
+                    loadBrandedSections();
+                    break;
+                case 8:
+                    loadProductionOptions();
+                    break;
+                case 9:
+                    loadFinalCalculation();
+                    break;
+            }
         }
-    ];
-    
-    let html = '';
-    stations.forEach(station => {
-        const isSelected = campaignState.selectedRadios.includes(station.name);
-        html += `
-            <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
-                <div class="radio-name">
-                    <span class="radio-emoji">${station.emoji}</span>
-                    ${station.name}
-                </div>
-                <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
-                <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
-            </div>
-        `;
-    });
-    
-    stationsList.innerHTML = html;
-    updateRadioStats();
-}
+
+        function loadRadioStations() {
+            const stationsList = document.getElementById('radioStationsList');
+            
+            const stations = [
+                {
+                    name: "LOVE RADIO",
+                    listeners: 700,
+                    description: "👩 Молодёжь 16-35 лет",
+                    emoji: "💖"
+                },
+                {
+                    name: "АВТОРАДИО", 
+                    listeners: 3250,
+                    description: "👨 Автомобилисты 25-55 лет",
+                    emoji: "🚗"
+                },
+                {
+                    name: "РАДИО ДАЧА",
+                    listeners: 3250,
+                    description: "👨👩 Семья 35-60 лет", 
+                    emoji: "🏠"
+                },
+                {
+                    name: "РАДИО ШАНСОН",
+                    listeners: 2900,
+                    description: "👨 Мужчины 30-60+ лет",
+                    emoji: "🎸"
+                },
+                {
+                    name: "РЕТРО FM",
+                    listeners: 3600,
+                    description: "👴👵 Взрослые 35-65 лет",
+                    emoji: "🎵"
+                },
+                {
+                    name: "ЮМОР FM",
+                    listeners: 2100,
+                    description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
+                    emoji: "🎭"
+                }
+            ];
+            
+            let html = '';
+            stations.forEach(station => {
+                const isSelected = campaignState.selectedRadios.includes(station.name);
+                html += `
+                    <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
+                        <div class="radio-name">
+                            <span class="radio-emoji">${station.emoji}</span>
+                            ${station.name}
+                        </div>
+                        <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
+                        <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
+                    </div>
+                `;
+            });
+            
+            stationsList.innerHTML = html;
+            updateRadioStats();
+        }
 
         function selectAllRadios() {
             const allRadios = ["LOVE RADIO", "АВТОРАДИО", "РАДИО ДАЧА", "РАДИО ШАНСОН", "РЕТРО FM", "ЮМОР FM"];
@@ -833,7 +804,7 @@ function loadRadioStations() {
                 'РАДИО ДАЧА': 3250,
                 'РАДИО ШАНСОН': 2900,
                 'РЕТРО FM': 3600,
-                'ЮМОР FM': 1600
+                'ЮМОР FM': 2100
             };
             
             const totalListeners = campaignState.selectedRadios.reduce((total, radio) => {
@@ -860,6 +831,16 @@ function loadRadioStations() {
             if (startDate && endDate) {
                 const start = new Date(startDate);
                 const end = new Date(endDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // Проверка на прошедшие даты
+                if (start < today) {
+                    document.getElementById('dateError').textContent = '❌ Дата начала не может быть в прошлом';
+                    document.getElementById('dateError').classList.remove('hidden');
+                    return;
+                }
+                
                 const diffTime = Math.abs(end - start);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                 
@@ -874,6 +855,7 @@ function loadRadioStations() {
                 // Показываем/скрываем ошибку
                 const errorElement = document.getElementById('dateError');
                 if (diffDays < 15) {
+                    errorElement.textContent = '❌ Минимальный период кампании - 15 дней';
                     errorElement.classList.remove('hidden');
                 } else {
                     errorElement.classList.add('hidden');
@@ -891,70 +873,70 @@ function loadRadioStations() {
                 alert('❌ Минимальный период кампании - 15 дней');
                 return;
             }
+            if (!campaignState.startDate || !campaignState.endDate) {
+                alert('❌ Выберите даты начала и окончания кампании');
+                return;
+            }
             nextStep(3);
         }
 
         // 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ
-        // В файле campaign.html исправляем функцию loadTimeSlots:
-
         function loadTimeSlots() {
-    fetch('/api/time-slots')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderTimeSlots(data.time_slots);
-            } else {
-                // Используем дефолтные данные если API не вернул success
-                renderTimeSlots(TIME_SLOTS_DATA);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка загрузки слотов:', error);
-            // Используем дефолтные данные при ошибке
-            renderTimeSlots(TIME_SLOTS_DATA);
-        });
-}
+            fetch('/api/time-slots')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTimeSlots(data.time_slots);
+                    } else {
+                        renderTimeSlots(getDefaultTimeSlots());
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки слотов:', error);
+                    renderTimeSlots(getDefaultTimeSlots());
+                });
+        }
 
-// Добавляем глобальную переменную с дефолтными слотами
-const TIME_SLOTS_DATA = [
-    {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
-    {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
-    {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
-    {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8},
-    {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": true, "coverage_percent": 7},
-    {"time": "11:00-12:00", "label": "Предобеденное время", "premium": true, "coverage_percent": 6},
-    {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": true, "coverage_percent": 5},
-    {"time": "13:00-14:00", "label": "После обеда", "premium": true, "coverage_percent": 5},
-    {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": true, "coverage_percent": 5},
-    {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": true, "coverage_percent": 6},
-    {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": true, "coverage_percent": 7},
-    {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": true, "coverage_percent": 10},
-    {"time": "18:00-19:00", "label": "Пик трафика", "premium": true, "coverage_percent": 8},
-    {"time": "19:00-20:00", "label": "Домашний вечер", "premium": true, "coverage_percent": 4},
-    {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": true, "coverage_percent": 4}
-];
+        function getDefaultTimeSlots() {
+            return [
+                {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
+                {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
+                {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
+                {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8},
+                {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": true, "coverage_percent": 7},
+                {"time": "11:00-12:00", "label": "Предобеденное время", "premium": true, "coverage_percent": 6},
+                {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": true, "coverage_percent": 5},
+                {"time": "13:00-14:00", "label": "После обеда", "premium": true, "coverage_percent": 5},
+                {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": true, "coverage_percent": 5},
+                {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": true, "coverage_percent": 6},
+                {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": true, "coverage_percent": 7},
+                {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": true, "coverage_percent": 10},
+                {"time": "18:00-19:00", "label": "Пик трафика", "premium": true, "coverage_percent": 8},
+                {"time": "19:00-20:00", "label": "Домашний вечер", "premium": true, "coverage_percent": 4},
+                {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": true, "coverage_percent": 4}
+            ];
+        }
 
-function renderTimeSlots(slots) {
-    const container = document.getElementById('timeSlotsList');
-    let html = '';
-    
-    slots.forEach((slot, index) => {
-        const isSelected = campaignState.selectedTimeSlots.includes(index);
-        const premiumEmoji = slot.premium ? '🚀' : '📊';
-        html += `
-            <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
-                <div class="radio-name">
-                    <span class="radio-emoji">${premiumEmoji}</span>
-                    ${slot.time} - ${slot.label}
-                </div>
-                <div class="radio-listeners">${slot.coverage_percent}% охвата</div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    updateTimeSlotsStats();
-}
+        function renderTimeSlots(slots) {
+            const container = document.getElementById('timeSlotsList');
+            let html = '';
+            
+            slots.forEach((slot, index) => {
+                const isSelected = campaignState.selectedTimeSlots.includes(index);
+                const premiumEmoji = slot.premium ? '🚀' : '📊';
+                html += `
+                    <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
+                        <div class="radio-name">
+                            <span class="radio-emoji">${premiumEmoji}</span>
+                            ${slot.time} - ${slot.label}
+                        </div>
+                        <div class="radio-listeners">${slot.coverage_percent}% охвата</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            updateTimeSlotsStats();
         }
 
         function selectAllTimeSlots() {
@@ -1001,7 +983,6 @@ function renderTimeSlots(slots) {
                 })
                 .catch(error => {
                     console.error('Ошибка загрузки рубрик:', error);
-                    // Используем дефолтные данные
                     const defaultSections = {
                         "auto": 1.2,
                         "realty": 1.15,
@@ -1067,6 +1048,11 @@ function renderTimeSlots(slots) {
         }
 
         function continueFromStep5() {
+            if (!campaignState.selectedPath) {
+                alert('❌ Выберите способ создания ролика');
+                return;
+            }
+            
             if (campaignState.selectedPath === 'text') {
                 nextStep(6);
             } else {
@@ -1094,6 +1080,10 @@ function renderTimeSlots(slots) {
         function validateStep6() {
             if (!campaignState.campaignText.trim()) {
                 alert('❌ Введите текст ролика');
+                return;
+            }
+            if (campaignState.campaignText.trim().length < 10) {
+                alert('❌ Текст ролика должен содержать минимум 10 символов');
                 return;
             }
             nextStep(8);
@@ -1131,7 +1121,6 @@ function renderTimeSlots(slots) {
                 })
                 .catch(error => {
                     console.error('Ошибка загрузки вариантов:', error);
-                    // Используем дефолтные данные
                     const defaultOptions = {
                         "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"},
                         "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"}
@@ -1310,8 +1299,9 @@ function renderTimeSlots(slots) {
             document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
             document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
             
-            // Показываем первый шаг
+            // Показываем первый шаг и загружаем радиостанции
             showStep(1);
+            loadRadioStations();
         });
     </script>
 </body>
