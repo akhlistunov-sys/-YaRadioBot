@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Возрастная структура - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 25px 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .radio-stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .radio-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .radio-item:last-child {
+            border-bottom: none;
+        }
+        
+        .radio-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .radio-coverage {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .radio-audience {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        
+        .insight-box {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #e17055;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #d63031;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .age-chart {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .chart-bar {
+            height: 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            margin: 8px 0;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .chart-label {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 ВОЗРАСТНАЯ СТРУКТУРА</h1>
+            <div class="subtitle">ЯЛУТОРОВСКА И ЗАВОДОУКОВСКА</div>
+        </div>
+        
+        <div class="content">
+            <!-- 🔍 КЛЮЧЕВОЙ ФАКТОР -->
+            <div class="section">
+                <div class="section-title">🎯 КЛЮЧЕВОЙ ФАКТОР ВАШЕГО ОХВАТА</div>
+                <p style="line-height: 1.6; margin-bottom: 15px; font-size: 14px;">
+                    Демография городов определяет эффективность каждой радиостанции
+                </p>
+            </div>
+            
+            <!-- 📈 СТАТИСТИКА ГОРОДОВ -->
+            <div class="section">
+                <div class="section-title">🏙️ СТАТИСТИКА ГОРОДОВ</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">65%</div>
+                        <div class="stat-label">Доля 35+ лет в Ялуторовске</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">58%</div>
+                        <div class="stat-label">Доля 35+ лет в Заводоуковске</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">-15%</div>
+                        <div class="stat-label">Отток молодежи за 5 лет</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">+12%</div>
+                        <div class="stat-label">Рост старшего поколения</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 💡 АНАЛИТИКА -->
+            <div class="section">
+                <div class="section-title">📈 НАШ АНАЛИЗ ПОКАЗЫВАЕТ</div>
+                <div class="insight-box">
+                    <div class="insight-title">🎯 КЛЮЧЕВЫЕ ВЫВОДЫ</div>
+                    <ul style="margin-left: 20px; line-height: 1.6; font-size: 14px;">
+                        <li>Ялуторовск — выше доля 65+</li>
+                        <li>Заводоуковск — моложе Ялуторовска, но демография смещена в сторону старших возрастов</li>
+                        <li>Общий тренд — отток молодежи + высокая доля старшего поколения</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 📊 ВОЗРАСТНАЯ ДИАГРАММА -->
+            <div class="section">
+                <div class="section-title">👥 ВОЗРАСТНАЯ СТРУКТУРА НАСЕЛЕНИЯ</div>
+                <div class="age-chart">
+                    <div class="chart-bar" style="width: 15%;">
+                        <div class="chart-label">16-25 лет: 15%</div>
+                    </div>
+                    <div class="chart-bar" style="width: 22%;">
+                        <div class="chart-label">26-35 лет: 22%</div>
+                    </div>
+                    <div class="chart-bar" style="width: 28%;">
+                        <div class="chart-label">36-50 лет: 28%</div>
+                    </div>
+                    <div class="chart-bar" style="width: 20%;">
+                        <div class="chart-label">51-65 лет: 20%</div>
+                    </div>
+                    <div class="chart-bar" style="width: 15%;">
+                        <div class="chart-label">65+ лет: 15%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 📻 РЕАЛЬНЫЕ ЦИФРЫ ОХВАТА -->
+            <div class="section">
+                <div class="section-title">📻 РЕАЛЬНЫЕ ЦИФРЫ ОХВАТА</div>
+                <div class="radio-stats">
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">🎵 РЕТРО FM</div>
+                            <div class="radio-audience">Аудитория 35-65 лет</div>
+                        </div>
+                        <div class="radio-coverage">3,200-4,000</div>
+                    </div>
+                    
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">🚗 АВТОРАДИО</div>
+                            <div class="radio-audience">Автомобилисты 25-55 лет</div>
+                        </div>
+                        <div class="radio-coverage">2,900-3,600</div>
+                    </div>
+                    
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">💖 LOVE RADIO</div>
+                            <div class="radio-audience">Молодежь 16-35 лет</div>
+                        </div>
+                        <div class="radio-coverage">480-600</div>
+                    </div>
+                    
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">🎭 ЮМОР FM</div>
+                            <div class="radio-audience">Смешанная 25-45 лет</div>
+                        </div>
+                        <div class="radio-coverage">1,120-1,400</div>
+                    </div>
+                    
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">🏠 РАДИО ДАЧА</div>
+                            <div class="radio-audience">Семейная 35-60 лет</div>
+                        </div>
+                        <div class="radio-coverage">2,900-3,600</div>
+                    </div>
+                    
+                    <div class="radio-item">
+                        <div>
+                            <div class="radio-name">🎸 РАДИО ШАНСОН</div>
+                            <div class="radio-audience">Мужчины 30-60+ лет</div>
+                        </div>
+                        <div class="radio-coverage">2,600-3,200</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 💎 КОНКУРЕНТНОЕ ПРЕИМУЩЕСТВО -->
+            <div class="section">
+                <div class="section-title">💎 ВАШЕ КОНКУРЕНТНОЕ ПРЕИМУЩЕСТВО</div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; line-height: 1.6; font-size: 14px;">
+                    <p style="margin-bottom: 10px;">
+                        <strong>Используйте станции, которые естественно преобладают в регионе</strong> — 
+                        это даст максимальный охват при оптимальном бюджете.
+                    </p>
+                    <p>
+                        Станции с аудиторией 35+ лет показывают на 40-50% лучшую эффективность 
+                        в Ялуторовске и Заводоуковске.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 📋 СРАВНИТЕЛЬНАЯ ТАБЛИЦА -->
+            <div class="section">
+                <div class="section-title">📋 СРАВНЕНИЕ ЭФФЕКТИВНОСТИ</div>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Радиостанция</th>
+                            <th>Охват</th>
+                            <th>Эффективность</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>РЕТРО FM</td>
+                            <td>3,600</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>АВТОРАДИО</td>
+                            <td>3,250</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>РАДИО ДАЧА</td>
+                            <td>3,250</td>
+                            <td>⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>РАДИО ШАНСОН</td>
+                            <td>2,900</td>
+                            <td>⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>ЮМОР FM</td>
+                            <td>1,260</td>
+                            <td>⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>LOVE RADIO</td>
+                            <td>540</td>
+                            <td>⭐⭐</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 🚀 ПРИЗЫВ К ДЕЙСТВИЮ -->
+            <div class="section">
+                <button class="btn" onclick="goToCampaign()">
+                    🎯 ПОДОБРАТЬ ОПТИМАЛЬНЫЙ МИКС
+                </button>
+                <button class="btn btn-secondary" onclick="goToMain()">
+                    ◀️ НАЗАД В ГЛАВНОЕ МЕНЮ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+        let tg = window.Telegram.WebApp;
+        
+        function goToCampaign() {
+            window.location.href = '/campaign.html';
+        }
+        
+        function goToMain() {
+            window.location.href = '/index.html';
+        }
+        
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Statistics Page loaded');
+            
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+        });
+    </script>
+</body>
+</html>
