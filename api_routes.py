@@ -41,13 +41,18 @@ def register_routes(app):
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
+    # В api_routes.py проверяем функцию:
     @app.route('/api/time-slots', methods=['GET'])
     def get_time_slots():
-        """Получить временные слоты"""
+    """Получить временные слоты"""
+    try:
         return jsonify({
             "success": True,
             "time_slots": TIME_SLOTS_DATA
         })
+    except Exception as e:
+        logger.error(f"Ошибка получения временных слотов: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route('/api/branded-sections', methods=['GET'])
     def get_branded_sections():
