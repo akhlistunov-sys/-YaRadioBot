@@ -1,3 +1,5 @@
+# [file name]: campaign_calculator.py
+# [file content begin]
 import sqlite3
 from datetime import datetime, timedelta
 import logging
@@ -28,12 +30,12 @@ TIME_SLOTS_DATA = [
 ]
 
 STATION_COVERAGE = {
-    "LOVE RADIO": 540,
+    "LOVE RADIO": 700,
     "АВТОРАДИО": 3250,
     "РАДИО ДАЧА": 3250,
     "РАДИО ШАНСОН": 2900,
     "РЕТРО FM": 3600,
-    "ЮМОР FM": 1260
+    "ЮМОР FM": 1600
 }
 
 BRANDED_SECTION_PRICES = {
@@ -60,7 +62,7 @@ def calculate_campaign_price_and_reach(user_data):
         selected_time_slots = user_data.get("selected_time_slots", [])
         
         if not selected_radios or not selected_time_slots:
-            return 0, 0, MIN_BUDGET, 0, 0, 0, 0
+            return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
             
         num_stations = len(selected_radios)
         spots_per_day = len(selected_time_slots) * num_stations
@@ -68,12 +70,15 @@ def calculate_campaign_price_and_reach(user_data):
         cost_per_spot = base_duration * BASE_PRICE_PER_SECOND
         base_air_cost = cost_per_spot * spots_per_day * campaign_days
         
-        time_multiplier = 1.0
+        # 🆕 НОВАЯ МЕТОДИКА ПРЕМИУМ-СЛОТОВ: +5% ЗА КАЖДЫЙ
+        premium_count = 0
         for slot_index in selected_time_slots:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
                 if slot["premium"]:
-                    time_multiplier = max(time_multiplier, 1.1)
+                    premium_count += 1
+        
+        time_multiplier = 1.0 + (premium_count * 0.05)  # 🆕 +5% за каждый премиум-слот
         
         branded_multiplier = 1.0
         branded_section = user_data.get("branded_section")
@@ -88,25 +93,24 @@ def calculate_campaign_price_and_reach(user_data):
         discounted_price = base_price - discount
         final_price = max(discounted_price, MIN_BUDGET)
         
-        # ОБНОВЛЕННЫЙ РАСЧЕТ ОХВАТА С РАЗНЫМИ % СЛОТОВ
+        # 🆕 НОВАЯ ФОРМУЛА ОХВАТА С НАСЫЩЕНИЕМ
         total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
         
-        # Сумма % охвата выбранных слотов
         total_coverage_percent = 0
         for slot_index in selected_time_slots:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
                 total_coverage_percent += slot["coverage_percent"]
         
-        # Уникальный охват с учетом пересечения аудитории (0.7)
-        unique_daily_coverage = int(total_listeners * 0.7 * (total_coverage_percent / 100))
+        # 🆕 ФОРМУЛА: total_listeners × (1 - 0.7^(total_coverage_percent/100))
+        unique_daily_coverage = int(total_listeners * (1 - 0.7 ** (total_coverage_percent / 100)))
         total_reach = int(unique_daily_coverage * campaign_days)
         
-        return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent
+        return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent, premium_count
         
     except Exception as e:
         logger.error(f"Ошибка расчета стоимости: {e}")
-        return 0, 0, MIN_BUDGET, 0, 0, 0, 0
+        return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
 
 def get_branded_section_name(section):
     names = {
@@ -126,3 +130,4 @@ def get_time_slots_text(selected_slots):
             premium_emoji = "🚀" if slot["premium"] else "📊"
             slots_text += f"• {slot['time']} - {slot['label']} {premium_emoji}\n"
     return slots_text
+# [file content end]
