@@ -1,3 +1,5 @@
+# [file name]: api_routes.py
+# [file content begin]
 from flask import jsonify, request
 from campaign_calculator import *
 
@@ -20,7 +22,7 @@ def register_routes(app):
                 "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
             }
             
-            base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent = calculate_campaign_price_and_reach(user_data)
+            base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(user_data)
             
             return jsonify({
                 "success": True,
@@ -31,7 +33,8 @@ def register_routes(app):
                     "total_reach": total_reach,
                     "daily_coverage": daily_coverage,
                     "spots_per_day": spots_per_day,
-                    "total_coverage_percent": total_coverage_percent
+                    "total_coverage_percent": total_coverage_percent,
+                    "premium_count": premium_count
                 }
             })
             
@@ -61,3 +64,12 @@ def register_routes(app):
             "success": True,
             "production_options": PRODUCTION_OPTIONS
         })
+
+    @app.route('/api/radio-stations', methods=['GET'])
+    def get_radio_stations():
+        """Получить список радиостанций с охватами"""
+        return jsonify({
+            "success": True,
+            "stations": STATION_COVERAGE
+        })
+# [file content end]
