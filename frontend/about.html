@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О нас - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 25px 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .mission {
+            text-align: center;
+            font-style: italic;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .features {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .feature-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .contact-info {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+        
+        .contact-icon {
+            font-size: 18px;
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
+        .legal-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 12px;
+            color: #7f8c8d;
+            border: 1px solid #e9ecef;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 О НАС</h1>
+        </div>
+        
+        <div class="content">
+            <!-- 🎯 МИССИЯ -->
+            <div class="mission">
+                «Мы не продаём секунды эфира —<br>
+                мы создаём истории, которые<br>
+                слышит весь регион»
+            </div>
+            
+            <!-- 📊 СТАТИСТИКА -->
+            <div class="section">
+                <div class="section-title">📊 МЫ В ЦИФРАХ</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">10+</div>
+                        <div class="stat-label">лет на рынке</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">70+</div>
+                        <div class="stat-label">кампаний в 2025</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">6</div>
+                        <div class="stat-label">федеральных станций</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">40k+</div>
+                        <div class="stat-label">слушателей</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 🎙️ ОПИСАНИЕ -->
+            <div class="section">
+                <div class="section-title">🎙️ НАША ИСТОРИЯ</div>
+                <p style="line-height: 1.6; margin-bottom: 15px; font-size: 14px;">
+                    10 лет мы помогаем бизнесу достигать своей аудитории через силу радиоволн.
+                </p>
+                <p style="line-height: 1.6; font-size: 14px;">
+                    Начиная с локальных проектов, мы выросли до ведущего оператора радиорекламы 
+                    в Тюменской области, сохраняя индивидуальный подход к каждому клиенту.
+                </p>
+            </div>
+            
+            <!-- 💡 ПРЕИМУЩЕСТВА -->
+            <div class="section">
+                <div class="section-title">💡 ПОЧЕМУ ВЫБИРАЮТ НАС</div>
+                <div class="features">
+                    <div class="feature-item">
+                        <div class="feature-icon">🎯</div>
+                        <div>Точный таргетинг по возрастным группам</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💰</div>
+                        <div>Скидка 50% на первую кампанию</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⚡</div>
+                        <div>Старт рекламы через 3 дня</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>Персональный медиаплан для каждого клиента</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🎙️</div>
+                        <div>Профессиональное производство роликов</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🏆</div>
+                        <div>Опыт 70+ успешных кампаний в 2025 году</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 📻 ОХВАТ -->
+            <div class="section">
+                <div class="section-title">📻 ГЕОГРАФИЯ ОХВАТА</div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">📍 Ялуторовск • Заводоуковск</div>
+                    <div style="font-size: 14px; color: #7f8c8d;">
+                        Два ключевых города Тюменской области с общей аудиторией 40,000+ слушателей
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 📞 КОНТАКТЫ -->
+            <div class="section">
+                <div class="section-title">📞 КОНТАКТЫ</div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div>Ялуторовск • Заводоуковск</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📱</div>
+                        <div>+7 (922) 044-66-44</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">✉️</div>
+                        <div>a.khlistunov@gmail.com</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">👤</div>
+                        <div>Telegram: @AlexeyKhlistunov</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ⚖️ ЮРИДИЧЕСКАЯ ИНФОРМАЦИЯ -->
+            <div class="section">
+                <div class="section-title">⚖️ РЕКВИЗИТЫ</div>
+                <div class="legal-info">
+                    <div style="font-weight: bold; margin-bottom: 8px;">Юридическая информация:</div>
+                    <div>ИП Хлыстунов Алексей Александрович</div>
+                    <div>ОГРНИП 315723200067362</div>
+                    <div style="margin-top: 8px; font-size: 11px;">
+                        *Вся деятельность осуществляется в соответствии с законодательством РФ
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 🚀 ПРИЗЫВ К ДЕЙСТВИЮ -->
+            <div class="section">
+                <button class="btn" onclick="goToCampaign()">
+                    🚀 НАЧАТЬ РАСЧЕТ
+                </button>
+                <button class="btn btn-success" onclick="showContacts()">
+                    📞 СВЯЗАТЬСЯ С НАМИ
+                </button>
+                <button class="btn btn-secondary" onclick="goToMain()">
+                    ◀️ НАЗАД В ГЛАВНОЕ МЕНЮ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+        let tg = window.Telegram.WebApp;
+        
+        function goToCampaign() {
+            window.location.href = '/campaign.html';
+        }
+        
+        function goToMain() {
+            window.location.href = '/index.html';
+        }
+        
+        function showContacts() {
+            alert(`📞 КОНТАКТЫ ДЛЯ СВЯЗИ:\n\n📍 Ялуторовск • Заводоуковск\n📱 +7 (922) 044-66-44\n✉️ a.khlistunov@gmail.com\n👤 @AlexeyKhlistunov`);
+        }
+        
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏆 About Page loaded');
+            
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+        });
+    </script>
+</body>
+</html>
