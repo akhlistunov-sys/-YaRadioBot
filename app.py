@@ -4,10 +4,14 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 import logging
-from dotenv import load_dotenv  # 👈 ДОБАВИТЬ ЭТУ СТРОКУ
+from dotenv import load_dotenv
 
 # 🔐 ЗАГРУЗКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
-load_dotenv()  # 👈 ДОБАВИТЬ ЭТУ СТРОКУ
+load_dotenv()
+
+# 🚀 СОЗДАНИЕ FLASK ПРИЛОЖЕНИЯ (ЭТО ОБЯЗАТЕЛЬНО ДОЛЖНО БЫТЬ!)
+app = Flask(__name__, static_folder='frontend')
+CORS(app)
 
 # 📊 КОНСТАНТЫ ИЗ .env
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
@@ -16,8 +20,7 @@ BASE_PRICE_PER_SECOND = float(os.getenv('BASE_PRICE_PER_SECOND', '2.0'))
 MIN_PRODUCTION_COST = int(os.getenv('MIN_PRODUCTION_COST', '2000'))
 MIN_BUDGET = int(os.getenv('MIN_BUDGET', '7000'))
 
-# Остальной код остается без изменений...
-
+# 🔧 КОНСТАНТЫ ИЗ BOT.PY (полная копия)
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
     {"time": "07:00-08:00", "label": "Утренние поездки", "premium": True, "coverage_percent": 10},
@@ -748,6 +751,10 @@ def internal_error(error):
 # 🚀 ЗАПУСК ПРИЛОЖЕНИЯ
 
 if __name__ == '__main__':
+    # Настройка логирования
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
     # Инициализация базы данных при запуске
     init_db()
     
