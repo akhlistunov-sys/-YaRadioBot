@@ -1,4 +1,5 @@
 Flask==2.3.3
 Flask-CORS==4.0.0
 gunicorn==21.2.0
-python-telegram-bot==20.7  # для совместимости с вашим bot.py
+python-dotenv==1.0.0  # 👈 ДОБАВИТЬ ЭТУ СТРОКУ
+python-telegram-bot==20.7
