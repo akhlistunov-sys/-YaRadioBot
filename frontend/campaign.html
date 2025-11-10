@@ -1272,50 +1272,24 @@
 
         // 💰 РАСЧЕТ СТОИМОСТИ КАМПАНИИ
         
+        // Замените временные функции на реальные API вызовы
         async function calculateCampaign() {
-            const calculationElement = document.getElementById('preliminaryCalculation');
-            
-            try {
-                // Временный расчет (будет заменен на API вызов)
-                const calculation = await performCalculation();
-                campaignState.calculation = calculation;
-                
-                let html = `
-                    <div class="calculation-title">💰 ПРЕДВАРИТЕЛЬНЫЙ РАСЧЕТ</div>
-                    <div class="calculation-item">
-                        <span>Базовая стоимость:</span>
-                        <span>${formatNumber(calculation.base_price)}₽</span>
-                    </div>
-                    <div class="calculation-item">
-                        <span>Скидка 50%:</span>
-                        <span style="color: #27ae60;">-${formatNumber(calculation.discount)}₽</span>
-                    </div>
-                    <div class="calculation-item calculation-total">
-                        <span>ИТОГО:</span>
-                        <span>${formatNumber(calculation.final_price)}₽</span>
-                    </div>
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef;">
-                        <div class="calculation-item">
-                            <span>Охват за период:</span>
-                            <span>~${formatNumber(calculation.total_reach)} чел.</span>
-                        </div>
-                        <div class="calculation-item">
-                            <span>Выходов в день:</span>
-                            <span>${calculation.spots_per_day}</span>
-                        </div>
-                    </div>
-                `;
-                
-                calculationElement.innerHTML = html;
-                
-            } catch (error) {
-                calculationElement.innerHTML = `
-                    <div class="error-message">
-                        ❌ Ошибка расчета: ${error.message}
-                    </div>
-                `;
-            }
+    try {
+        const response = await fetch('/api/calculate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(campaignState)
+        });
+        const data = await response.json();
+        if (data.success) {
+            displayCalculationResult(data.calculation);
+        } else {
+            showError(data.error);
         }
+    } catch (error) {
+        showError('Ошибка соединения с сервером');
+    }
+}
 
         async function performCalculation() {
             // Временная функция расчета (будет заменена на вызов API)
