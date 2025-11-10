@@ -6,7 +6,6 @@
     <title>Создание кампании - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* 🔧 ОСНОВНЫЕ СТИЛИ */
         * {
             margin: 0;
             padding: 0;
@@ -17,39 +16,38 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            width: 100%;
         }
         
         .container {
-            max-width: 400px;
-            margin: 0 auto;
+            width: 100%;
+            min-height: 100vh;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
-        /* 🏠 ШАПКА */
         .header {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white;
             padding: 20px;
             text-align: center;
+            flex-shrink: 0;
         }
         
         .header h1 {
             font-size: 20px;
             font-weight: 700;
-            margin-bottom: 5px;
         }
         
-        /* 📊 ИНДИКАТОР ШАГОВ */
         .step-indicator {
             display: flex;
             justify-content: center;
             padding: 15px 20px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
+            flex-shrink: 0;
+            overflow-x: auto;
         }
         
         .step {
@@ -65,6 +63,7 @@
             font-size: 12px;
             transition: all 0.3s ease;
             position: relative;
+            flex-shrink: 0;
         }
         
         .step.active {
@@ -91,24 +90,27 @@
             display: none;
         }
         
-        /* 📱 ОСНОВНОЕ СОДЕРЖИМОЕ */
         .content {
+            flex: 1;
             padding: 20px;
-            max-height: 60vh;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         
         .step-content {
             display: none;
+            flex: 1;
+            flex-direction: column;
         }
         
         .step-content.active {
-            display: block;
+            display: flex;
         }
         
         .step-title {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 18px;
             font-weight: 600;
             color: #2c3e50;
@@ -122,7 +124,6 @@
             line-height: 1.4;
         }
         
-        /* 🔘 КНОПКИ */
         .btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
@@ -136,6 +137,7 @@
             margin: 10px 0;
             transition: all 0.3s ease;
             text-align: center;
+            flex-shrink: 0;
         }
         
         .btn:hover {
@@ -151,14 +153,11 @@
             background: linear-gradient(135deg, #27ae60, #219653);
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-        }
-        
         .btn-container {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: auto;
+            flex-shrink: 0;
         }
         
         .btn-container .btn {
@@ -166,7 +165,6 @@
             margin: 0;
         }
         
-        /* 📻 РАДИОСТАНЦИИ */
         .radio-station {
             background: white;
             border: 2px solid #ecf0f1;
@@ -200,54 +198,6 @@
             font-size: 14px;
         }
         
-        .radio-description {
-            color: #7f8c8d;
-            font-size: 13px;
-            margin-top: 5px;
-            line-height: 1.3;
-        }
-        
-        /* 🕒 ВРЕМЕННЫЕ СЛОТЫ */
-        .time-slot {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 8px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .time-slot.selected {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-        
-        .slot-time {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .slot-emoji {
-            margin-right: 8px;
-        }
-        
-        .slot-label {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .slot-coverage {
-            color: #27ae60;
-            font-size: 13px;
-            font-weight: 600;
-            margin-top: 5px;
-        }
-        
-        /* 📊 СТАТИСТИКА */
         .stats {
             background: #f8f9fa;
             padding: 15px;
@@ -263,177 +213,6 @@
             font-size: 14px;
         }
         
-        /* 📝 ФОРМЫ */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        /* 🎯 РУБРИКИ */
-        .branded-option {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .branded-option.selected {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-        
-        .branded-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .branded-price {
-            color: #e74c3c;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .branded-desc {
-            color: #7f8c8d;
-            font-size: 13px;
-            margin-top: 5px;
-            line-height: 1.3;
-        }
-        
-        /* ⚡ ПРОИЗВОДСТВО */
-        .production-option {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .production-option.selected {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-        
-        .production-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .production-price {
-            color: #e74c3c;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .production-desc {
-            color: #7f8c8d;
-            font-size: 13px;
-            margin-top: 5px;
-            line-height: 1.3;
-        }
-        
-        /* 💰 РАСЧЕТ СТОИМОСТИ */
-        .calculation-result {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 2px solid #3498db;
-        }
-        
-        .calculation-title {
-            text-align: center;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-        
-        .calculation-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .calculation-total {
-            font-weight: bold;
-            font-size: 18px;
-            color: #e74c3c;
-            border-bottom: none;
-            border-top: 2px solid #e9ecef;
-            padding-top: 15px;
-            margin-top: 15px;
-        }
-        
-        /* 📞 КОНТАКТЫ */
-        .contact-form {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-        }
-        
-        /* ✅ ПОДТВЕРЖДЕНИЕ */
-        .confirmation-summary {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            border-left: 4px solid #27ae60;
-        }
-        
-        .summary-section {
-            margin-bottom: 20px;
-        }
-        
-        .summary-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #2c3e50;
-            border-bottom: 1px solid #e9ecef;
-            padding-bottom: 5px;
-        }
-        
-        .summary-item {
-            margin: 5px 0;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        
-        /* 🔄 ЗАГРУЗКА */
         .loading {
             text-align: center;
             padding: 40px 20px;
@@ -454,46 +233,26 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* ⚠️ ОШИБКИ */
-        .error-message {
-            background: #ffeaa7;
-            color: #d63031;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border-left: 4px solid #fab1a0;
-            font-size: 14px;
+        .hidden {
+            display: none !important;
         }
-        
-        /* 📱 АДАПТИВНОСТЬ */
-        @media (max-width: 480px) {
+
+        @media (min-width: 768px) {
             .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
-            .content {
-                padding: 15px;
-            }
-            
-            .header {
-                padding: 15px;
-            }
-            
-            .header h1 {
-                font-size: 18px;
+                max-width: 400px;
+                margin: 0 auto;
+                min-height: 100vh;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 🏠 ШАПКА -->
         <div class="header">
             <h1>🎙️ СОЗДАНИЕ КАМПАНИИ</h1>
         </div>
         
-        <!-- 📊 ИНДИКАТОР 7 ШАГОВ -->
+        <!-- 📊 ИНДИКАТОР 9 ШАГОВ -->
         <div class="step-indicator">
             <div class="step active" data-step="1">1</div>
             <div class="step" data-step="2">2</div>
@@ -502,6 +261,8 @@
             <div class="step" data-step="5">5</div>
             <div class="step" data-step="6">6</div>
             <div class="step" data-step="7">7</div>
+            <div class="step" data-step="8">8</div>
+            <div class="step" data-step="9">9</div>
         </div>
         
         <!-- 📱 ОСНОВНОЕ СОДЕРЖИМОЕ -->
@@ -510,7 +271,7 @@
             <div id="step1" class="step-content active">
                 <div class="step-title">📻 ВЫБОР РАДИОСТАНЦИЙ</div>
                 <div class="step-description">
-                    ● ● ○ ○ ○ ○ ○ [1/7]<br>
+                    ● ● ○ ○ ○ ○ ○ ○ ○ [1/9]<br>
                     ⏱️ Этот шаг займет ~30 секунд
                 </div>
                 
@@ -526,7 +287,6 @@
                 </div>
                 
                 <div id="radioStationsList">
-                    <!-- Радиостанции будут загружены через JavaScript -->
                     <div class="loading">
                         <div class="spinner"></div>
                         <p>Загрузка радиостанций...</p>
@@ -539,30 +299,20 @@
                 </div>
             </div>
             
-            <!-- 📅 ШАГ 2: ВЫБОР ДАТ КАМПАНИИ -->
+            <!-- 📅 ШАГ 2: КАЛЕНДАРЬ (ЗАГЛУШКА) -->
             <div id="step2" class="step-content">
                 <div class="step-title">📅 ВЫБОР ДАТ КАМПАНИИ</div>
                 <div class="step-description">
-                    ● ● ● ○ ○ ○ ○ [2/7]<br>
+                    ● ● ● ○ ○ ○ ○ ○ ○ [2/9]<br>
                     ⏱️ Этот шаг займет ~15 секунд
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">📅 Дата начала кампании</label>
-                    <input type="text" id="startDate" class="form-input" placeholder="ДД.ММ.ГГГГ (например: 15.01.2025)">
-                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">Минимальный период: 15 дней</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">📅 Дата окончания кампании</label>
-                    <input type="text" id="endDate" class="form-input" placeholder="ДД.ММ.ГГГГ (например: 30.01.2025)">
-                </div>
-                
-                <div class="stats" id="dateStats">
-                    <div class="stat-item">
-                        <span>Период кампании:</span>
-                        <span id="campaignDays">0 дней</span>
-                    </div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Календарь в разработке...</p>
+                    <p style="font-size: 14px; color: #7f8c8d; margin-top: 10px;">
+                        Используем временные данные: 30 дней
+                    </p>
                 </div>
                 
                 <div class="btn-container">
@@ -571,35 +321,20 @@
                 </div>
             </div>
             
-            <!-- 🕒 ШАГ 3: ВЫБОР ВРЕМЕНИ ВЫХОДА -->
+            <!-- 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ (ЗАГЛУШКА) -->
             <div id="step3" class="step-content">
                 <div class="step-title">🕒 ВЫБОР ВРЕМЕНИ ВЫХОДА</div>
                 <div class="step-description">
-                    ● ● ● ● ○ ○ ○ [3/7]<br>
+                    ● ● ● ● ○ ○ ○ ○ ○ [3/9]<br>
                     ⏱️ Этот шаг займет ~30 секунд
                 </div>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Выбрано слотов:</span>
-                        <span id="selectedSlotsCount">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Выходов в день:</span>
-                        <span id="outputsPerDay">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Суммарный охват:</span>
-                        <span id="totalCoveragePercent">0%</span>
-                    </div>
-                </div>
-                
-                <div id="timeSlotsList">
-                    <!-- Временные слоты будут загружены через JavaScript -->
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка временных слотов...</p>
-                    </div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Выбор временных слотов в разработке...</p>
+                    <p style="font-size: 14px; color: #7f8c8d; margin-top: 10px;">
+                        Используем временные данные: 10 слотов
+                    </p>
                 </div>
                 
                 <div class="btn-container">
@@ -608,21 +343,22 @@
                 </div>
             </div>
             
-            <!-- 🎙️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ -->
+            <!-- 🎙️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ (ЗАГЛУШКА) -->
             <div id="step4" class="step-content">
                 <div class="step-title">🎙️ БРЕНДИРОВАННЫЕ РУБРИКИ</div>
                 <div class="step-description">
-                    ● ● ● ● ● ○ ○ [4/7]<br>
+                    ● ● ● ● ● ○ ○ ○ ○ [4/9]<br>
                     ⏱️ Этот шаг займет ~15 секунд
                 </div>
                 
-                <div id="brandedSectionsList">
-                    <!-- Брендированные рубрики будут загружены через JavaScript -->
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка рубрик...</p>
-                    </div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Выбор рубрик в разработке...</p>
                 </div>
+                
+                <button class="btn btn-secondary" onclick="skipBrandedSection()">
+                    🚫 ПРОПУСТИТЬ РУБРИКУ
+                </button>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
@@ -630,101 +366,107 @@
                 </div>
             </div>
             
-            <!-- 📝 ШАГ 5: СОЗДАНИЕ РОЛИКА -->
+            <!-- 📝 ШАГ 5: ВЫБОР ПУТИ СОЗДАНИЯ РОЛИКА -->
             <div id="step5" class="step-content">
                 <div class="step-title">📝 СОЗДАНИЕ РОЛИКА</div>
                 <div class="step-description">
-                    ● ● ● ● ● ● ○ [5/7]<br>
+                    ● ● ● ● ● ● ○ ○ ○ [5/9]<br>
                     ⏱️ Этот шаг займет ~60 секунд
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">📝 Текст для радиоролика (до 500 знаков)</label>
-                    <textarea id="campaignText" class="form-input form-textarea" placeholder="Введите текст вашего рекламного ролика..."></textarea>
-                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">
-                        Осталось знаков: <span id="charCount">500</span>
-                    </div>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p>Выберите способ создания рекламного ролика:</p>
                 </div>
                 
-                <div style="text-align: center; margin: 15px 0;">
-                    <div style="font-size: 14px; color: #7f8c8d;">или</div>
-                </div>
+                <button class="btn" onclick="selectTextPath()" style="margin-bottom: 10px;">
+                    📝 ВВЕСТИ ТЕКСТ РОЛИКА
+                </button>
                 
-                <button class="btn btn-secondary" onclick="useOwnAudio()">
+                <button class="btn btn-secondary" onclick="selectAudioPath()">
                     🎵 ПРИШЛЮ СВОЙ РОЛИК
                 </button>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="nextStep(6)">➡️ ДАЛЕЕ</button>
+                    <button class="btn" onclick="nextStep(6)" style="display: none;" id="continueBtn">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- ⚡ ШАГ 6: ПРОИЗВОДСТВО РОЛИКА -->
+            <!-- 📝 ШАГ 6: ВВОД ТЕКСТА РОЛИКА (ПУТЬ 1) -->
             <div id="step6" class="step-content">
-                <div class="step-title">⚡ ПРОИЗВОДСТВО РОЛИКА</div>
+                <div class="step-title">📝 ВВОД ТЕКСТА РОЛИКА</div>
                 <div class="step-description">
-                    ● ● ● ● ● ● ○ [6/7]<br>
-                    ⏱️ Этот шаг займет ~15 секунд
+                    ● ● ● ● ● ● ● ○ ○ [6/9]<br>
+                    ⏱️ Этот шаг займет ~60 секунд
                 </div>
                 
-                <div id="productionOptionsList">
-                    <!-- Варианты производства будут загружены через JavaScript -->
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка вариантов...</p>
-                    </div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ввод текста ролика в разработке...</p>
                 </div>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="nextStep(7)">➡️ ДАЛЕЕ</button>
+                    <button class="btn" onclick="nextStep(8)">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- 👤 ШАГ 7: КОНТАКТНЫЕ ДАННЫЕ -->
+            <!-- ⏱️ ШАГ 7: ВВОД ХРОНОМЕТРАЖА (ПУТЬ 2) -->
             <div id="step7" class="step-content">
-                <div class="step-title">👤 КОНТАКТНЫЕ ДАННЫЕ</div>
+                <div class="step-title">⏱️ ВВОД ХРОНОМЕТРАЖА</div>
                 <div class="step-description">
-                    ● ● ● ● ● ● ● [7/7]<br>
-                    ⏱️ Этот шаг займет ~30 секунд
+                    ● ● ● ● ● ● ● ○ ○ [7/9]<br>
+                    ⏱️ Этот шаг займет ~15 секунд
                 </div>
                 
-                <!-- 💰 ПРЕДВАРИТЕЛЬНЫЙ РАСЧЕТ -->
-                <div class="calculation-result" id="preliminaryCalculation">
-                    <div class="calculation-title">💰 ПРЕДВАРИТЕЛЬНЫЙ РАСЧЕТ</div>
-                    <!-- Расчет будет заполнен через JavaScript -->
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Рассчитываем стоимость...</p>
-                    </div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ввод хронометража в разработке...</p>
                 </div>
                 
-                <!-- 📝 ФОРМА КОНТАКТОВ -->
-                <div class="contact-form">
-                    <div class="form-group">
-                        <label class="form-label">👤 Ваше имя *</label>
-                        <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">📞 Телефон *</label>
-                        <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">📧 Email</label>
-                        <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">🏢 Название компании</label>
-                        <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
-                    </div>
+                <div class="btn-container">
+                    <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(9)">➡️ ДАЛЕЕ</button>
+                </div>
+            </div>
+            
+            <!-- ⚡ ШАГ 8: ПРОИЗВОДСТВО РОЛИКА (ПУТЬ 1) -->
+            <div id="step8" class="step-content">
+                <div class="step-title">⚡ ПРОИЗВОДСТВО РОЛИКА</div>
+                <div class="step-description">
+                    ● ● ● ● ● ● ● ● ○ [8/9]<br>
+                    ⏱️ Этот шаг займет ~15 секунд
+                </div>
+                
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Выбор производства ролика в разработке...</p>
                 </div>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(6)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="nextStep(9)">➡️ ДАЛЕЕ</button>
+                </div>
+            </div>
+            
+            <!-- 👤 ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ -->
+            <div id="step9" class="step-content">
+                <div class="step-title">👤 КОНТАКТНЫЕ ДАННЫЕ</div>
+                <div class="step-description">
+                    ● ● ● ● ● ● ● ● ● [9/9]<br>
+                    ⏱️ Этот шаг займет ~30 секунд
+                </div>
+                
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Форма контактов в разработке...</p>
+                    <p style="font-size: 14px; color: #7f8c8d; margin-top: 10px;">
+                        Здесь будет предварительный расчет и отправка заявки
+                    </p>
+                </div>
+                
+                <div class="btn-container">
+                    <button class="btn btn-secondary" onclick="prevStep(8)" id="prevStep9Btn">◀️ НАЗАД</button>
                     <button class="btn btn-success" onclick="submitCampaign()">📤 ОТПРАВИТЬ ЗАЯВКУ</button>
                 </div>
             </div>
@@ -732,30 +474,18 @@
     </div>
 
     <script>
-        // 🔧 ГЛОБАЛЬНОЕ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
-        const campaignState = {
-            currentStep: 1,
-            selectedRadios: [],
-            startDate: '',
-            endDate: '',
-            campaignDays: 0,
-            selectedTimeSlots: [],
-            brandedSection: '',
-            campaignText: '',
-            productionOption: '',
-            contactName: '',
-            contactPhone: '',
-            contactEmail: '',
-            contactCompany: '',
-            duration: 20,
-            calculation: null
-        };
-
         // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
+        
+        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        let campaignState = {
+            currentStep: 1,
+            selectedRadios: [],
+            selectedPath: null, // 'text' или 'audio'
+            // остальные поля будут добавлены
+        };
 
         // 🚀 ОСНОВНЫЕ ФУНКЦИИ НАВИГАЦИИ
-        
         function goToMainPage() {
             window.location.href = '/index.html';
         }
@@ -783,11 +513,6 @@
         }
 
         function nextStep(nextStepNumber) {
-            // Проверяем валидность текущего шага перед переходом
-            if (!validateCurrentStep()) {
-                return;
-            }
-            
             showStep(nextStepNumber);
         }
 
@@ -809,108 +534,21 @@
             });
         }
 
-        // ✅ ВАЛИДАЦИЯ ШАГОВ
-        
-        function validateCurrentStep() {
-            const currentStep = campaignState.currentStep;
-            
-            switch(currentStep) {
-                case 1:
-                    if (campaignState.selectedRadios.length === 0) {
-                        showError('Выберите хотя бы одну радиостанцию');
-                        return false;
-                    }
-                    break;
-                    
-                case 2:
-                    if (!campaignState.startDate || !campaignState.endDate) {
-                        showError('Заполните даты начала и окончания кампании');
-                        return false;
-                    }
-                    if (campaignState.campaignDays < 15) {
-                        showError('Минимальный период кампании - 15 дней');
-                        return false;
-                    }
-                    break;
-                    
-                case 3:
-                    if (campaignState.selectedTimeSlots.length === 0) {
-                        showError('Выберите хотя бы один временной слот');
-                        return false;
-                    }
-                    break;
-                    
-                case 4:
-                    if (!campaignState.brandedSection) {
-                        showError('Выберите тип брендированной рубрики');
-                        return false;
-                    }
-                    break;
-                    
-                case 5:
-                    if (!campaignState.campaignText && !campaignState.useOwnAudio) {
-                        showError('Введите текст ролика или выберите вариант с готовым роликом');
-                        return false;
-                    }
-                    break;
-                    
-                case 6:
-                    if (!campaignState.productionOption) {
-                        showError('Выберите вариант производства ролика');
-                        return false;
-                    }
-                    break;
-                    
-                case 7:
-                    if (!campaignState.contactName || !campaignState.contactPhone) {
-                        showError('Заполните обязательные поля: имя и телефон');
-                        return false;
-                    }
-                    break;
-            }
-            
-            return true;
-        }
-
-        // 📥 ЗАГРУЗКА ДАННЫХ ДЛЯ ШАГОВ
-        
+        // 🎯 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ
         function loadStepData(stepNumber) {
-            switch(stepNumber) {
-                case 1:
-                    loadRadioStations();
-                    break;
-                case 2:
-                    loadDateInputs();
-                    break;
-                case 3:
-                    loadTimeSlots();
-                    break;
-                case 4:
-                    loadBrandedSections();
-                    break;
-                case 5:
-                    loadCampaignText();
-                    break;
-                case 6:
-                    loadProductionOptions();
-                    break;
-                case 7:
-                    loadContactForm();
-                    calculateCampaign();
-                    break;
+            if (stepNumber === 1) {
+                loadRadioStations();
             }
         }
 
-        // 🎯 ШАГ 1: ЗАГРУЗКА РАДИОСТАНЦИЙ
-        
         function loadRadioStations() {
             const stationsList = document.getElementById('radioStationsList');
             
-            // Данные радиостанций из бота
+            // ОБНОВЛЕННЫЕ ДАННЫЕ РАДИОСТАНЦИЙ
             const stations = [
                 {
                     name: "LOVE RADIO",
-                    listeners: 540,
+                    listeners: 700, // 👈 ОБНОВЛЕНО
                     description: "👩 Молодёжь 16-35 лет",
                     emoji: "💖"
                 },
@@ -940,7 +578,7 @@
                 },
                 {
                     name: "ЮМОР FM",
-                    listeners: 1260,
+                    listeners: 1600, // 👈 ОБНОВЛЕНО
                     description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
                     emoji: "🎭"
                 }
@@ -956,7 +594,7 @@
                             ${station.name}
                         </div>
                         <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
-                        <div class="radio-description">${station.description}</div>
+                        <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
                     </div>
                 `;
             });
@@ -974,18 +612,17 @@
                 campaignState.selectedRadios.splice(index, 1);
             }
             
-            // Обновляем отображение
             loadRadioStations();
         }
 
         function updateRadioStats() {
             const stationListeners = {
-                'LOVE RADIO': 540,
+                'LOVE RADIO': 700,
                 'АВТОРАДИО': 3250,
                 'РАДИО ДАЧА': 3250,
                 'РАДИО ШАНСОН': 2900,
                 'РЕТРО FM': 3600,
-                'ЮМОР FM': 1260
+                'ЮМОР FM': 1600
             };
             
             const totalListeners = campaignState.selectedRadios.reduce((total, radio) => {
@@ -996,427 +633,41 @@
             document.getElementById('totalListenersCount').textContent = formatNumber(totalListeners) + ' слушателей';
         }
 
-        // 📅 ШАГ 2: РАБОТА С ДАТАМИ
-        
-        function loadDateInputs() {
-            // Устанавливаем текущие значения
-            document.getElementById('startDate').value = campaignState.startDate;
-            document.getElementById('endDate').value = campaignState.endDate;
-            
-            // Добавляем обработчики изменений
-            document.getElementById('startDate').addEventListener('change', updateDates);
-            document.getElementById('endDate').addEventListener('change', updateDates);
-            
-            updateDateStats();
-        }
-
-        function updateDates() {
-            campaignState.startDate = document.getElementById('startDate').value;
-            campaignState.endDate = document.getElementById('endDate').value;
-            
-            // Расчет количества дней
-            if (campaignState.startDate && campaignState.endDate) {
-                const start = parseDate(campaignState.startDate);
-                const end = parseDate(campaignState.endDate);
-                
-                if (start && end && end > start) {
-                    const diffTime = Math.abs(end - start);
-                    campaignState.campaignDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                } else {
-                    campaignState.campaignDays = 0;
-                }
-            } else {
-                campaignState.campaignDays = 0;
-            }
-            
-            updateDateStats();
-        }
-
-        function parseDate(dateString) {
-            const parts = dateString.split('.');
-            if (parts.length === 3) {
-                return new Date(parts[2], parts[1] - 1, parts[0]);
-            }
-            return null;
-        }
-
-        function updateDateStats() {
-            document.getElementById('campaignDays').textContent = campaignState.campaignDays + ' дней';
-        }
-
-        // 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ
-        
-        function loadTimeSlots() {
-            const slotsList = document.getElementById('timeSlotsList');
-            
-            // Данные временных слотов из бота
-            const timeSlots = [
-                {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": true, "coverage_percent": 6},
-                {"time": "07:00-08:00", "label": "Утренние поездки", "premium": true, "coverage_percent": 10},
-                {"time": "08:00-09:00", "label": "Пик трафика", "premium": true, "coverage_percent": 12},
-                {"time": "09:00-10:00", "label": "Начало работы", "premium": true, "coverage_percent": 8},
-                {"time": "10:00-11:00", "label": "Рабочий процесс", "premium": true, "coverage_percent": 7},
-                {"time": "11:00-12:00", "label": "Предобеденное время", "premium": true, "coverage_percent": 6},
-                {"time": "12:00-13:00", "label": "Обеденный перерыв", "premium": true, "coverage_percent": 5},
-                {"time": "13:00-14:00", "label": "После обеда", "premium": true, "coverage_percent": 5},
-                {"time": "14:00-15:00", "label": "Вторая половина дня", "premium": true, "coverage_percent": 5},
-                {"time": "15:00-16:00", "label": "Рабочий финиш", "premium": true, "coverage_percent": 6},
-                {"time": "16:00-17:00", "label": "Конец рабочего дня", "premium": true, "coverage_percent": 7},
-                {"time": "17:00-18:00", "label": "Вечерние поездки", "premium": true, "coverage_percent": 10},
-                {"time": "18:00-19:00", "label": "Пик трафика", "premium": true, "coverage_percent": 8},
-                {"time": "19:00-20:00", "label": "Домашний вечер", "premium": true, "coverage_percent": 4},
-                {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": true, "coverage_percent": 4}
-            ];
-            
-            let html = '';
-            timeSlots.forEach((slot, index) => {
-                const isSelected = campaignState.selectedTimeSlots.includes(index);
-                const emoji = slot.premium ? "🚀" : "📊";
-                
-                html += `
-                    <div class="time-slot ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
-                        <div class="slot-time">
-                            <span class="slot-emoji">${emoji}</span>
-                            ${slot.time}
-                        </div>
-                        <div class="slot-label">${slot.label}</div>
-                        <div class="slot-coverage">Охват: ${slot.coverage_percent}%</div>
-                    </div>
-                `;
-            });
-            
-            slotsList.innerHTML = html;
-            updateTimeSlotStats();
-        }
-
-        function toggleTimeSlot(slotIndex) {
-            const index = campaignState.selectedTimeSlots.indexOf(slotIndex);
-            
-            if (index === -1) {
-                campaignState.selectedTimeSlots.push(slotIndex);
-            } else {
-                campaignState.selectedTimeSlots.splice(index, 1);
-            }
-            
-            loadTimeSlots();
-        }
-
-        function updateTimeSlotStats() {
-            const timeSlots = [
-                {"coverage_percent": 6}, {"coverage_percent": 10}, {"coverage_percent": 12},
-                {"coverage_percent": 8}, {"coverage_percent": 7}, {"coverage_percent": 6},
-                {"coverage_percent": 5}, {"coverage_percent": 5}, {"coverage_percent": 5},
-                {"coverage_percent": 6}, {"coverage_percent": 7}, {"coverage_percent": 10},
-                {"coverage_percent": 8}, {"coverage_percent": 4}, {"coverage_percent": 4}
-            ];
-            
-            const totalCoverage = campaignState.selectedTimeSlots.reduce((total, slotIndex) => {
-                return total + (timeSlots[slotIndex]?.coverage_percent || 0);
-            }, 0);
-            
-            const outputsPerDay = campaignState.selectedTimeSlots.length * campaignState.selectedRadios.length;
-            
-            document.getElementById('selectedSlotsCount').textContent = campaignState.selectedTimeSlots.length;
-            document.getElementById('outputsPerDay').textContent = outputsPerDay;
-            document.getElementById('totalCoveragePercent').textContent = totalCoverage + '%';
-        }
-
         // 🎙️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ
-        
-        function loadBrandedSections() {
-            const sectionsList = document.getElementById('brandedSectionsList');
-            
-            const brandedSections = [
-                {
-                    id: "auto",
-                    name: "АВТОРУБРИКИ",
-                    price: "+20%",
-                    description: "Готовые сценарии для автосалонов. \"30 секунд о китайских автомобилях\", \"30 секунд об АвтоВАЗе\""
-                },
-                {
-                    id: "realty", 
-                    name: "НЕДВИЖИМОСТЬ",
-                    price: "+15%",
-                    description: "Рубрики для агентств недвижимости. \"Совет по недвижимости\", \"Полезно знать при покупке квартиры\""
-                },
-                {
-                    id: "medical",
-                    name: "МЕДИЦИНСКИЕ РУБРИКИ", 
-                    price: "+25%",
-                    description: "Экспертные форматы для клиник. \"Здоровое серде\", \"Совет врача\""
-                },
-                {
-                    id: "custom",
-                    name: "ИНДИВИДУАЛЬНАЯ РУБРИКА",
-                    price: "+30%", 
-                    description: "Разработка под ваш бизнес. Уникальный контент и сценарий"
-                }
-            ];
-            
-            let html = '';
-            brandedSections.forEach(section => {
-                const isSelected = campaignState.brandedSection === section.id;
-                
-                html += `
-                    <div class="branded-option ${isSelected ? 'selected' : ''}" onclick="selectBrandedSection('${section.id}')">
-                        <div class="branded-name">${section.name}</div>
-                        <div class="branded-price">${section.price} к стоимости</div>
-                        <div class="branded-desc">${section.description}</div>
-                    </div>
-                `;
-            });
-            
-            sectionsList.innerHTML = html;
+        function skipBrandedSection() {
+            campaignState.branded_section = '';
+            alert('✅ Брендированная рубрика пропущена');
+            nextStep(5);
         }
 
-        function selectBrandedSection(sectionId) {
-            campaignState.brandedSection = sectionId;
-            loadBrandedSections();
+        // 📝 ШАГ 5: ВЫБОР ПУТИ
+        function selectTextPath() {
+            campaignState.selectedPath = 'text';
+            document.getElementById('continueBtn').style.display = 'block';
+            alert('✅ Выбран путь: создание текста ролика');
         }
 
-        // 📝 ШАГ 5: ТЕКСТ РОЛИКА
-        
-        function loadCampaignText() {
-            document.getElementById('campaignText').value = campaignState.campaignText;
-            
-            // Обработчик изменения текста
-            document.getElementById('campaignText').addEventListener('input', function() {
-                campaignState.campaignText = this.value;
-                updateCharCount();
-            });
-            
-            updateCharCount();
+        function selectAudioPath() {
+            campaignState.selectedPath = 'audio';
+            document.getElementById('continueBtn').style.display = 'block';
+            alert('✅ Выбран путь: готовый аудиофайл');
         }
 
-        function updateCharCount() {
-            const text = campaignState.campaignText;
-            const remaining = 500 - text.length;
-            document.getElementById('charCount').textContent = remaining;
-            
-            if (remaining < 0) {
-                document.getElementById('charCount').style.color = '#e74c3c';
-            } else {
-                document.getElementById('charCount').style.color = '#7f8c8d';
-            }
+        // 👤 ШАГ 9: ОТПРАВКА ЗАЯВКИ
+        function submitCampaign() {
+            alert('✅ Заявка отправлена! В реальном приложении здесь будет вызов API');
+            // В реальном приложении здесь будет:
+            // 1. Вызов API /api/create-campaign
+            // 2. Создание Excel файла
+            // 3. Отправка уведомлений
         }
 
-        function useOwnAudio() {
-            campaignState.useOwnAudio = true;
-            campaignState.campaignText = '';
-            document.getElementById('campaignText').value = '';
-            showError('✅ Выбран вариант с готовым роликом. Прикрепите файл после отправки заявки.');
-        }
-
-        // ⚡ ШАГ 6: ПРОИЗВОДСТВО РОЛИКА
-        
-        function loadProductionOptions() {
-            const optionsList = document.getElementById('productionOptionsList');
-            
-            const productionOptions = [
-                {
-                    id: "standard",
-                    name: "СТАНДАРТНЫЙ РОЛИК",
-                    price: "от 2 000₽",
-                    description: "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"
-                },
-                {
-                    id: "premium",
-                    name: "ПРЕМИУМ РОЛИК", 
-                    price: "от 5 000₽",
-                    description: "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"
-                }
-            ];
-            
-            let html = '';
-            productionOptions.forEach(option => {
-                const isSelected = campaignState.productionOption === option.id;
-                
-                html += `
-                    <div class="production-option ${isSelected ? 'selected' : ''}" onclick="selectProductionOption('${option.id}')">
-                        <div class="production-name">${option.name}</div>
-                        <div class="production-price">${option.price}</div>
-                        <div class="production-desc">${option.description}</div>
-                    </div>
-                `;
-            });
-            
-            optionsList.innerHTML = html;
-        }
-
-        function selectProductionOption(optionId) {
-            campaignState.productionOption = optionId;
-            loadProductionOptions();
-        }
-
-        // 👤 ШАГ 7: КОНТАКТНЫЕ ДАННЫЕ И РАСЧЕТ
-        
-        function loadContactForm() {
-            document.getElementById('contactName').value = campaignState.contactName;
-            document.getElementById('contactPhone').value = campaignState.contactPhone;
-            document.getElementById('contactEmail').value = campaignState.contactEmail;
-            document.getElementById('contactCompany').value = campaignState.contactCompany;
-            
-            // Обработчики изменений
-            document.getElementById('contactName').addEventListener('change', updateContactData);
-            document.getElementById('contactPhone').addEventListener('change', updateContactData);
-            document.getElementById('contactEmail').addEventListener('change', updateContactData);
-            document.getElementById('contactCompany').addEventListener('change', updateContactData);
-        }
-
-        function updateContactData() {
-            campaignState.contactName = document.getElementById('contactName').value;
-            campaignState.contactPhone = document.getElementById('contactPhone').value;
-            campaignState.contactEmail = document.getElementById('contactEmail').value;
-            campaignState.contactCompany = document.getElementById('contactCompany').value;
-        }
-
-        // 💰 РАСЧЕТ СТОИМОСТИ КАМПАНИИ
-        
-        // Замените временные функции на реальные API вызовы
-        async function calculateCampaign() {
-    try {
-        const response = await fetch('/api/calculate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(campaignState)
-        });
-        const data = await response.json();
-        if (data.success) {
-            displayCalculationResult(data.calculation);
-        } else {
-            showError(data.error);
-        }
-    } catch (error) {
-        showError('Ошибка соединения с сервером');
-    }
-}
-
-        async function performCalculation() {
-            // Временная функция расчета (будет заменена на вызов API)
-            // Используем логику из бота
-            
-            const BASE_PRICE_PER_SECOND = 2.0;
-            const MIN_BUDGET = 7000;
-            
-            const base_duration = campaignState.duration;
-            const campaign_days = campaignState.campaignDays;
-            const selected_radios = campaignState.selectedRadios;
-            const selected_time_slots = campaignState.selectedTimeSlots;
-            
-            if (!selected_radios.length || !selected_time_slots.length) {
-                throw new Error('Не выбраны радиостанции или временные слоты');
-            }
-            
-            const num_stations = selected_radios.length;
-            const spots_per_day = selected_time_slots.length * num_stations;
-            
-            const cost_per_spot = base_duration * BASE_PRICE_PER_SECOND;
-            let base_air_cost = cost_per_spot * spots_per_day * campaign_days;
-            
-            // Учет премиальных слотов
-            let time_multiplier = 1.0;
-            selected_time_slots.forEach(slotIndex => {
-                if (slotIndex < 3) { // Первые 3 слота премиальные
-                    time_multiplier = Math.max(time_multiplier, 1.1);
-                }
-            });
-            
-            // Учет брендированных рубрик
-            let branded_multiplier = 1.0;
-            switch(campaignState.brandedSection) {
-                case 'auto': branded_multiplier = 1.2; break;
-                case 'realty': branded_multiplier = 1.15; break;
-                case 'medical': branded_multiplier = 1.25; break;
-                case 'custom': branded_multiplier = 1.3; break;
-            }
-            
-            // Стоимость производства
-            let production_cost = 0;
-            switch(campaignState.productionOption) {
-                case 'standard': production_cost = 2000; break;
-                case 'premium': production_cost = 5000; break;
-            }
-            
-            const air_cost = Math.floor(base_air_cost * time_multiplier * branded_multiplier);
-            const base_price = air_cost + production_cost;
-            const discount = Math.floor(base_price * 0.5);
-            const final_price = Math.max(base_price - discount, MIN_BUDGET);
-            
-            // Расчет охвата
-            const station_coverage = {
-                'LOVE RADIO': 540,
-                'АВТОРАДИО': 3250,
-                'РАДИО ДАЧА': 3250,
-                'РАДИО ШАНСОН': 2900,
-                'РЕТРО FM': 3600,
-                'ЮМОР FM': 1260
-            };
-            
-            const time_slots_data = [
-                {"coverage_percent": 6}, {"coverage_percent": 10}, {"coverage_percent": 12},
-                {"coverage_percent": 8}, {"coverage_percent": 7}, {"coverage_percent": 6},
-                {"coverage_percent": 5}, {"coverage_percent": 5}, {"coverage_percent": 5},
-                {"coverage_percent": 6}, {"coverage_percent": 7}, {"coverage_percent": 10},
-                {"coverage_percent": 8}, {"coverage_percent": 4}, {"coverage_percent": 4}
-            ];
-            
-            const total_listeners = selected_radios.reduce((total, radio) => {
-                return total + (station_coverage[radio] || 0);
-            }, 0);
-            
-            const total_coverage_percent = selected_time_slots.reduce((total, slotIndex) => {
-                return total + (time_slots_data[slotIndex]?.coverage_percent || 0);
-            }, 0);
-            
-            const unique_daily_coverage = Math.floor(total_listeners * 0.7 * (total_coverage_percent / 100));
-            const total_reach = Math.floor(unique_daily_coverage * campaign_days);
-            
-            return {
-                base_price,
-                discount,
-                final_price,
-                total_reach,
-                daily_coverage: unique_daily_coverage,
-                spots_per_day,
-                total_coverage_percent
-            };
-        }
-
-        // 📤 ОТПРАВКА ЗАЯВКИ
-        
-        async function submitCampaign() {
-            if (!validateCurrentStep()) {
-                return;
-            }
-            
-            try {
-                // Здесь будет вызов API для сохранения кампании
-                const campaignNumber = `R-${new Date().getTime().toString().slice(-6)}`;
-                
-                showError(`✅ Заявка #${campaignNumber} отправлена! Менеджер свяжется с вами в течение 24 часов.`);
-                
-                // Возврат на главную страницу через 3 секунды
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 3000);
-                
-            } catch (error) {
-                showError('❌ Ошибка при отправке заявки: ' + error.message);
-            }
-        }
-
-        // 🛠️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-        
+        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         }
 
-        function showError(message) {
-            alert(message);
-        }
-
         // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-        
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Campaign App запущен!');
             
