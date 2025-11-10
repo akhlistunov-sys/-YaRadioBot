@@ -6,7 +6,6 @@
     <title>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* 🔧 ОСНОВНЫЕ СТИЛИ */
         * {
             margin: 0;
             padding: 0;
@@ -17,28 +16,27 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            width: 100%;
         }
         
         .container {
-            max-width: 400px;
-            margin: 0 auto;
+            width: 100%;
+            min-height: 100vh;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
-        /* 🏠 ШАПКА */
         .header {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white;
-            padding: 30px 20px;
+            padding: 25px 20px;
             text-align: center;
+            flex-shrink: 0;
         }
         
         .header h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             margin-bottom: 8px;
         }
@@ -56,17 +54,20 @@
             opacity: 0.95;
         }
         
-        /* 📋 ОСНОВНОЕ СОДЕРЖИМОЕ */
         .content {
+            flex: 1;
             padding: 25px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         
         .features {
             background: #f8f9fa;
             padding: 20px;
-            border-radius: 15px;
             margin-bottom: 25px;
             border-left: 4px solid #3498db;
+            border-radius: 0 12px 12px 0;
         }
         
         .feature-item {
@@ -98,11 +99,11 @@
             margin-bottom: 8px;
         }
         
-        /* 🔘 КНОПКИ МЕНЮ */
         .menu-buttons {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-top: auto;
         }
         
         .menu-btn {
@@ -132,29 +133,49 @@
             text-align: center;
         }
         
-        .btn-statistics { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-        .btn-about { background: linear-gradient(135deg, #e67e22, #d35400); }
-        .btn-cabinet { background: linear-gradient(135deg, #34495e, #2c3e50); }
+        .btn-statistics { 
+            background: linear-gradient(135deg, #9b59b6, #8e44ad); 
+        }
         
-        /* 📱 АДАПТИВНОСТЬ */
+        .btn-about { 
+            background: linear-gradient(135deg, #e67e22, #d35400); 
+        }
+        
+        .btn-cabinet { 
+            background: linear-gradient(135deg, #34495e, #2c3e50); 
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+        /* Адаптивность */
         @media (max-width: 480px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
             .header {
-                padding: 25px 15px;
+                padding: 20px 15px;
             }
             
             .header h1 {
-                font-size: 22px;
+                font-size: 20px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .menu-btn {
+                padding: 16px 18px;
+                font-size: 15px;
             }
         }
-        
-        /* 🔄 СКРЫТЫЕ БЛОКИ */
-        .hidden {
-            display: none !important;
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 400px;
+                margin: 0 auto;
+                min-height: 100vh;
+                border-radius: 0;
+            }
         }
     </style>
 </head>
@@ -207,236 +228,46 @@
                 </div>
             </div>
         </div>
-        
-        <!-- 📊 СТРАНИЦА СТАТИСТИКИ -->
-        <div id="statisticsPage" class="hidden">
-            <div class="header">
-                <h1>📊 ВОЗРАСТНАЯ СТРУКТУРА</h1>
-                <div class="location">ЯЛУТОРОВСКА И ЗАВОДОУКОВСКА</div>
-            </div>
-            <div class="content">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
-                        <i>◀️</i> НАЗАД
-                    </button>
-                </div>
-                <!-- Контент статистики будет здесь -->
-                <div id="statisticsContent">
-                    Загрузка статистики...
-                </div>
-            </div>
-        </div>
-        
-        <!-- 🏆 СТРАНИЦА "О НАС" -->
-        <div id="aboutPage" class="hidden">
-            <div class="header">
-                <h1>🏆 О НАС</h1>
-            </div>
-            <div class="content">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
-                        <i>◀️</i> НАЗАД
-                    </button>
-                </div>
-                <!-- Контент "О нас" будет здесь -->
-                <div id="aboutContent">
-                    Загрузка информации...
-                </div>
-            </div>
-        </div>
-        
-        <!-- 📋 ЛИЧНЫЙ КАБИНЕТ -->
-        <div id="cabinetPage" class="hidden">
-            <div class="header">
-                <h1>📋 ЛИЧНЫЙ КАБИНЕТ</h1>
-            </div>
-            <div class="content">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
-                        <i>◀️</i> НАЗАД
-                    </button>
-                </div>
-                <!-- Контент личного кабинета будет здесь -->
-                <div id="cabinetContent">
-                    Загрузка данных...
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // 🔧 ОСНОВНАЯ ЛОГИКА НАВИГАЦИИ
-        
-        // 📱 Инициализация Telegram Web App
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
         
-        // 🚀 Функция показа страницы
+        // 🚀 ФУНКЦИИ НАВИГАЦИИ
         function showPage(pageName) {
             console.log('Переход на страницу:', pageName);
             
-            // Скрываем все страницы
-            document.getElementById('mainPage').classList.add('hidden');
-            document.getElementById('statisticsPage').classList.add('hidden');
-            document.getElementById('aboutPage').classList.add('hidden');
-            document.getElementById('cabinetPage').classList.add('hidden');
-            
-            // Показываем нужную страницу
-            const targetPage = document.getElementById(pageName + 'Page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
+            switch(pageName) {
+                case 'campaign':
+                    window.location.href = '/campaign.html';
+                    break;
+                case 'statistics':
+                    window.location.href = '/statistics.html';
+                    break;
+                case 'about':
+                    window.location.href = '/about.html';
+                    break;
+                case 'cabinet':
+                    window.location.href = '/cabinet.html';
+                    break;
             }
             
             // Раскрываем Telegram Web App на полный экран
             if (tg && tg.expand) {
                 tg.expand();
             }
-            
-            // Загружаем контент для страницы
-            loadPageContent(pageName);
-        }
-        
-        // 📥 Загрузка контента для страницы
-        function loadPageContent(pageName) {
-            switch(pageName) {
-                case 'statistics':
-                    loadStatisticsContent();
-                    break;
-                case 'about':
-                    loadAboutContent();
-                    break;
-                case 'cabinet':
-                    loadCabinetContent();
-                    break;
-                case 'campaign':
-                    // Переход к созданию кампании
-                    window.location.href = '/campaign.html';
-                    break;
-            }
-        }
-        
-        // 📊 Загрузка контента статистики
-        function loadStatisticsContent() {
-            const content = `
-                <div style="line-height: 1.6; font-size: 14px;">
-                    <p style="margin-bottom: 15px; text-align: center; font-weight: bold;">
-                        — КЛЮЧЕВОЙ ФАКТОР ВАШЕГО ОХВАТА
-                    </p>
-                    
-                    <p style="margin-bottom: 15px;">
-                        <strong>🎯 ПОНИМАЕМ РЕАЛЬНУЮ АУДИТОРИЮ:</strong><br>
-                        Демография городов определяет эффективность каждой радиостанции
-                    </p>
-                    
-                    <p style="margin-bottom: 15px;">
-                        <strong>📈 НАШ АНАЛИЗ ПОКАЗЫВАЕТ:</strong>
-                    </p>
-                    
-                    <ul style="margin-left: 20px; margin-bottom: 15px;">
-                        <li>Ялуторовск — выше доля 65+</li>
-                        <li>Заводоуковск — моложе Ялуторовска, но демография смещена в сторону старших возрастов</li>
-                        <li>Общий тренд — отток молодежи + высокая доля старшего поколения</li>
-                    </ul>
-                    
-                    <div style="text-align: center; margin: 20px 0;">
-                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
-                            <i>🎯</i> ПОДОБРАТЬ ОПТИМАЛЬНЫЙ МИКС
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.getElementById('statisticsContent').innerHTML = content;
-        }
-        
-        // 🏆 Загрузка контента "О нас"
-        function loadAboutContent() {
-            const content = `
-                <div style="line-height: 1.6; font-size: 14px; text-align: center;">
-                    <p style="margin-bottom: 15px; font-style: italic;">
-                        «Мы не продаём секунды эфира —<br>
-                        мы создаём истории, которые<br>
-                        слышит весь регион»
-                    </p>
-                    
-                    <p style="margin-bottom: 15px;">
-                        10 лет мы помогаем бизнесу достигать своей аудитории через силу радиоволн.
-                    </p>
-                    
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
-                        <p>📻 6 федеральных станций</p>
-                        <p>📍 Ялуторовск • Заводоуковск</p>  
-                        <p>🎯 40 000+ слушателей</p>
-                    </div>
-                    
-                    <p style="margin-bottom: 20px;">
-                        <strong>Наша миссия</strong> — делать рекламу, которую слушают, а не пропускают.
-                    </p>
-                    
-                    <div style="display: flex; gap: 10px; flex-direction: column;">
-                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
-                            <i>🚀</i> НАЧАТЬ РАСЧЕТ
-                        </button>
-                        <button class="menu-btn btn-cabinet" onclick="showContactDetails()" style="text-align: center;">
-                            <i>📞</i> КОНТАКТЫ
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.getElementById('aboutContent').innerHTML = content;
-        }
-        
-        // 📋 Загрузка контента личного кабинета
-        function loadCabinetContent() {
-            const content = `
-                <div style="text-align: center;">
-                    <div class="loading" style="padding: 30px;">
-                        <p>📡 Загрузка данных кабинета...</p>
-                        <p style="font-size: 12px; color: #7f8c8d; margin-top: 10px;">
-                            Для доступа к личному кабинету нужно создать хотя бы одну кампанию
-                        </p>
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
-                            <i>🚀</i> СОЗДАТЬ ПЕРВУЮ КАМПАНИЮ
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.getElementById('cabinetContent').innerHTML = content;
-        }
-        
-        // 📞 Показать контакты
-        function showContactDetails() {
-            const content = `
-                <div style="line-height: 1.6; font-size: 14px;">
-                    <p><strong>📞 КОНТАКТЫ И РЕКВИЗИТЫ</strong></p>
-                    <p>📍 Ялуторовск • Заводоуковск</p>
-                    <p>📱 +7 (922) 044-66-44</p>
-                    <p>✉️ a.khlistunov@gmail.com</p>
-                    <p>👤 Telegram: @AlexeyKhlistunov</p>
-                    
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ecf0f1;">
-                        <p><strong>Юридическая информация:</strong></p>
-                        <p>ИП Хлыстунов Алексей Александрович</p>
-                        <p>ОГРНИП 315723200067362</p>
-                    </div>
-                </div>
-            `;
-            document.getElementById('aboutContent').innerHTML = content;
         }
         
         // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Mini App запущен!');
+            console.log('🚀 Главная страница загружена!');
             
             // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
                 tg.expand(); // Раскрываем на весь экран
             }
-            
-            // Показываем главную страницу
-            showPage('main');
         });
     </script>
 </body>
