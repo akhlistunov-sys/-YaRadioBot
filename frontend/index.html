@@ -6,6 +6,7 @@
     <title>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* 🔧 ОСНОВНЫЕ СТИЛИ */
         * {
             margin: 0;
             padding: 0;
@@ -28,378 +29,415 @@
             overflow: hidden;
         }
         
+        /* 🏠 ШАПКА */
         .header {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white;
-            padding: 25px 20px;
+            padding: 30px 20px;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         
-        .header p {
-            font-size: 14px;
+        .header .location {
+            font-size: 16px;
             opacity: 0.9;
+            margin-bottom: 15px;
         }
         
+        .header .description {
+            font-size: 15px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            opacity: 0.95;
+        }
+        
+        /* 📋 ОСНОВНОЕ СОДЕРЖИМОЕ */
         .content {
             padding: 25px 20px;
         }
         
-        .step-indicator {
-            display: flex;
-            justify-content: center;
+        .features {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
             margin-bottom: 25px;
+            border-left: 4px solid #3498db;
         }
         
-        .step {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #ecf0f1;
+        .feature-item {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 5px;
-            font-weight: bold;
+            margin: 12px 0;
             font-size: 14px;
-            transition: all 0.3s ease;
         }
         
-        .step.active {
-            background: #3498db;
+        .feature-item::before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .stats {
+            background: linear-gradient(135deg, #27ae60, #219653);
             color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
         }
         
-        .step.completed {
-            background: #27ae60;
-            color: white;
+        .stats h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
         }
         
-        .btn {
+        /* 🔘 КНОПКИ МЕНЮ */
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .menu-btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 15px 25px;
+            padding: 18px 20px;
             border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            width: 100%;
-            margin: 10px 0;
+            text-align: left;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
         }
         
-        .btn:hover {
+        .menu-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
         }
         
-        .btn-secondary {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        .menu-btn i {
+            font-size: 20px;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60, #219653);
+        .btn-statistics { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .btn-about { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .btn-cabinet { background: linear-gradient(135deg, #34495e, #2c3e50); }
+        
+        /* 📱 АДАПТИВНОСТЬ */
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 25px 15px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
         }
         
-        .stats {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 15px 0;
-            border-left: 4px solid #3498db;
-        }
-        
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            font-size: 14px;
-        }
-        
-        .radio-station {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .radio-station.selected {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-        
-        .radio-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .radio-listeners {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
+        /* 🔄 СКРЫТЫЕ БЛОКИ */
         .hidden {
-            display: none;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        .time-slot {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 8px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .time-slot.selected {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-        
-        .slot-time {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .slot-label {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .success-message {
-            background: linear-gradient(135deg, #27ae60, #219653);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin: 20px 0;
+            display: none !important;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
-            <p>Ялуторовск • Заводоуковск</p>
+        <!-- 🏠 ГЛАВНАЯ СТРАНИЦА -->
+        <div id="mainPage">
+            <div class="header">
+                <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
+                <div class="location">📍 Ялуторовск • Заводоуковск</div>
+                
+                <div class="description">
+                    🤖 <strong>Рассчитайте рекламу за 2 минуты</strong><br>
+                    3 простых шага → готовый медиаплан
+                </div>
+            </div>
+            
+            <div class="content">
+                <!-- 📋 ПРЕИМУЩЕСТВА -->
+                <div class="features">
+                    <div class="feature-item">6 федеральных радиостанций</div>
+                    <div class="feature-item">Скидка 50% на первую кампанию</div>
+                    <div class="feature-item">Старт через 3 дня</div>
+                    <div class="feature-item">Персональный медиаплан</div>
+                </div>
+                
+                <!-- 📊 СТАТИСТИКА -->
+                <div class="stats">
+                    <h3>🏆 70+ кампаний в 2025 году</h3>
+                    <div>✅ От 7 000₽</div>
+                </div>
+                
+                <!-- 🔘 МЕНЮ -->
+                <div class="menu-buttons">
+                    <button class="menu-btn" onclick="showPage('campaign')">
+                        <i>🚀</i> НАЧАТЬ РАСЧЕТ
+                    </button>
+                    
+                    <button class="menu-btn btn-statistics" onclick="showPage('statistics')">
+                        <i>📊</i> ВОЗРАСТНАЯ СТРУКТУРА
+                    </button>
+                    
+                    <button class="menu-btn btn-about" onclick="showPage('about')">
+                        <i>🏆</i> О НАС
+                    </button>
+                    
+                    <button class="menu-btn btn-cabinet" onclick="showPage('cabinet')">
+                        <i>📋</i> ЛИЧНЫЙ КАБИНЕТ
+                    </button>
+                </div>
+            </div>
         </div>
         
-        <div class="content">
-            <!-- Шаг 1: Выбор радиостанций -->
-            <div id="step1" class="step-content">
-                <div class="step-indicator">
-                    <div class="step active">1</div>
-                    <div class="step">2</div>
-                    <div class="step">3</div>
-                    <div class="step">4</div>
-                    <div class="step">5</div>
-                </div>
-                
-                <h2 style="text-align: center; margin-bottom: 20px;">📻 ВЫБОР РАДИОСТАНЦИЙ</h2>
-                
-                <div id="radioStationsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка радиостанций...</p>
-                    </div>
-                </div>
-                
-                <div class="stats" id="selectionStats">
-                    <div class="stat-item">
-                        <span>Выбрано станций:</span>
-                        <span id="selectedCount">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Общий охват:</span>
-                        <span id="totalListeners">0</span>
-                    </div>
-                </div>
-                
-                <button class="btn" onclick="nextStep(2)">➡️ ДАЛЕЕ</button>
+        <!-- 📊 СТРАНИЦА СТАТИСТИКИ -->
+        <div id="statisticsPage" class="hidden">
+            <div class="header">
+                <h1>📊 ВОЗРАСТНАЯ СТРУКТУРА</h1>
+                <div class="location">ЯЛУТОРОВСКА И ЗАВОДОУКОВСКА</div>
             </div>
-            
-            <!-- Шаг 2: Расчет стоимости -->
-            <div id="step2" class="step-content hidden">
-                <div class="step-indicator">
-                    <div class="step completed">1</div>
-                    <div class="step active">2</div>
-                    <div class="step">3</div>
-                    <div class="step">4</div>
-                    <div class="step">5</div>
+            <div class="content">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
+                        <i>◀️</i> НАЗАД
+                    </button>
                 </div>
-                
-                <h2 style="text-align: center; margin-bottom: 20px;">💰 РАСЧЕТ СТОИМОСТИ</h2>
-                
-                <div id="calculationResult">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Рассчитываем стоимость...</p>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="prevStep(1)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="nextStep(3)">➡️ ДАЛЕЕ</button>
+                <!-- Контент статистики будет здесь -->
+                <div id="statisticsContent">
+                    Загрузка статистики...
                 </div>
             </div>
-            
-            <!-- Шаг 3: Временные слоты -->
-            <div id="step3" class="step-content hidden">
-                <div class="step-indicator">
-                    <div class="step completed">1</div>
-                    <div class="step completed">2</div>
-                    <div class="step active">3</div>
-                    <div class="step">4</div>
-                    <div class="step">5</div>
+        </div>
+        
+        <!-- 🏆 СТРАНИЦА "О НАС" -->
+        <div id="aboutPage" class="hidden">
+            <div class="header">
+                <h1>🏆 О НАС</h1>
+            </div>
+            <div class="content">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
+                        <i>◀️</i> НАЗАД
+                    </button>
                 </div>
-                
-                <h2 style="text-align: center; margin-bottom: 20px;">🕒 ВЫБОР ВРЕМЕНИ ВЫХОДА</h2>
-                
-                <div id="timeSlotsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка временных слотов...</p>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="prevStep(2)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="nextStep(4)">➡️ ДАЛЕЕ</button>
+                <!-- Контент "О нас" будет здесь -->
+                <div id="aboutContent">
+                    Загрузка информации...
                 </div>
             </div>
-            
-            <!-- Шаг 4: Контактные данные -->
-            <div id="step4" class="step-content hidden">
-                <div class="step-indicator">
-                    <div class="step completed">1</div>
-                    <div class="step completed">2</div>
-                    <div class="step completed">3</div>
-                    <div class="step active">4</div>
-                    <div class="step">5</div>
-                </div>
-                
-                <h2 style="text-align: center; margin-bottom: 20px;">👤 ВАШИ КОНТАКТЫ</h2>
-                
-                <div class="form-group">
-                    <label class="form-label">Ваше имя *</label>
-                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Телефон *</label>
-                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Название компании</label>
-                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="nextStep(5)">➡️ ДАЛЕЕ</button>
-                </div>
+        </div>
+        
+        <!-- 📋 ЛИЧНЫЙ КАБИНЕТ -->
+        <div id="cabinetPage" class="hidden">
+            <div class="header">
+                <h1>📋 ЛИЧНЫЙ КАБИНЕТ</h1>
             </div>
-            
-            <!-- Шаг 5: Подтверждение -->
-            <div id="step5" class="step-content hidden">
-                <div class="step-indicator">
-                    <div class="step completed">1</div>
-                    <div class="step completed">2</div>
-                    <div class="step completed">3</div>
-                    <div class="step completed">4</div>
-                    <div class="step active">5</div>
+            <div class="content">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="menu-btn" onclick="showPage('main')" style="text-align: center; justify-content: center;">
+                        <i>◀️</i> НАЗАД
+                    </button>
                 </div>
-                
-                <h2 style="text-align: center; margin-bottom: 20px;">✅ ПОДТВЕРЖДЕНИЕ ЗАЯВКИ</h2>
-                
-                <div class="success-message">
-                    <h3>🎉 ВСЕ ГОТОВО!</h3>
-                    <p>Ваша рекламная кампания настроена</p>
+                <!-- Контент личного кабинета будет здесь -->
+                <div id="cabinetContent">
+                    Загрузка данных...
                 </div>
-                
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Станции:</span>
-                        <span id="confirmStations">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Стоимость:</span>
-                        <span id="confirmPrice">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Охват:</span>
-                        <span id="confirmReach">-</span>
-                    </div>
-                </div>
-                
-                <button class="btn btn-success" onclick="submitCampaign()">📤 ОТПРАВИТЬ ЗАЯВКУ</button>
-                <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
             </div>
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script>
+        // 🔧 ОСНОВНАЯ ЛОГИКА НАВИГАЦИИ
+        
+        // 📱 Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        
+        // 🚀 Функция показа страницы
+        function showPage(pageName) {
+            console.log('Переход на страницу:', pageName);
+            
+            // Скрываем все страницы
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('statisticsPage').classList.add('hidden');
+            document.getElementById('aboutPage').classList.add('hidden');
+            document.getElementById('cabinetPage').classList.add('hidden');
+            
+            // Показываем нужную страницу
+            const targetPage = document.getElementById(pageName + 'Page');
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            }
+            
+            // Раскрываем Telegram Web App на полный экран
+            if (tg && tg.expand) {
+                tg.expand();
+            }
+            
+            // Загружаем контент для страницы
+            loadPageContent(pageName);
+        }
+        
+        // 📥 Загрузка контента для страницы
+        function loadPageContent(pageName) {
+            switch(pageName) {
+                case 'statistics':
+                    loadStatisticsContent();
+                    break;
+                case 'about':
+                    loadAboutContent();
+                    break;
+                case 'cabinet':
+                    loadCabinetContent();
+                    break;
+                case 'campaign':
+                    // Переход к созданию кампании
+                    window.location.href = '/campaign.html';
+                    break;
+            }
+        }
+        
+        // 📊 Загрузка контента статистики
+        function loadStatisticsContent() {
+            const content = `
+                <div style="line-height: 1.6; font-size: 14px;">
+                    <p style="margin-bottom: 15px; text-align: center; font-weight: bold;">
+                        — КЛЮЧЕВОЙ ФАКТОР ВАШЕГО ОХВАТА
+                    </p>
+                    
+                    <p style="margin-bottom: 15px;">
+                        <strong>🎯 ПОНИМАЕМ РЕАЛЬНУЮ АУДИТОРИЮ:</strong><br>
+                        Демография городов определяет эффективность каждой радиостанции
+                    </p>
+                    
+                    <p style="margin-bottom: 15px;">
+                        <strong>📈 НАШ АНАЛИЗ ПОКАЗЫВАЕТ:</strong>
+                    </p>
+                    
+                    <ul style="margin-left: 20px; margin-bottom: 15px;">
+                        <li>Ялуторовск — выше доля 65+</li>
+                        <li>Заводоуковск — моложе Ялуторовска, но демография смещена в сторону старших возрастов</li>
+                        <li>Общий тренд — отток молодежи + высокая доля старшего поколения</li>
+                    </ul>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
+                            <i>🎯</i> ПОДОБРАТЬ ОПТИМАЛЬНЫЙ МИКС
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('statisticsContent').innerHTML = content;
+        }
+        
+        // 🏆 Загрузка контента "О нас"
+        function loadAboutContent() {
+            const content = `
+                <div style="line-height: 1.6; font-size: 14px; text-align: center;">
+                    <p style="margin-bottom: 15px; font-style: italic;">
+                        «Мы не продаём секунды эфира —<br>
+                        мы создаём истории, которые<br>
+                        слышит весь регион»
+                    </p>
+                    
+                    <p style="margin-bottom: 15px;">
+                        10 лет мы помогаем бизнесу достигать своей аудитории через силу радиоволн.
+                    </p>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                        <p>📻 6 федеральных станций</p>
+                        <p>📍 Ялуторовск • Заводоуковск</p>  
+                        <p>🎯 40 000+ слушателей</p>
+                    </div>
+                    
+                    <p style="margin-bottom: 20px;">
+                        <strong>Наша миссия</strong> — делать рекламу, которую слушают, а не пропускают.
+                    </p>
+                    
+                    <div style="display: flex; gap: 10px; flex-direction: column;">
+                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
+                            <i>🚀</i> НАЧАТЬ РАСЧЕТ
+                        </button>
+                        <button class="menu-btn btn-cabinet" onclick="showContactDetails()" style="text-align: center;">
+                            <i>📞</i> КОНТАКТЫ
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('aboutContent').innerHTML = content;
+        }
+        
+        // 📋 Загрузка контента личного кабинета
+        function loadCabinetContent() {
+            const content = `
+                <div style="text-align: center;">
+                    <div class="loading" style="padding: 30px;">
+                        <p>📡 Загрузка данных кабинета...</p>
+                        <p style="font-size: 12px; color: #7f8c8d; margin-top: 10px;">
+                            Для доступа к личному кабинету нужно создать хотя бы одну кампанию
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="menu-btn" onclick="showPage('campaign')" style="text-align: center;">
+                            <i>🚀</i> СОЗДАТЬ ПЕРВУЮ КАМПАНИЮ
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('cabinetContent').innerHTML = content;
+        }
+        
+        // 📞 Показать контакты
+        function showContactDetails() {
+            const content = `
+                <div style="line-height: 1.6; font-size: 14px;">
+                    <p><strong>📞 КОНТАКТЫ И РЕКВИЗИТЫ</strong></p>
+                    <p>📍 Ялуторовск • Заводоуковск</p>
+                    <p>📱 +7 (922) 044-66-44</p>
+                    <p>✉️ a.khlistunov@gmail.com</p>
+                    <p>👤 Telegram: @AlexeyKhlistunov</p>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ecf0f1;">
+                        <p><strong>Юридическая информация:</strong></p>
+                        <p>ИП Хлыстунов Алексей Александрович</p>
+                        <p>ОГРНИП 315723200067362</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('aboutContent').innerHTML = content;
+        }
+        
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Mini App запущен!');
+            
+            // Инициализация Telegram Web App
+            if (tg) {
+                tg.ready();
+                tg.expand(); // Раскрываем на весь экран
+            }
+            
+            // Показываем главную страницу
+            showPage('main');
+        });
+    </script>
 </body>
 </html>
