@@ -1,3 +1,5 @@
+# [file name]: render.yaml
+# [file content begin]
 services:
   - type: web
     name: yaradiobot
@@ -8,3 +10,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU
+      - key: ADMIN_TELEGRAM_ID
+        value: 174046571
+# [file content end]
