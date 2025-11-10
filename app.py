@@ -1,5 +1,4 @@
 # [file name]: app.py
-# [file content begin]
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 import sqlite3
@@ -67,6 +66,10 @@ PRODUCTION_OPTIONS = {
     "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"},
     "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"}
 }
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # 🗄️ ФУНКЦИИ РАБОТЫ С БАЗОЙ ДАННЫХ
 def init_db():
@@ -142,7 +145,7 @@ def calculate_campaign_price_and_reach(user_data):
                 if slot["premium"]:
                     premium_count += 1
         
-        time_multiplier = 1.0 + (premium_count * 0.05)  # 🆕 +5% за каждый премиум-слот
+        time_multiplier = 1.0 + (premium_count * 0.05)
         
         # БРЕНДИРОВАННЫЕ РУБРИКИ
         branded_multiplier = 1.0
@@ -169,7 +172,6 @@ def calculate_campaign_price_and_reach(user_data):
                 slot = TIME_SLOTS_DATA[slot_index]
                 total_coverage_percent += slot["coverage_percent"]
         
-        # 🆕 ФОРМУЛА: total_listeners × (1 - 0.7^(total_coverage_percent/100))
         unique_daily_coverage = int(total_listeners * (1 - 0.7 ** (total_coverage_percent / 100)))
         total_reach = int(unique_daily_coverage * campaign_days)
         
@@ -453,14 +455,9 @@ def download_campaign_excel(campaign_number):
 
 # 🚀 ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
-    # Настройка логирования
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    
     # Инициализация базы данных
     init_db()
     
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"🚀 Запуск приложения на порту {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
-[file content end]
