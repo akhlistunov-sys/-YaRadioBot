@@ -11,6 +11,16 @@ BASE_PRICE_PER_SECOND = 2.0
 MIN_PRODUCTION_COST = 2000
 MIN_BUDGET = 7000
 
+# Гибкие ставки для опта
+PRICE_TIERS = {
+    1: 2.0,    # 1-2 радио
+    2: 2.0,    # 1-2 радио  
+    3: 1.5,    # 3-4 радио
+    4: 1.5,    # 3-4 радио
+    5: 1.2,    # 5+ радио
+    6: 1.2     # 5+ радио
+}
+
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
     {"time": "07:00-08:00", "label": "Утренние поездки", "premium": True, "coverage_percent": 10},
@@ -29,13 +39,14 @@ TIME_SLOTS_DATA = [
     {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": True, "coverage_percent": 4}
 ]
 
+# ОБНОВЛЕННЫЕ ОХВАТЫ РАДИОСТАНЦИЙ
 STATION_COVERAGE = {
     "LOVE RADIO": 700,
     "АВТОРАДИО": 3250,
-    "РАДИО ДАЧА": 3250,
+    "РАДИО ДАЧА": 3250, 
     "РАДИО ШАНСОН": 2900,
     "РЕТРО FM": 3600,
-    "ЮМОР FM": 1600
+    "ЮМОР FM": 2100  # Исправлено: 1600 → 2100
 }
 
 BRANDED_SECTION_PRICES = {
@@ -54,7 +65,7 @@ def format_number(num):
     return f"{num:,}".replace(",", " ")
 
 def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С РАЗНЫМ ОХВАТОМ СЛОТОВ"""
+    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С ПРАВИЛЬНОЙ ЛОГИКОЙ ОХВАТА"""
     try:
         base_duration = user_data.get("duration", 20)
         campaign_days = user_data.get("campaign_days", 30)
@@ -67,10 +78,14 @@ def calculate_campaign_price_and_reach(user_data):
         num_stations = len(selected_radios)
         spots_per_day = len(selected_time_slots) * num_stations
         
-        cost_per_spot = base_duration * BASE_PRICE_PER_SECOND
+        # ГИБКАЯ СТАВКА В ЗАВИСИМОСТИ ОТ КОЛИЧЕСТВА РАДИО
+        price_per_second = PRICE_TIERS.get(num_stations, PRICE_TIERS[6])
+        
+        # БАЗОВАЯ СТОИМОСТЬ ЭФИРА
+        cost_per_spot = base_duration * price_per_second
         base_air_cost = cost_per_spot * spots_per_day * campaign_days
         
-        # 🆕 НОВАЯ МЕТОДИКА ПРЕМИУМ-СЛОТОВ: +5% ЗА КАЖДЫЙ
+        # ПРЕМИУМ-СЛОТЫ: +2% ЗА КАЖДЫЙ (вместо +5%)
         premium_count = 0
         for slot_index in selected_time_slots:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
@@ -78,33 +93,45 @@ def calculate_campaign_price_and_reach(user_data):
                 if slot["premium"]:
                     premium_count += 1
         
-        time_multiplier = 1.0 + (premium_count * 0.05)  # 🆕 +5% за каждый премиум-слот
+        time_multiplier = 1.0 + (premium_count * 0.02)  # 🆕 +2% за каждый премиум-слот
         
+        # БРЕНДИРОВАННЫЕ РУБРИКИ
         branded_multiplier = 1.0
         branded_section = user_data.get("branded_section")
         if branded_section in BRANDED_SECTION_PRICES:
             branded_multiplier = BRANDED_SECTION_PRICES[branded_section]
         
+        # ПРОИЗВОДСТВО РОЛИКА
         production_cost = user_data.get("production_cost", 0)
         air_cost = int(base_air_cost * time_multiplier * branded_multiplier)
         base_price = air_cost + production_cost
         
+        # СКИДКА И ИТОГ
         discount = int(base_price * 0.5)
         discounted_price = base_price - discount
         final_price = max(discounted_price, MIN_BUDGET)
         
-        # 🆕 НОВАЯ ФОРМУЛА ОХВАТА С НАСЫЩЕНИЕМ
+        # 🆕 ПРАВИЛЬНАЯ ФОРМУЛА ОХВАТА
         total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
         
-        total_coverage_percent = 0
+        # Расчет потенциального охвата за день
+        potential_coverage = 0
         for slot_index in selected_time_slots:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
-                total_coverage_percent += slot["coverage_percent"]
+                slot_coverage = total_listeners * (slot["coverage_percent"] / 100)
+                potential_coverage += slot_coverage
         
-        # 🆕 ФОРМУЛА: total_listeners × (1 - 0.7^(total_coverage_percent/100))
-        unique_daily_coverage = int(total_listeners * (1 - 0.7 ** (total_coverage_percent / 100)))
+        # Уникальный охват с учетом пересечения аудитории
+        unique_daily_coverage = int(potential_coverage * 0.7)
         total_reach = int(unique_daily_coverage * campaign_days)
+        
+        # Суммарный процент охвата для отображения
+        total_coverage_percent = sum(
+            TIME_SLOTS_DATA[slot_index]["coverage_percent"] 
+            for slot_index in selected_time_slots 
+            if 0 <= slot_index < len(TIME_SLOTS_DATA)
+        )
         
         return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent, premium_count
         
@@ -130,4 +157,8 @@ def get_time_slots_text(selected_slots):
             premium_emoji = "🚀" if slot["premium"] else "📊"
             slots_text += f"• {slot['time']} - {slot['label']} {premium_emoji}\n"
     return slots_text
+
+def get_production_cost(production_option):
+    """Получить стоимость производства ролика"""
+    return PRODUCTION_OPTIONS.get(production_option, {}).get('price', 0)
 # [file content end]
