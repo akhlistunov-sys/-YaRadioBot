@@ -4,18 +4,19 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 import logging
+from dotenv import load_dotenv  # 👈 ДОБАВИТЬ ЭТУ СТРОКУ
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 🔐 ЗАГРУЗКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
+load_dotenv()  # 👈 ДОБАВИТЬ ЭТУ СТРОКУ
 
-app = Flask(__name__, static_folder='frontend')
-CORS(app)
+# 📊 КОНСТАНТЫ ИЗ .env
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
+ADMIN_TELEGRAM_ID = int(os.getenv('ADMIN_TELEGRAM_ID', '174046571'))
+BASE_PRICE_PER_SECOND = float(os.getenv('BASE_PRICE_PER_SECOND', '2.0'))
+MIN_PRODUCTION_COST = int(os.getenv('MIN_PRODUCTION_COST', '2000'))
+MIN_BUDGET = int(os.getenv('MIN_BUDGET', '7000'))
 
-# 🔧 КОНСТАНТЫ ИЗ BOT.PY (полная копия)
-BASE_PRICE_PER_SECOND = 2.0
-MIN_PRODUCTION_COST = 2000
-MIN_BUDGET = 7000
+# Остальной код остается без изменений...
 
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
