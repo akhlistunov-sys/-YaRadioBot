@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .content {
+            padding: 25px 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .user-info {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .user-avatar {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .user-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .user-id {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .campaign-list {
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .campaign-item {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .campaign-item:hover {
+            background: #ebf5fb;
+        }
+        
+        .campaign-item:last-child {
+            border-bottom: none;
+        }
+        
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .campaign-number {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .campaign-status {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .campaign-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219653);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 ЛИЧНЫЙ КАБИНЕТ</h1>
+        </div>
+        
+        <div class="content">
+            <!-- 👤 ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ -->
+            <div class="user-info">
+                <div class="user-avatar">👤</div>
+                <div class="user-name" id="userName">Загрузка...</div>
+                <div class="user-id" id="userId">ID: ...</div>
+            </div>
+            
+            <!-- 📊 СТАТИСТИКА -->
+            <div class="section">
+                <div class="section-title">💎 СТАТИСТИКА ЗА 2025</div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка статистики...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 🚀 АКТИВНЫЕ КАМПАНИИ -->
+            <div class="section">
+                <div class="section-title">🚀 АКТИВНЫЕ КАМПАНИИ</div>
+                <div class="campaign-list" id="activeCampaigns">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка активных кампаний...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 📊 ЗАВЕРШЕННЫЕ КАМПАНИИ -->
+            <div class="section">
+                <div class="section-title">📊 ЗАВЕРШЕННЫЕ КАМПАНИИ</div>
+                <div class="campaign-list" id="completedCampaigns">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка завершенных кампаний...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 🚀 ПРИЗЫВ К ДЕЙСТВИЮ -->
+            <div class="section">
+                <button class="btn" onclick="goToCampaign()">
+                    🚀 СОЗДАТЬ НОВУЮ КАМПАНИЮ
+                </button>
+                <button class="btn btn-success" onclick="showDetailedStats()">
+                    📈 ДЕТАЛЬНАЯ СТАТИСТИКА
+                </button>
+                <button class="btn btn-secondary" onclick="goToMain()">
+                    ◀️ НАЗАД В ГЛАВНОЕ МЕНЮ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+        let tg = window.Telegram.WebApp;
+        
+        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        let userData = {
+            id: null,
+            name: 'Пользователь',
+            campaigns: []
+        };
+        
+        // 🚀 ФУНКЦИИ НАВИГАЦИИ
+        function goToCampaign() {
+            window.location.href = '/campaign.html';
+        }
+        
+        function goToMain() {
+            window.location.href = '/index.html';
+        }
+        
+        function showDetailedStats() {
+            alert('📈 Детальная статистика будет доступна после создания первой кампании!');
+        }
+        
+        // 📊 ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
+        async function loadUserData() {
+            try {
+                // Получаем данные из Telegram Web App
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const tgUser = tg.initDataUnsafe.user;
+                    userData.id = tgUser.id;
+                    userData.name = tgUser.first_name || 'Пользователь';
+                    
+                    document.getElementById('userName').textContent = userData.name;
+                    document.getElementById('userId').textContent = `ID: ${userData.id}`;
+                    
+                    // Загружаем кампании пользователя
+                    await loadUserCampaigns();
+                } else {
+                    // Демо-режим для тестирования
+                    userData.id = Date.now();
+                    userData.name = 'Демо Пользователь';
+                    
+                    document.getElementById('userName').textContent = userData.name;
+                    document.getElementById('userId').textContent = `ID: ${userData.id} (демо)`;
+                    
+                    showDemoData();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                showDemoData();
+            }
+        }
+        
+        // 📋 ЗАГРУЗКА КАМПАНИЙ ПОЛЬЗОВАТЕЛЯ
+        async function loadUserCampaigns() {
+            try {
+                // Здесь будет реальный API вызов
+                // const response = await fetch(`/api/user-campaigns?user_id=${userData.id}`);
+                // const data = await response.json();
+                
+                // Временные демо-данные
+                const demoData = {
+                    active_campaigns: [
+                        {
+                            campaign_number: 'R-164532',
+                            start_date: '15.01.2025',
+                            end_date: '30.01.2025',
+                            final_price: 7000,
+                            actual_reach: 150000,
+                            status: 'active'
+                        }
+                    ],
+                    completed_campaigns: [
+                        {
+                            campaign_number: 'R-142356',
+                            start_date: '01.12.2024',
+                            end_date: '15.12.2024',
+                            final_price: 14000,
+                            actual_reach: 300000,
+                            status: 'completed'
+                        }
+                    ],
+                    stats: {
+                        total_campaigns: 2,
+                        total_revenue: 21000,
+                        total_reach: 450000
+                    }
+                };
+                
+                displayCampaigns(demoData);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки кампаний:', error);
+                showDemoData();
+            }
+        }
+        
+        // 🎯 ОТОБРАЖЕНИЕ ДАННЫХ
+        function displayCampaigns(data) {
+            // Отображаем статистику
+            displayStats(data.stats);
+            
+            // Отображаем активные кампании
+            displayCampaignList('activeCampaigns', data.active_campaigns, 'active');
+            
+            // Отображаем завершенные кампании
+            displayCampaignList('completedCampaigns', data.completed_campaigns, 'completed');
+        }
+        
+        function displayStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            
+            if (stats.total_campaigns > 0) {
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.total_campaigns}</div>
+                        <div class="stat-label">кампаний</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${formatNumber(stats.total_revenue)}₽</div>
+                        <div class="stat-label">общий бюджет</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${formatNumber(stats.total_reach)}</div>
+                        <div class="stat-label">общий охват</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${Math.round(stats.total_reach / stats.total_revenue)}</div>
+                        <div class="stat-label">охват на 1₽</div>
+                    </div>
+                `;
+            } else {
+                statsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div>У вас пока нет кампаний</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayCampaignList(containerId, campaigns, status) {
+            const container = document.getElementById(containerId);
+            
+            if (campaigns && campaigns.length > 0) {
+                let html = '';
+                campaigns.forEach(campaign => {
+                    const statusClass = status === 'active' ? 'status-active' : 'status-completed';
+                    const statusText = status === 'active' ? 'АКТИВНА' : 'ЗАВЕРШЕНА';
+                    
+                    html += `
+                        <div class="campaign-item" onclick="showCampaignDetails('${campaign.campaign_number}')">
+                            <div class="campaign-header">
+                                <div class="campaign-number">${campaign.campaign_number}</div>
+                                <div class="campaign-status ${statusClass}">${statusText}</div>
+                            </div>
+                            <div class="campaign-details">
+                                <div class="detail-item">
+                                    <span>Период:</span>
+                                    <span>${campaign.start_date} - ${campaign.end_date}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Стоимость:</span>
+                                    <span>${formatNumber(campaign.final_price)}₽</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Охват:</span>
+                                    <span>${formatNumber(campaign.actual_reach)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">${status === 'active' ? '📭' : '📊'}</div>
+                        <div>${status === 'active' ? 'Нет активных кампаний' : 'Нет завершенных кампаний'}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function showCampaignDetails(campaignNumber) {
+            alert(`📋 Детали кампании #${campaignNumber}\n\nЭта функция будет доступна в следующем обновлении!`);
+        }
+        
+        // 🎪 ДЕМО-РЕЖИМ
+        function showDemoData() {
+            const demoStats = {
+                total_campaigns: 0,
+                total_revenue: 0,
+                total_reach: 0
+            };
+            
+            displayStats(demoStats);
+            displayCampaignList('activeCampaigns', [], 'active');
+            displayCampaignList('completedCampaigns', [], 'completed');
+        }
+        
+        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+        
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 Cabinet Page loaded');
+            
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+            
+            loadUserData();
+        });
+    </script>
+</body>
+</html>
