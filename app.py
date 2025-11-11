@@ -72,6 +72,11 @@ def init_db():
             )
         """)
         
+        # Добавляем индексы для производительности
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON campaigns(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_number ON campaigns(campaign_number)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON campaigns(created_at)")
+        
         conn.commit()
         conn.close()
         logger.info("✅ База данных инициализирована успешно")
@@ -101,6 +106,7 @@ Email: {user_data.get('email', 'Не указан')}
 
 📅 ПЕРИОД: {user_data.get('start_date')} - {user_data.get('end_date')} ({user_data.get('campaign_days')} дней)
 💰 СТОИМОСТЬ: {format_number(user_data.get('final_price', 0))}₽
+👥 ОХВАТ: ~{format_number(user_data.get('total_reach', 0))} чел.
 """
         
         # Отправка текстового сообщения
@@ -110,7 +116,11 @@ Email: {user_data.get('email', 'Не указан')}
             'text': notification_text,
             'parse_mode': 'HTML'
         }
-        requests.post(text_url, data=text_data)
+        response = requests.post(text_url, data=text_data)
+        
+        if response.status_code != 200:
+            logger.error(f"❌ Ошибка отправки текста в Telegram: {response.text}")
+            return False
         
         # Отправка Excel файла
         excel_buffer = create_excel_file_from_db(campaign_number)
@@ -118,7 +128,11 @@ Email: {user_data.get('email', 'Не указан')}
             files = {'document': (f'mediaplan_{campaign_number}.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             doc_data = {'chat_id': ADMIN_TELEGRAM_ID}
             doc_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
-            requests.post(doc_url, files=files, data=doc_data)
+            doc_response = requests.post(doc_url, files=files, data=doc_data)
+            
+            if doc_response.status_code != 200:
+                logger.error(f"❌ Ошибка отправки файла в Telegram: {doc_response.text}")
+                # Продолжаем выполнение даже если файл не отправился
         
         logger.info(f"✅ Уведомление отправлено админу для кампании #{campaign_number}")
         return True
@@ -204,8 +218,10 @@ def create_excel_file_from_db(campaign_number):
         
         ws["A7"] = "• Радиостанции: " + ", ".join(user_data["selected_radios"])
         ws["A8"] = f"• Период: {user_data['start_date']} - {user_data['end_date']} ({user_data['campaign_days']} дней)"
-        ws["A9"] = f"• Выходов в день: {len(user_data['selected_time_slots']) * len(user_data['selected_radios'])}"
-        ws["A10"] = f"• Всего выходов за период: {len(user_data['selected_time_slots']) * len(user_data['selected_radios']) * user_data['campaign_days']}"
+        
+        spots_per_day = len(user_data["selected_time_slots"]) * len(user_data["selected_radios"])
+        ws["A9"] = f"• Выходов в день: {spots_per_day}"
+        ws["A10"] = f"• Всего выходов за период: {spots_per_day * user_data['campaign_days']}"
         ws["A11"] = f"• Хронометраж ролика: {user_data['duration']} сек"
         
         branded_section_name = "Не выбрана"
@@ -261,20 +277,21 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{row}"].font = title_font
         row += 1
         
-        ws[f"A{row}"] = f"• Выходов в день: {len(user_data['selected_time_slots']) * len(user_data['selected_radios'])}"
-        row += 1
+        # Расчет по логике из campaign_calculator.py
+        calculation_data = {
+            "selected_radios": user_data["selected_radios"],
+            "selected_time_slots": user_data["selected_time_slots"],
+            "campaign_days": user_data["campaign_days"],
+            "duration": user_data["duration"]
+        }
         
-        # Расчет охвата
-        daily_outputs = len(user_data["selected_time_slots"]) * len(user_data["selected_radios"])
-        coverage_per_output = int(total_listeners * 0.15)  # Пример: 15% от аудитории за выход
-        daily_coverage = int(daily_outputs * coverage_per_output * 0.7)  # Уникальный охват
-        total_coverage = daily_coverage * user_data["campaign_days"]
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(calculation_data)
         
-        ws[f"A{row}"] = f"• Охват за 1 выход: ~{format_number(coverage_per_output)} чел. (15% от аудитории)"
+        ws[f"A{row}"] = f"• Выходов в день: {spots_per_day}"
         row += 1
         ws[f"A{row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
         row += 1
-        ws[f"A{row}"] = f"• Общий охват за период: ~{format_number(total_coverage)} чел."
+        ws[f"A{row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
         
         # Пустая строка
         ws.append([])
@@ -291,12 +308,14 @@ def create_excel_file_from_db(campaign_number):
         ws[f"B{row}"] = "Сумма (₽)"
         row += 1
         
+        production_cost = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("price", 0)
+        air_cost = user_data["base_price"] - production_cost
+        
         ws[f"A{row}"] = "Эфирное время"
-        ws[f"B{row}"] = user_data["base_price"] - user_data.get("production_cost", 0)
+        ws[f"B{row}"] = air_cost
         row += 1
         
         if user_data["production_option"]:
-            production_cost = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("price", 0)
             ws[f"A{row}"] = "Производство ролика"
             ws[f"B{row}"] = production_cost
             row += 1
@@ -309,7 +328,7 @@ def create_excel_file_from_db(campaign_number):
         ws[f"B{row}"] = user_data["base_price"]
         row += 1
         
-        ws[f"A{row}"] = "Скидка 50%"
+        ws[f"A{row}"] = "Скидка"
         ws[f"B{row}"] = f"-{user_data['discount']}"
         row += 1
         
@@ -351,9 +370,9 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{row}"].font = title_font
         row += 1
         
-        ws[f"A{row}"] = "• Email: a.khlistunov@gmail.com"
+        ws[f"A{row}"] = "• Email: man@ya-radio.ru"
         row += 1
-        ws[f"A{row}"] = "• Telegram: t.me/AlexeyKhlistunov"
+        ws[f"A{row}"] = "• Telegram: @AlexeyKhlistunov"
         
         # Пустая строка
         ws.append([])
@@ -408,7 +427,6 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-# 🆕 API ДЛЯ КАМПАНИЙ
 @app.route('/api/calculate', methods=['POST'])
 def calculate_campaign():
     """Расчет стоимости кампании"""
@@ -506,8 +524,17 @@ def create_campaign():
             }), 400
         
         # Расчет стоимости
-        calculation_result = calculate_campaign_price_and_reach(data)
-        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculation_result
+        calculation_data = {
+            "selected_radios": data.get('selected_radios', []),
+            "selected_time_slots": data.get('selected_time_slots', []),
+            "campaign_days": data.get('campaign_days', 30),
+            "duration": data.get('duration', 20),
+            "branded_section": data.get('branded_section'),
+            "production_option": data.get('production_option'),
+            "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
+        }
+        
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(calculation_data)
         
         # Генерация номера кампании
         campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
@@ -619,6 +646,43 @@ def download_campaign_excel(campaign_number):
             return jsonify({"success": False, "error": "Файл не найден"}), 404
     except Exception as e:
         logger.error(f"❌ Ошибка скачивания Excel: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/confirmation/<campaign_number>')
+def get_campaign_confirmation(campaign_number):
+    """ПОЛУЧЕНИЕ ДАННЫХ ДЛЯ СТРАНИЦЫ ПОДТВЕРЖДЕНИЯ"""
+    try:
+        conn = sqlite3.connect("campaigns.db")
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at
+            FROM campaigns 
+            WHERE campaign_number = ?
+        """, (campaign_number,))
+        
+        campaign = cursor.fetchone()
+        conn.close()
+        
+        if not campaign:
+            return jsonify({"success": False, "error": "Кампания не найдена"}), 404
+        
+        return jsonify({
+            "success": True,
+            "campaign": {
+                "campaign_number": campaign[0],
+                "final_price": campaign[1],
+                "actual_reach": campaign[2],
+                "contact_name": campaign[3],
+                "phone": campaign[4],
+                "email": campaign[5],
+                "company": campaign[6],
+                "created_at": campaign[7]
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 # 🚀 ЗАПУСК ПРИЛОЖЕНИЯ
