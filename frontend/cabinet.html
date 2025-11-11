@@ -1,4 +1,4 @@
-<!-- [file name]: cabinet.html -->
+<!-- [file name]: frontend/cabinet.html -->
 <!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
@@ -71,10 +71,6 @@
         
         .btn-secondary {
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60, #219653);
         }
         
         .btn-excel {
@@ -450,7 +446,6 @@
         }
 
         function getUserIdFromStorage() {
-            // Попытка получить ID из localStorage или сгенерировать временный
             let userId = localStorage.getItem('telegram_user_id');
             if (!userId) {
                 userId = 'temp_' + Date.now();
