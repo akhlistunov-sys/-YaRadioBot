@@ -1,4 +1,4 @@
-<!-- [file name]: index.html -->
+<!-- [file name]: frontend/index.html -->
 <!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
@@ -37,44 +37,16 @@
             flex-shrink: 0;
         }
         
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 15px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
         
         .location {
             font-size: 16px;
             opacity: 0.9;
             margin-bottom: 20px;
-        }
-        
-        .hero {
-            text-align: center;
-            padding: 20px;
-            background: #f8fafc;
-            margin: 0 20px 20px;
-            border-radius: 12px;
-            border-left: 4px solid #3b82f6;
-        }
-        
-        .hero-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-        
-        .hero-subtitle {
-            font-size: 14px;
-            color: #64748b;
         }
         
         .stats {
@@ -84,11 +56,24 @@
             border-radius: 12px;
             text-align: center;
             margin: 0 20px 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
         
-        .stats h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
+        .stat-item {
+            padding: 8px;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
         }
         
         .menu-grid {
@@ -138,10 +123,6 @@
         .btn-cabinet { 
             background: linear-gradient(135deg, #64748b, #475569); 
         }
-        
-        .hidden {
-            display: none !important;
-        }
 
         @media (min-width: 768px) {
             .container {
@@ -155,18 +136,27 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">📻</div>
+            <h1>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
             <div class="location">📍 Ялуторовск • Заводоуковск</div>
-        </div>
-        
-        <div class="hero">
-            <div class="hero-title">🤖 Рассчитайте рекламу за 2 минуты</div>
-            <div class="hero-subtitle">🎯 9 шагов → готовый медиаплан</div>
         </div>
 
         <div class="stats">
-            <h3>🏆 200+ кампаний в 2025</h3>
-            <div>💰 От 7 000₽</div>
+            <div class="stat-item">
+                <div class="stat-number">200+</div>
+                <div class="stat-label">кампаний</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">7 000₽</div>
+                <div class="stat-label">от</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">~15 100</div>
+                <div class="stat-label">в день</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">52%</div>
+                <div class="stat-label">рынка</div>
+            </div>
         </div>
 
         <div class="menu-grid">
