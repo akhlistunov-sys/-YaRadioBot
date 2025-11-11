@@ -1,0 +1,332 @@
+<!-- [file name]: frontend/confirmation.html -->
+<!-- [file content begin] -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявка принята - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            width: 100%;
+        }
+        
+        .container {
+            width: 100%;
+            min-height: 100vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px 20px;
+            overflow-y: auto;
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .campaign-number {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .details h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .next-steps {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .next-steps h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .next-steps ol {
+            padding-left: 20px;
+        }
+        
+        .next-steps li {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-excel {
+            background: linear-gradient(135deg, #1e8449, #186a3b);
+        }
+        
+        .btn-cabinet {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+        
+        .btn-new {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 400px;
+                margin: 0 auto;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ ЗАЯВКА ПРИНЯТА</h1>
+        </div>
+        
+        <div class="content">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Загрузка данных заявки...</p>
+            </div>
+            
+            <div id="confirmationContent" class="hidden">
+                <div class="success-icon">🎉</div>
+                
+                <div class="campaign-number" id="campaignNumber">
+                    #R-000000
+                </div>
+                
+                <div class="details">
+                    <h3>📋 ДЕТАЛИ ЗАЯВКИ</h3>
+                    <div class="detail-item">
+                        <span>Номер:</span>
+                        <span id="detailNumber">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Статус:</span>
+                        <span style="color: #27ae60;">Принята</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Стоимость:</span>
+                        <span id="detailPrice">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Охват:</span>
+                        <span id="detailReach">-</span>
+                    </div>
+                </div>
+
+                <div class="next-steps">
+                    <h3>📞 ЧТО ДАЛЬШЕ</h3>
+                    <ol>
+                        <li>Мы свяжемся с вами в течение 24 часов</li>
+                        <li>Подтвердим детали кампании</li>
+                        <li>Отправим медиаплан на email</li>
+                        <li>Запустим кампанию в течение 3 дней</li>
+                    </ol>
+                </div>
+
+                <button class="btn btn-excel" onclick="downloadExcel()">
+                    📊 СКАЧАТЬ EXCEL МЕДИАПЛАН
+                </button>
+                
+                <button class="btn btn-cabinet" onclick="goToCabinet()">
+                    📋 ЛИЧНЫЙ КАБИНЕТ
+                </button>
+                
+                <button class="btn btn-new" onclick="goToNewCampaign()">
+                    🚀 НОВАЯ КАМПАНИЯ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+        let tg = window.Telegram.WebApp;
+        
+        // 🗄️ ДАННЫЕ ЗАЯВКИ
+        let campaignData = null;
+
+        // 🚀 ФУНКЦИИ НАВИГАЦИИ
+        function downloadExcel() {
+            if (campaignData) {
+                window.open(`/api/campaign-excel/${campaignData.campaign_number}`, '_blank');
+            }
+        }
+
+        function goToCabinet() {
+            window.location.href = '/cabinet.html';
+        }
+
+        function goToNewCampaign() {
+            window.location.href = '/campaign.html';
+        }
+
+        // 📊 ЗАГРУЗКА ДАННЫХ ЗАЯВКИ
+        function loadCampaignData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const campaignNumber = urlParams.get('campaign');
+            
+            if (!campaignNumber) {
+                showError('Номер заявки не указан');
+                return;
+            }
+
+            fetch(`/api/confirmation/${campaignNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        campaignData = data.campaign;
+                        displayConfirmationData(data.campaign);
+                    } else {
+                        showError('Заявка не найдена: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки данных:', error);
+                    showError('Ошибка загрузки данных заявки');
+                });
+        }
+
+        function displayConfirmationData(campaign) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('confirmationContent').classList.remove('hidden');
+            
+            document.getElementById('campaignNumber').textContent = `#${campaign.campaign_number}`;
+            document.getElementById('detailNumber').textContent = campaign.campaign_number;
+            document.getElementById('detailPrice').textContent = formatNumber(campaign.final_price) + ' ₽';
+            document.getElementById('detailReach').textContent = '~' + formatNumber(campaign.actual_reach) + ' чел.';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').innerHTML = `
+                <div style="color: #e74c3c; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                    <div>${message}</div>
+                    <button class="btn" onclick="goToNewCampaign()" style="margin-top: 20px;">
+                        🚀 СОЗДАТЬ НОВУЮ ЗАЯВКУ
+                    </button>
+                </div>
+            `;
+        }
+
+        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Страница подтверждения загружена!');
+            
+            // Инициализация Telegram Web App
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+            
+            // Загрузка данных заявки
+            loadCampaignData();
+        });
+    </script>
+</body>
+</html>
+<!-- [file content end] -->
