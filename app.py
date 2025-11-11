@@ -504,6 +504,10 @@ def get_radio_stations():
 def create_campaign():
     """СОЗДАНИЕ НОВОЙ КАМПАНИИ"""
     try:
+        # Инициализация БД перед созданием кампании
+        if not init_db():
+            return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
+            
         data = request.json
         user_id = data.get('user_id', 0)
         
@@ -597,6 +601,10 @@ def create_campaign():
 def get_user_campaigns(user_id):
     """ПОЛУЧЕНИЕ ИСТОРИИ КАМПАНИЙ ПОЛЬЗОВАТЕЛЯ"""
     try:
+        # Инициализация БД перед запросом
+        if not init_db():
+            return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
+            
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
         
@@ -652,6 +660,10 @@ def download_campaign_excel(campaign_number):
 def get_campaign_confirmation(campaign_number):
     """ПОЛУЧЕНИЕ ДАННЫХ ДЛЯ СТРАНИЦЫ ПОДТВЕРЖДЕНИЯ"""
     try:
+        # Инициализация БД перед запросом
+        if not init_db():
+            return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
+            
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
         
