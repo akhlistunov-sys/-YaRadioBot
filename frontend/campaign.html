@@ -1,4 +1,4 @@
-<!-- [file name]: campaign.html -->
+<!-- [file name]: frontend/campaign.html -->
 <!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
@@ -42,56 +42,6 @@
             font-weight: 700;
         }
         
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-            flex-shrink: 0;
-            overflow-x: auto;
-        }
-        
-        .step {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #ecf0f1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 3px;
-            font-weight: bold;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            position: relative;
-            flex-shrink: 0;
-        }
-        
-        .step.active {
-            background: #3498db;
-            color: white;
-        }
-        
-        .step.completed {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .step::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 100%;
-            width: 6px;
-            height: 2px;
-            background: #bdc3c7;
-        }
-        
-        .step:last-child::after {
-            display: none;
-        }
-        
         .content {
             flex: 1;
             padding: 20px;
@@ -118,33 +68,25 @@
             color: #2c3e50;
         }
         
-        .step-description {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #7f8c8d;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        
         .btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 15px 20px;
-            border-radius: 12px;
-            font-size: 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            margin: 10px 0;
+            margin: 8px 0;
             transition: all 0.3s ease;
             text-align: center;
             flex-shrink: 0;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
         
         .btn-secondary {
@@ -170,11 +112,14 @@
         .radio-station {
             background: white;
             border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0;
             cursor: pointer;
             transition: all 0.3s ease;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .radio-station.selected {
@@ -186,13 +131,7 @@
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .radio-emoji {
-            margin-right: 8px;
-            font-size: 18px;
+            color: #2c3e50;
         }
         
         .radio-listeners {
@@ -202,61 +141,43 @@
         
         .stats {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 15px 0;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 12px 0;
             border-left: 4px solid #3498db;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .stat-item {
             display: flex;
             justify-content: space-between;
-            margin: 8px 0;
+            margin: 6px 0;
             font-size: 14px;
         }
         
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-
-        /* Стили для форм ввода */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
             color: #2c3e50;
+            font-size: 14px;
         }
         
         .form-input, .form-textarea {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 2px solid #ecf0f1;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             transition: border-color 0.3s ease;
         }
         
@@ -266,7 +187,7 @@
         }
         
         .form-textarea {
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
         }
         
@@ -274,17 +195,20 @@
             text-align: right;
             font-size: 12px;
             color: #7f8c8d;
-            margin-top: 5px;
+            margin-top: 4px;
         }
         
         .production-option {
             background: white;
             border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0;
             cursor: pointer;
             transition: all 0.3s ease;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .production-option.selected {
@@ -295,18 +219,22 @@
         .production-name {
             font-weight: 600;
             font-size: 16px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
         .production-price {
             color: #27ae60;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
         .production-desc {
             color: #7f8c8d;
-            font-size: 14px;
+            font-size: 13px;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         @media (min-width: 768px) {
@@ -321,30 +249,22 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎙️ СОЗДАНИЕ КАМПАНИИ</h1>
+            <h1>🚀 СОЗДАНИЕ КАМПАНИИ</h1>
         </div>
         
-        <!-- 📊 ИНДИКАТОР 9 ШАГОВ -->
-        <div class="step-indicator">
-            <div class="step active" data-step="1">1</div>
-            <div class="step" data-step="2">2</div>
-            <div class="step" data-step="3">3</div>
-            <div class="step" data-step="4">4</div>
-            <div class="step" data-step="5">5</div>
-            <div class="step" data-step="6">6</div>
-            <div class="step" data-step="7">7</div>
-            <div class="step" data-step="8">8</div>
-            <div class="step" data-step="9">9</div>
-        </div>
-        
-        <!-- 📱 ОСНОВНОЕ СОДЕРЖИМОЕ -->
         <div class="content">
-            <!-- 🚀 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ -->
+            <!-- ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ -->
             <div id="step1" class="step-content active">
                 <div class="step-title">📻 ВЫБОР РАДИОСТАНЦИЙ</div>
-                <div class="step-description">
-                    ● ● ○ ○ ○ ○ ○ ○ ○ [1/9]<br>
-                    ⏱️ Этот шаг займет ~30 секунд
+                
+                <button class="btn btn-secondary" onclick="selectAllRadios()" style="width: 95%; margin: 0 auto 12px;">
+                    ✅ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
+                </button>
+                
+                <div id="radioStationsList">
+                    <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                        Загрузка радиостанций...
+                    </div>
                 </div>
                 
                 <div class="stats">
@@ -358,45 +278,15 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="selectAllRadios()">
-                    ✅ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
-                </button>
-                
-                <div id="radioStationsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка радиостанций...</p>
-                    </div>
-                </div>
-                
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="goToMainPage()">◀️ НАЗАД</button>
                     <button class="btn" onclick="validateStep1()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- 📅 ШАГ 2: КАЛЕНДАРЬ -->
+            <!-- ШАГ 2: ВЫБОР ДАТ -->
             <div id="step2" class="step-content">
                 <div class="step-title">📅 ВЫБОР ДАТ КАМПАНИИ</div>
-                <div class="step-description">
-                    ● ● ● ○ ○ ○ ○ ○ ○ [2/9]<br>
-                    ⏱️ Этот шаг займет ~15 секунд
-                </div>
-                
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Начало:</span>
-                        <span id="startDateDisplay">не выбрано</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Окончание:</span>
-                        <span id="endDateDisplay">не выбрано</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Период:</span>
-                        <span id="periodDisplay">0 дней</span>
-                    </div>
-                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Дата начала кампании:</label>
@@ -408,8 +298,23 @@
                     <input type="date" id="endDate" class="form-input" onchange="updateCampaignDates()">
                 </div>
                 
-                <div id="dateError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0;">
+                <div id="dateError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0; font-size: 13px;">
                     ❌ Минимальный период кампании - 15 дней
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Период:</span>
+                        <span id="periodDisplay">0 дней</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Начало:</span>
+                        <span id="startDateDisplay">не выбрано</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Окончание:</span>
+                        <span id="endDateDisplay">не выбрано</span>
+                    </div>
                 </div>
                 
                 <div class="btn-container">
@@ -418,12 +323,18 @@
                 </div>
             </div>
             
-            <!-- 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ -->
+            <!-- ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ -->
             <div id="step3" class="step-content">
-                <div class="step-title">🕒 ВЫБОР ВРЕМЕНИ ВЫХОДА</div>
-                <div class="step-description">
-                    ● ● ● ● ○ ○ ○ ○ ○ [3/9]<br>
-                    ⏱️ Этот шаг займет ~30 секунд
+                <div class="step-title">⏰ ВЫБОР ВРЕМЕНИ ВЫХОДА</div>
+                
+                <button class="btn btn-secondary" onclick="selectAllTimeSlots()" style="width: 95%; margin: 0 auto 12px;">
+                    ✅ ВЫБРАТЬ ВСЕ СЛОТЫ
+                </button>
+                
+                <div id="timeSlotsList">
+                    <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                        Загрузка временных слотов...
+                    </div>
                 </div>
                 
                 <div class="stats">
@@ -435,16 +346,13 @@
                         <span>Выходов в день:</span>
                         <span id="outputsPerDay">0</span>
                     </div>
-                </div>
-                
-                <button class="btn btn-secondary" onclick="selectAllTimeSlots()">
-                    ✅ ВЫБРАТЬ ВСЕ СЛОТЫ
-                </button>
-                
-                <div id="timeSlotsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка временных слотов...</p>
+                    <div class="stat-item">
+                        <span>Суточный охват:</span>
+                        <span id="dailyCoverage">~0 чел.</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Общий охват:</span>
+                        <span id="totalCoverage">~0 чел.</span>
                     </div>
                 </div>
                 
@@ -454,24 +362,26 @@
                 </div>
             </div>
             
-            <!-- 🎙️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ -->
+            <!-- ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ -->
             <div id="step4" class="step-content">
-                <div class="step-title">🎙️ БРЕНДИРОВАННЫЕ РУБРИКИ</div>
-                <div class="step-description">
-                    ● ● ● ● ● ○ ○ ○ ○ [4/9]<br>
-                    ⏱️ Этот шаг займет ~15 секунд
-                </div>
+                <div class="step-title">🏷️ БРЕНДИРОВАННЫЕ РУБРИКИ</div>
                 
                 <div id="brandedSectionsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка рубрик...</p>
+                    <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                        Загрузка рубрик...
                     </div>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="skipBrandedSection()">
-                    🚫 ПРОПУСТИТЬ РУБРИКУ
+                <button class="btn btn-secondary" onclick="skipBrandedSection()" style="width: 95%; margin: 12px auto;">
+                    ⏭️ ПРОПУСТИТЬ РУБРИКУ
                 </button>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Доплата за рубрику:</span>
+                        <span id="brandedBonus">+0%</span>
+                    </div>
+                </div>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
@@ -479,16 +389,12 @@
                 </div>
             </div>
             
-            <!-- 📝 ШАГ 5: ВЫБОР ПУТИ СОЗДАНИЯ РОЛИКА -->
+            <!-- ШАГ 5: СОЗДАНИЕ РОЛИКА -->
             <div id="step5" class="step-content">
-                <div class="step-title">📝 СОЗДАНИЕ РОЛИКА</div>
-                <div class="step-description">
-                    ● ● ● ● ● ● ○ ○ ○ [5/9]<br>
-                    ⏱️ Этот шаг займет ~60 секунд
-                </div>
+                <div class="step-title">🎙️ СОЗДАНИЕ РОЛИКА</div>
                 
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <p>Выберите способ создания рекламного ролика:</p>
+                <div style="text-align: center; margin-bottom: 20px; font-size: 14px; color: #7f8c8d;">
+                    Выберите способ создания рекламного ролика:
                 </div>
                 
                 <button class="btn" onclick="selectTextPath()" style="margin-bottom: 10px;">
@@ -496,28 +402,30 @@
                 </button>
                 
                 <button class="btn btn-secondary" onclick="selectAudioPath()">
-                    🎵 ПРИШЛЮ СВОЙ РОЛИК
+                    🎧 ПРИСЛАТЬ СВОЙ РОЛИК
                 </button>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Стоимость производства:</span>
+                        <span id="productionCost">0 ₽</span>
+                    </div>
+                </div>
                 
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
-                    <button class="btn" id="continueBtn" onclick="continueFromStep5()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- 📝 ШАГ 6: ВВОД ТЕКСТА РОЛИКА (ПУТЬ 1) -->
+            <!-- ШАГ 6: ВВОД ТЕКСТА РОЛИКА -->
             <div id="step6" class="step-content">
                 <div class="step-title">📝 ВВОД ТЕКСТА РОЛИКА</div>
-                <div class="step-description">
-                    ● ● ● ● ● ● ● ○ ○ [6/9]<br>
-                    ⏱️ Этот шаг займет ~60 секунд
-                </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Текст радиоролика (до 500 знаков):</label>
+                    <label class="form-label">Текст радиоролика (до 500 символов):</label>
                     <textarea id="campaignText" class="form-textarea" placeholder="Введите текст для радиоролика..." maxlength="500" oninput="updateCharCount()"></textarea>
                     <div class="char-counter">
-                        <span id="charCount">0</span>/500 знаков
+                        <span id="charCount">0</span>/500 символов
                     </div>
                 </div>
                 
@@ -525,6 +433,10 @@
                     <div class="stat-item">
                         <span>Автохронометраж:</span>
                         <span id="autoDuration">0 секунд</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Рекомендуемая длительность:</span>
+                        <span>20 секунд</span>
                     </div>
                 </div>
                 
@@ -534,21 +446,24 @@
                 </div>
             </div>
             
-            <!-- ⏱️ ШАГ 7: ВВОД ХРОНОМЕТРАЖА (ПУТЬ 2) -->
+            <!-- ШАГ 7: ВВОД ХРОНОМЕТРАЖА -->
             <div id="step7" class="step-content">
                 <div class="step-title">⏱️ ВВОД ХРОНОМЕТРАЖА</div>
-                <div class="step-description">
-                    ● ● ● ● ● ● ● ○ ○ [7/9]<br>
-                    ⏱️ Этот шаг займет ~15 секунд
-                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Длительность ролика (10-25 секунд):</label>
                     <input type="number" id="durationInput" class="form-input" min="10" max="25" value="20" onchange="validateDuration()">
                 </div>
                 
-                <div id="durationError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0;">
+                <div id="durationError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0; font-size: 13px;">
                     ❌ Длительность должна быть от 10 до 25 секунд
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Рекомендуемая длительность:</span>
+                        <span>20 секунд</span>
+                    </div>
                 </div>
                 
                 <div class="btn-container">
@@ -557,18 +472,20 @@
                 </div>
             </div>
             
-            <!-- ⚡ ШАГ 8: ПРОИЗВОДСТВО РОЛИКА (ПУТЬ 1) -->
+            <!-- ШАГ 8: ПРОИЗВОДСТВО РОЛИКА -->
             <div id="step8" class="step-content">
-                <div class="step-title">⚡ ПРОИЗВОДСТВО РОЛИКА</div>
-                <div class="step-description">
-                    ● ● ● ● ● ● ● ● ○ [8/9]<br>
-                    ⏱️ Этот шаг займет ~15 секунд
-                </div>
+                <div class="step-title">🎬 ПРОИЗВОДСТВО РОЛИКА</div>
                 
                 <div id="productionOptionsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка вариантов производства...</p>
+                    <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                        Загрузка вариантов...
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Стоимость производства:</span>
+                        <span id="finalProductionCost">0 ₽</span>
                     </div>
                 </div>
                 
@@ -578,50 +495,74 @@
                 </div>
             </div>
             
-            <!-- 👤 ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ -->
+            <!-- ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ -->
             <div id="step9" class="step-content">
                 <div class="step-title">👤 КОНТАКТНЫЕ ДАННЫЕ</div>
-                <div class="step-description">
-                    ● ● ● ● ● ● ● ● ● [9/9]<br>
-                    ⏱️ Этот шаг займет ~30 секунд
+                
+                <div class="form-group">
+                    <label class="form-label">Ваше имя:</label>
+                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
                 </div>
                 
-                <div id="contactForm">
-                    <div class="form-group">
-                        <label class="form-label">Ваше имя:</label>
-                        <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Телефон:</label>
-                        <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Email:</label>
-                        <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Название компании:</label>
-                        <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон:</label>
+                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
                 </div>
                 
-                <div class="stats" id="finalCalculation" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Email:</label>
+                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Название компании:</label>
+                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
+                </div>
+                
+                <div class="btn-container">
+                    <button class="btn btn-secondary" onclick="prevStep(8)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="goToFinalCalculation()">➡️ ПЕРЕЙТИ К ИТОГАМ</button>
+                </div>
+            </div>
+            
+            <!-- ШАГ 10: ИТОГОВЫЙ РАСЧЕТ -->
+            <div id="step10" class="step-content">
+                <div class="step-title">🎯 ИТОГОВЫЙ РАСЧЕТ</div>
+                
+                <div class="stats">
                     <div class="stat-item">
-                        <span>Итоговая стоимость:</span>
+                        <span>Стоимость:</span>
                         <span id="finalPrice">0 ₽</span>
                     </div>
                     <div class="stat-item">
-                        <span>Общий охват:</span>
+                        <span>Охват:</span>
                         <span id="finalReach">0 чел.</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Период:</span>
+                        <span id="finalPeriod">0 дней</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Станций:</span>
+                        <span id="finalStations">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Выходов в день:</span>
+                        <span id="finalOutputs">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Производство:</span>
+                        <span id="finalProduction">Не выбрано</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Рубрика:</span>
+                        <span id="finalBranded">Не выбрана</span>
                     </div>
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(8)" id="prevStep9Btn">◀️ НАЗАД</button>
-                    <button class="btn btn-success" onclick="submitCampaign()">📤 ОТПРАВИТЬ ЗАЯВКУ</button>
+                    <button class="btn btn-secondary" onclick="prevStep(9)">◀️ НАЗАД</button>
+                    <button class="btn btn-success" onclick="submitCampaign()">✅ ОТПРАВИТЬ ЗАЯВКУ</button>
                 </div>
             </div>
         </div>
@@ -651,7 +592,7 @@
             calculation: null
         };
 
-        // 🚀 ОСНОВНЫЕ ФУНКЦИИ НАВИГАЦИИ
+        // 🚀 ФУНКЦИИ НАВИГАЦИИ
         function goToMainPage() {
             window.location.href = '/index.html';
         }
@@ -668,9 +609,6 @@
                 stepElement.classList.add('active');
             }
             
-            // Обновляем индикатор шагов
-            updateStepIndicator(stepNumber);
-            
             // Сохраняем текущий шаг
             campaignState.currentStep = stepNumber;
             
@@ -686,77 +624,61 @@
             showStep(prevStepNumber);
         }
 
-        function updateStepIndicator(currentStep) {
-            const steps = document.querySelectorAll('.step');
-            steps.forEach((step, index) => {
-                const stepNumber = index + 1;
-                step.classList.remove('active', 'completed');
-                
-                if (stepNumber === currentStep) {
-                    step.classList.add('active');
-                } else if (stepNumber < currentStep) {
-                    step.classList.add('completed');
-                }
-            });
-        }
-
-        // 🎯 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ
+        // 📊 ШАГ 1: ВЫБОР РАДИОСТАНЦИЙ
         function loadStepData(stepNumber) {
             switch(stepNumber) {
+                case 1:
+                    loadRadioStations();
+                    break;
                 case 3:
                     loadTimeSlots();
                     break;
                 case 4:
                     loadBrandedSections();
                     break;
+                case 5:
+                    updateProductionCost();
+                    break;
                 case 8:
                     loadProductionOptions();
                     break;
-                case 9:
+                case 10:
                     loadFinalCalculation();
                     break;
             }
         }
 
         function loadRadioStations() {
-            const stationsList = document.getElementById('radioStationsList');
-            
             const stations = [
                 {
                     name: "LOVE RADIO",
                     listeners: 700,
-                    description: "👩 Молодёжь 16-35 лет",
-                    emoji: "💖"
+                    audience: "Молодёжь 18-35 лет"
                 },
                 {
                     name: "АВТОРАДИО", 
                     listeners: 3250,
-                    description: "👨 Автомобилисты 25-55 лет",
-                    emoji: "🚗"
+                    audience: "Автомобилисты 25-50 лет"
                 },
                 {
                     name: "РАДИО ДАЧА",
                     listeners: 3250,
-                    description: "👨👩 Семья 35-60 лет", 
-                    emoji: "🏠"
+                    audience: "Семья 35-65 лет"
                 },
                 {
                     name: "РАДИО ШАНСОН",
                     listeners: 2900,
-                    description: "👨 Мужчины 30-60+ лет",
-                    emoji: "🎸"
+                    audience: "Мужчины 30-60 лет"
                 },
                 {
                     name: "РЕТРО FM",
                     listeners: 3600,
-                    description: "👴👵 Взрослые 35-65 лет",
-                    emoji: "🎵"
+                    audience: "Ценители хитов 30-55 лет"
                 },
                 {
                     name: "ЮМОР FM",
                     listeners: 2100,
-                    description: "👦👧 Молодежь 12-19 и взрослые 25-45 лет",
-                    emoji: "🎭"
+                    audience: "Слушатели 25-45 лет"
                 }
             ];
             
@@ -765,17 +687,14 @@
                 const isSelected = campaignState.selectedRadios.includes(station.name);
                 html += `
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
-                        <div class="radio-name">
-                            <span class="radio-emoji">${station.emoji}</span>
-                            ${station.name}
-                        </div>
-                        <div class="radio-listeners">~${formatNumber(station.listeners)} слушателей в день</div>
-                        <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${station.description}</div>
+                        <div class="radio-name">${station.name}</div>
+                        <div class="radio-listeners">👥 ${formatNumber(station.listeners)} слушателей/день</div>
+                        <div class="radio-listeners">👥 ${station.audience}</div>
                     </div>
                 `;
             });
             
-            stationsList.innerHTML = html;
+            document.getElementById('radioStationsList').innerHTML = html;
             updateRadioStats();
         }
 
@@ -823,7 +742,7 @@
             nextStep(2);
         }
 
-        // 📅 ШАГ 2: КАЛЕНДАРЬ
+        // 📅 ШАГ 2: ВЫБОР ДАТ
         function updateCampaignDates() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -880,7 +799,7 @@
             nextStep(3);
         }
 
-        // 🕒 ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ
+        // ⏰ ШАГ 3: ВРЕМЕННЫЕ СЛОТЫ
         function loadTimeSlots() {
             fetch('/api/time-slots')
                 .then(response => response.json())
@@ -926,11 +845,8 @@
                 const premiumEmoji = slot.premium ? '🚀' : '📊';
                 html += `
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
-                        <div class="radio-name">
-                            <span class="radio-emoji">${premiumEmoji}</span>
-                            ${slot.time} - ${slot.label}
-                        </div>
-                        <div class="radio-listeners">${slot.coverage_percent}% охвата</div>
+                        <div class="radio-name">${slot.time} - ${slot.label} ${premiumEmoji}</div>
+                        <div class="radio-listeners">👥 ${slot.coverage_percent}% суточного охвата</div>
                     </div>
                 `;
             });
@@ -962,6 +878,43 @@
             
             document.getElementById('selectedSlotsCount').textContent = selectedCount;
             document.getElementById('outputsPerDay').textContent = outputsPerDay;
+            
+            // Расчет охвата
+            calculateCoverage();
+        }
+
+        function calculateCoverage() {
+            if (campaignState.selectedRadios.length === 0 || campaignState.selectedTimeSlots.length === 0) {
+                document.getElementById('dailyCoverage').textContent = '~0 чел.';
+                document.getElementById('totalCoverage').textContent = '~0 чел.';
+                return;
+            }
+
+            const requestData = {
+                selected_radios: campaignState.selectedRadios,
+                selected_time_slots: campaignState.selectedTimeSlots,
+                campaign_days: campaignState.campaignDays,
+                duration: campaignState.duration
+            };
+            
+            fetch('/api/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    campaignState.calculation = data.calculation;
+                    document.getElementById('dailyCoverage').textContent = '~' + formatNumber(data.calculation.daily_coverage) + ' чел.';
+                    document.getElementById('totalCoverage').textContent = '~' + formatNumber(data.calculation.total_reach) + ' чел.';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка расчета охвата:', error);
+            });
         }
 
         function validateStep3() {
@@ -972,54 +925,29 @@
             nextStep(4);
         }
 
-        // 🎙️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ
+        // 🏷️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ
         function loadBrandedSections() {
-            fetch('/api/branded-sections')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        renderBrandedSections(data.branded_sections);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки рубрик:', error);
-                    const defaultSections = {
-                        "auto": 1.2,
-                        "realty": 1.15,
-                        "medical": 1.25,
-                        "custom": 1.3
-                    };
-                    renderBrandedSections(defaultSections);
-                });
-        }
-
-        function renderBrandedSections(sections) {
-            const container = document.getElementById('brandedSectionsList');
-            let html = '';
-            
-            const sectionData = {
-                "auto": { name: "АВТОРУБРИКИ", desc: "Готовые сценарии для автосалонов", bonus: "+20%" },
-                "realty": { name: "НЕДВИЖИМОСТЬ", desc: "Рубрики для агентств недвижимости", bonus: "+15%" },
-                "medical": { name: "МЕДИЦИНСКИЕ", desc: "Экспертные форматы для клиник", bonus: "+25%" },
-                "custom": { name: "ИНДИВИДУАЛЬНАЯ", desc: "Разработка под ваш бизнес", bonus: "+30%" }
+            const sections = {
+                "auto": { name: "АВТОРУБРИКИ", bonus: "+20%", desc: "Готовые сценарии для автосалонов" },
+                "realty": { name: "НЕДВИЖИМОСТЬ", bonus: "+15%", desc: "Рубрики для агентств недвижимости" },
+                "medical": { name: "МЕДИЦИНСКИЕ", bonus: "+25%", desc: "Экспертные форматы для клиник" },
+                "custom": { name: "ИНДИВИДУАЛЬНАЯ", bonus: "+30%", desc: "Разработка под ваш бизнес" }
             };
             
-            Object.entries(sections).forEach(([key, multiplier]) => {
+            let html = '';
+            Object.entries(sections).forEach(([key, section]) => {
                 const isSelected = campaignState.brandedSection === key;
-                const data = sectionData[key];
                 html += `
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="selectBrandedSection('${key}')">
-                        <div class="radio-name">
-                            <span class="radio-emoji">🎙️</span>
-                            ${data.name}
-                        </div>
-                        <div class="radio-listeners">${data.bonus} к стоимости</div>
-                        <div style="color: #7f8c8d; font-size: 13px; margin-top: 5px;">${data.desc}</div>
+                        <div class="radio-name">${section.name}</div>
+                        <div class="radio-listeners">${section.bonus} к стоимости</div>
+                        <div class="radio-listeners">${section.desc}</div>
                     </div>
                 `;
             });
             
-            container.innerHTML = html;
+            document.getElementById('brandedSectionsList').innerHTML = html;
+            updateBrandedBonus();
         }
 
         function selectBrandedSection(section) {
@@ -1032,32 +960,37 @@
             nextStep(5);
         }
 
+        function updateBrandedBonus() {
+            const bonuses = {
+                "auto": "+20%",
+                "realty": "+15%", 
+                "medical": "+25%",
+                "custom": "+30%"
+            };
+            
+            const bonus = campaignState.brandedSection ? bonuses[campaignState.brandedSection] : "+0%";
+            document.getElementById('brandedBonus').textContent = bonus;
+        }
+
         function validateStep4() {
             nextStep(5);
         }
 
-        // 📝 ШАГ 5: ВЫБОР ПУТИ
+        // 🎙️ ШАГ 5: СОЗДАНИЕ РОЛИКА
         function selectTextPath() {
             campaignState.selectedPath = 'text';
-            document.getElementById('continueBtn').classList.remove('hidden');
+            nextStep(6);
         }
 
         function selectAudioPath() {
             campaignState.selectedPath = 'audio';
-            document.getElementById('continueBtn').classList.remove('hidden');
+            nextStep(7);
         }
 
-        function continueFromStep5() {
-            if (!campaignState.selectedPath) {
-                alert('❌ Выберите способ создания ролика');
-                return;
-            }
-            
-            if (campaignState.selectedPath === 'text') {
-                nextStep(6);
-            } else {
-                nextStep(7);
-            }
+        function updateProductionCost() {
+            const cost = campaignState.productionOption ? 
+                (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0;
+            document.getElementById('productionCost').textContent = formatNumber(cost) + ' ₽';
         }
 
         // 📝 ШАГ 6: ВВОД ТЕКСТА РОЛИКА
@@ -1110,29 +1043,14 @@
             nextStep(9);
         }
 
-        // ⚡ ШАГ 8: ПРОИЗВОДСТВО РОЛИКА
+        // 🎬 ШАГ 8: ПРОИЗВОДСТВО РОЛИКА
         function loadProductionOptions() {
-            fetch('/api/production-options')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        renderProductionOptions(data.production_options);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки вариантов:', error);
-                    const defaultOptions = {
-                        "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"},
-                        "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"}
-                    };
-                    renderProductionOptions(defaultOptions);
-                });
-        }
-
-        function renderProductionOptions(options) {
-            const container = document.getElementById('productionOptionsList');
-            let html = '';
+            const options = {
+                "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление"},
+                "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка"}
+            };
             
+            let html = '';
             Object.entries(options).forEach(([key, option]) => {
                 const isSelected = campaignState.productionOption === key;
                 html += `
@@ -1144,12 +1062,19 @@
                 `;
             });
             
-            container.innerHTML = html;
+            document.getElementById('productionOptionsList').innerHTML = html;
+            updateProductionCostDisplay();
         }
 
         function selectProductionOption(option) {
             campaignState.productionOption = option;
             loadProductionOptions();
+        }
+
+        function updateProductionCostDisplay() {
+            const cost = campaignState.productionOption ? 
+                (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0;
+            document.getElementById('finalProductionCost').textContent = formatNumber(cost) + ' ₽';
         }
 
         function validateStep8() {
@@ -1160,19 +1085,30 @@
             nextStep(9);
         }
 
-        // 👤 ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ И ФИНАЛЬНЫЙ РАСЧЕТ
-        function loadFinalCalculation() {
-            // Заполняем сохраненные контакты
-            document.getElementById('contactName').value = campaignState.contactName;
-            document.getElementById('contactPhone').value = campaignState.phone;
-            document.getElementById('contactEmail').value = campaignState.email;
-            document.getElementById('contactCompany').value = campaignState.company;
+        // 👤 ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ
+        function goToFinalCalculation() {
+            // Сохраняем контакты
+            campaignState.contactName = document.getElementById('contactName').value.trim();
+            campaignState.phone = document.getElementById('contactPhone').value.trim();
+            campaignState.email = document.getElementById('contactEmail').value.trim();
+            campaignState.company = document.getElementById('contactCompany').value.trim();
             
-            // Выполняем расчет
-            calculateCampaign();
+            // Валидация
+            if (!campaignState.contactName) {
+                alert('❌ Введите ваше имя');
+                return;
+            }
+            
+            if (!campaignState.phone) {
+                alert('❌ Введите ваш телефон');
+                return;
+            }
+            
+            nextStep(10);
         }
 
-        function calculateCampaign() {
+        // 🎯 ШАГ 10: ИТОГОВЫЙ РАСЧЕТ
+        function loadFinalCalculation() {
             const requestData = {
                 selected_radios: campaignState.selectedRadios,
                 selected_time_slots: campaignState.selectedTimeSlots,
@@ -1197,9 +1133,28 @@
             .then(data => {
                 if (data.success) {
                     campaignState.calculation = data.calculation;
+                    
                     document.getElementById('finalPrice').textContent = formatNumber(data.calculation.final_price) + ' ₽';
                     document.getElementById('finalReach').textContent = '~' + formatNumber(data.calculation.total_reach) + ' чел.';
-                    document.getElementById('finalCalculation').style.display = 'block';
+                    document.getElementById('finalPeriod').textContent = campaignState.campaignDays + ' дней';
+                    document.getElementById('finalStations').textContent = campaignState.selectedRadios.join(', ');
+                    document.getElementById('finalOutputs').textContent = data.calculation.spots_per_day + '/день';
+                    
+                    const productionNames = {
+                        "standard": "Стандартный ролик",
+                        "premium": "Премиум ролик"
+                    };
+                    document.getElementById('finalProduction').textContent = campaignState.productionOption ? 
+                        productionNames[campaignState.productionOption] : 'Не выбрано';
+                    
+                    const brandedNames = {
+                        "auto": "Авторубрики",
+                        "realty": "Недвижимость", 
+                        "medical": "Медицинские",
+                        "custom": "Индивидуальная"
+                    };
+                    document.getElementById('finalBranded').textContent = campaignState.brandedSection ? 
+                        brandedNames[campaignState.brandedSection] : 'Не выбрана';
                 }
             })
             .catch(error => {
@@ -1208,24 +1163,6 @@
         }
 
         function submitCampaign() {
-            // Сохраняем контакты
-            campaignState.contactName = document.getElementById('contactName').value.trim();
-            campaignState.phone = document.getElementById('contactPhone').value.trim();
-            campaignState.email = document.getElementById('contactEmail').value.trim();
-            campaignState.company = document.getElementById('contactCompany').value.trim();
-            
-            // Валидация
-            if (!campaignState.contactName) {
-                alert('❌ Введите ваше имя');
-                return;
-            }
-            
-            if (!campaignState.phone) {
-                alert('❌ Введите ваш телефон');
-                return;
-            }
-            
-            // Подготовка данных для отправки
             const submitData = {
                 user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
                 selected_radios: campaignState.selectedRadios,
@@ -1251,7 +1188,6 @@
                 submitData.total_reach = campaignState.calculation.total_reach;
             }
             
-            // Отправка заявки
             fetch('/api/create-campaign', {
                 method: 'POST',
                 headers: {
@@ -1262,9 +1198,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('✅ Заявка успешно отправлена! Номер вашей заявки: ' + data.campaign_number);
-                    // Переход в личный кабинет или главное меню
-                    window.location.href = '/cabinet.html';
+                    window.location.href = `/confirmation.html?campaign=${data.campaign_number}`;
                 } else {
                     alert('❌ Ошибка: ' + data.error);
                 }
@@ -1299,9 +1233,8 @@
             document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
             document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
             
-            // Показываем первый шаг и загружаем радиостанции
+            // Показываем первый шаг и загружаем данные
             showStep(1);
-            loadRadioStations();
         });
     </script>
 </body>
