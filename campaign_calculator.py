@@ -6,20 +6,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Данные из вашего bot.py
-BASE_PRICE_PER_SECOND = 2.0
-MIN_PRODUCTION_COST = 2000
-MIN_BUDGET = 7000
+# НОВАЯ ЛОГИКА: Умные скидки за количество радио
+BASE_PRICE_PER_SECOND = 1.5  # Базовая ставка 1.5 ₽/секунда
 
-# Гибкие ставки для опта
+# Скидки за количество радиостанций
 PRICE_TIERS = {
-    1: 2.0,    # 1-2 радио
-    2: 2.0,    # 1-2 радио  
-    3: 1.5,    # 3-4 радио
-    4: 1.5,    # 3-4 радио
-    5: 1.2,    # 5+ радио
-    6: 1.2     # 5+ радио
+    1: 1.5,    # 1-2 радио: без скидки
+    2: 1.5,    # 1-2 радио: без скидки  
+    3: 1.3,    # 3-4 радио: -13%
+    4: 1.3,    # 3-4 радио: -13%
+    5: 1.1,    # 5+ радио: -27%
+    6: 1.1     # 5+ радио: -27%
 }
+
+MIN_BUDGET = 7000  # Минимальная стоимость кампании
 
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
@@ -46,26 +46,27 @@ STATION_COVERAGE = {
     "РАДИО ДАЧА": 3250, 
     "РАДИО ШАНСОН": 2900,
     "РЕТРО FM": 3600,
-    "ЮМОР FM": 2100  # Исправлено: 1600 → 2100
+    "ЮМОР FM": 2100
 }
 
 BRANDED_SECTION_PRICES = {
-    "auto": 1.2,
-    "realty": 1.15,
-    "medical": 1.25,
-    "custom": 1.3
+    "auto": 1.2,      # +20%
+    "realty": 1.15,   # +15%
+    "medical": 1.25,  # +25%
+    "custom": 1.3     # +30%
 }
 
 PRODUCTION_OPTIONS = {
-    "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление, срок: 2-3 дня"},
-    "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка, срочное производство 1 день"}
+    "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление"},
+    "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка"}
 }
 
 def format_number(num):
+    """Форматирование чисел с пробелами"""
     return f"{num:,}".replace(",", " ")
 
 def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С ПРАВИЛЬНОЙ ЛОГИКОЙ ОХВАТА"""
+    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С УМНЫМИ СКИДКАМИ"""
     try:
         base_duration = user_data.get("duration", 20)
         campaign_days = user_data.get("campaign_days", 30)
@@ -78,14 +79,14 @@ def calculate_campaign_price_and_reach(user_data):
         num_stations = len(selected_radios)
         spots_per_day = len(selected_time_slots) * num_stations
         
-        # ГИБКАЯ СТАВКА В ЗАВИСИМОСТИ ОТ КОЛИЧЕСТВА РАДИО
+        # УМНАЯ СКИДКА В ЗАВИСИМОСТИ ОТ КОЛИЧЕСТВА РАДИО
         price_per_second = PRICE_TIERS.get(num_stations, PRICE_TIERS[6])
         
         # БАЗОВАЯ СТОИМОСТЬ ЭФИРА
         cost_per_spot = base_duration * price_per_second
         base_air_cost = cost_per_spot * spots_per_day * campaign_days
         
-        # ПРЕМИУМ-СЛОТЫ: +2% ЗА КАЖДЫЙ (вместо +5%)
+        # ПРЕМИУМ-СЛОТЫ: +2% ЗА КАЖДЫЙ
         premium_count = 0
         for slot_index in selected_time_slots:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
@@ -93,7 +94,7 @@ def calculate_campaign_price_and_reach(user_data):
                 if slot["premium"]:
                     premium_count += 1
         
-        time_multiplier = 1.0 + (premium_count * 0.02)  # 🆕 +2% за каждый премиум-слот
+        time_multiplier = 1.0 + (premium_count * 0.02)
         
         # БРЕНДИРОВАННЫЕ РУБРИКИ
         branded_multiplier = 1.0
@@ -106,12 +107,11 @@ def calculate_campaign_price_and_reach(user_data):
         air_cost = int(base_air_cost * time_multiplier * branded_multiplier)
         base_price = air_cost + production_cost
         
-        # СКИДКА И ИТОГ
-        discount = int(base_price * 0.5)
-        discounted_price = base_price - discount
-        final_price = max(discounted_price, MIN_BUDGET)
+        # ФИНАЛЬНАЯ ЦЕНА (без скидки 50%, только MIN_BUDGET)
+        final_price = max(base_price, MIN_BUDGET)
+        discount = 0  # Убрали скидку 50%
         
-        # 🆕 ПРАВИЛЬНАЯ ФОРМУЛА ОХВАТА
+        # РАСЧЕТ ОХВАТА
         total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
         
         # Расчет потенциального охвата за день
