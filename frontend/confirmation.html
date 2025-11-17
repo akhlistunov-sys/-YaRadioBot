@@ -165,6 +165,15 @@
             display: none !important;
         }
 
+        .discount-note {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+
         @media (min-width: 768px) {
             .container {
                 max-width: 400px;
@@ -191,6 +200,11 @@
                 
                 <div class="campaign-number" id="campaignNumber">
                     #R-000000
+                </div>
+
+                <div class="discount-note">
+                    🎯 Рассчитанная стоимость: <span id="displayPrice">0</span> ₽<br>
+                    <em>*При заключении договора возможны дополнительные скидки*</em>
                 </div>
                 
                 <div class="details">
@@ -223,8 +237,8 @@
                     </ol>
                 </div>
 
-                <button class="btn btn-excel" onclick="downloadExcel()">
-                    📊 СКАЧАТЬ EXCEL МЕДИАПЛАН
+                <button class="btn btn-excel" onclick="sendExcelToTelegram()">
+                    📊 ОТПРАВИТЬ EXCEL В TELEGRAM
                 </button>
                 
                 <button class="btn btn-cabinet" onclick="goToCabinet()">
@@ -246,10 +260,37 @@
         let campaignData = null;
 
         // 🚀 ФУНКЦИИ НАВИГАЦИИ
-        function downloadExcel() {
-            if (campaignData) {
-                window.open(`/api/campaign-excel/${campaignData.campaign_number}`, '_blank');
+        function sendExcelToTelegram() {
+            if (!campaignData) return;
+
+            const userTelegramId = tg?.initDataUnsafe?.user?.id;
+            
+            if (!userTelegramId) {
+                alert('❌ Не удалось определить ваш Telegram ID');
+                return;
             }
+
+            fetch('/api/send-excel/' + campaignData.campaign_number, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_telegram_id: userTelegramId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Excel медиаплан отправлен в ваш Telegram!');
+                } else {
+                    alert('❌ Ошибка отправки: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка отправки Excel:', error);
+                alert('❌ Ошибка отправки. Попробуйте еще раз.');
+            });
         }
 
         function goToCabinet() {
@@ -291,6 +332,7 @@
             document.getElementById('confirmationContent').classList.remove('hidden');
             
             document.getElementById('campaignNumber').textContent = `#${campaign.campaign_number}`;
+            document.getElementById('displayPrice').textContent = formatNumber(campaign.final_price);
             document.getElementById('detailNumber').textContent = campaign.campaign_number;
             document.getElementById('detailPrice').textContent = formatNumber(campaign.final_price) + ' ₽';
             document.getElementById('detailReach').textContent = '~' + formatNumber(campaign.actual_reach) + ' чел.';
@@ -317,13 +359,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Страница подтверждения загружена!');
             
-            // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
                 tg.expand();
             }
             
-            // Загрузка данных заявки
             loadCampaignData();
         });
     </script>
