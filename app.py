@@ -710,9 +710,9 @@ def get_campaign_confirmation(campaign_number):
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+# В app.py ДОБАВЬТЕ в конец:
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5000))
-    logger.info(f"🚀 Запуск приложения на порту {port}")
+    # Увеличиваем таймаут для тяжелых операций
     app.run(host='0.0.0.0', port=port, debug=False)
 # [file content end]
