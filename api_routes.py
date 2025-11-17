@@ -16,7 +16,6 @@ def register_routes(app):
                 "end_date": data.get('end_date'),
                 "campaign_days": data.get('campaign_days', 30),
                 "selected_time_slots": data.get('selected_time_slots', []),
-                "branded_section": data.get('branded_section'),
                 "duration": data.get('duration', 20),
                 "production_option": data.get('production_option'),
                 "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
@@ -41,26 +40,16 @@ def register_routes(app):
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
 
-    # В api_routes.py проверяем функцию:
     @app.route('/api/time-slots', methods=['GET'])
     def get_time_slots():
-    """Получить временные слоты"""
-    try:
-        return jsonify({
-            "success": True,
-            "time_slots": TIME_SLOTS_DATA
-        })
-    except Exception as e:
-        logger.error(f"Ошибка получения временных слотов: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-    @app.route('/api/branded-sections', methods=['GET'])
-    def get_branded_sections():
-        """Получить брендированные рубрики"""
-        return jsonify({
-            "success": True,
-            "branded_sections": BRANDED_SECTION_PRICES
-        })
+        """Получить временные слоты"""
+        try:
+            return jsonify({
+                "success": True,
+                "time_slots": TIME_SLOTS_DATA
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route('/api/production-options', methods=['GET'])
     def get_production_options():
