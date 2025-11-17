@@ -6,8 +6,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# НОВАЯ ЛОГИКА: Умные скидки за количество радио
-BASE_PRICE_PER_SECOND = 1.5  # Базовая ставка 1.5 ₽/секунда
+# ЛОГИКА: Умные скидки за количество радио
+BASE_PRICE_PER_SECOND = 1.5
 
 # Скидки за количество радиостанций
 PRICE_TIERS = {
@@ -15,11 +15,11 @@ PRICE_TIERS = {
     2: 1.5,    # 1-2 радио: без скидки  
     3: 1.3,    # 3-4 радио: -13%
     4: 1.3,    # 3-4 радио: -13%
-    5: 1.1,    # 5+ радио: -27%
-    6: 1.1     # 5+ радио: -27%
+    5: 1.2,    # 5+ радио: -20%
+    6: 1.1     # 6 радио: -27%
 }
 
-MIN_BUDGET = 7000  # Минимальная стоимость кампании
+MIN_BUDGET = 7000
 
 TIME_SLOTS_DATA = [
     {"time": "06:00-07:00", "label": "Подъем, сборы", "premium": True, "coverage_percent": 6},
@@ -39,7 +39,7 @@ TIME_SLOTS_DATA = [
     {"time": "20:00-21:00", "label": "Вечерний отдых", "premium": True, "coverage_percent": 4}
 ]
 
-# ОБНОВЛЕННЫЕ ОХВАТЫ РАДИОСТАНЦИЙ
+# ОХВАТЫ РАДИОСТАНЦИЙ
 STATION_COVERAGE = {
     "LOVE RADIO": 700,
     "АВТОРАДИО": 3250,
@@ -47,13 +47,6 @@ STATION_COVERAGE = {
     "РАДИО ШАНСОН": 2900,
     "РЕТРО FM": 3600,
     "ЮМОР FM": 2100
-}
-
-BRANDED_SECTION_PRICES = {
-    "auto": 1.2,      # +20%
-    "realty": 1.15,   # +15%
-    "medical": 1.25,  # +25%
-    "custom": 1.3     # +30%
 }
 
 PRODUCTION_OPTIONS = {
@@ -66,7 +59,7 @@ def format_number(num):
     return f"{num:,}".replace(",", " ")
 
 def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА С УМНЫМИ СКИДКАМИ"""
+    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА БЕЗ РУБРИК"""
     try:
         base_duration = user_data.get("duration", 20)
         campaign_days = user_data.get("campaign_days", 30)
@@ -86,30 +79,32 @@ def calculate_campaign_price_and_reach(user_data):
         cost_per_spot = base_duration * price_per_second
         base_air_cost = cost_per_spot * spots_per_day * campaign_days
         
-        # ПРЕМИУМ-СЛОТЫ: +2% ЗА КАЖДЫЙ
+        # БОНУС: ПРЕМИУМ-СЛОТЫ БЕСПЛАТНО ПРИ 15 СЛОТАХ
+        time_multiplier = 1.0
         premium_count = 0
-        for slot_index in selected_time_slots:
-            if 0 <= slot_index < len(TIME_SLOTS_DATA):
-                slot = TIME_SLOTS_DATA[slot_index]
-                if slot["premium"]:
-                    premium_count += 1
         
-        time_multiplier = 1.0 + (premium_count * 0.02)
+        # Если выбрано меньше 15 слотов - считаем премиум
+        if len(selected_time_slots) < 15:
+            for slot_index in selected_time_slots:
+                if 0 <= slot_index < len(TIME_SLOTS_DATA):
+                    slot = TIME_SLOTS_DATA[slot_index]
+                    if slot["premium"]:
+                        premium_count += 1
+            time_multiplier = 1.0 + (premium_count * 0.02)
         
-        # БРЕНДИРОВАННЫЕ РУБРИКИ
-        branded_multiplier = 1.0
-        branded_section = user_data.get("branded_section")
-        if branded_section in BRANDED_SECTION_PRICES:
-            branded_multiplier = BRANDED_SECTION_PRICES[branded_section]
+        # БОНУС: ДОПОЛНИТЕЛЬНАЯ СКИДКА 5% ПРИ 15 СЛОТАХ
+        bonus_discount = 0
+        if len(selected_time_slots) == 15:
+            bonus_discount = 0.05
         
         # ПРОИЗВОДСТВО РОЛИКА
         production_cost = user_data.get("production_cost", 0)
-        air_cost = int(base_air_cost * time_multiplier * branded_multiplier)
-        base_price = air_cost + production_cost
         
-        # ФИНАЛЬНАЯ ЦЕНА (без скидки 50%, только MIN_BUDGET)
+        # ФИНАЛЬНАЯ ЦЕНА
+        air_cost = int(base_air_cost * time_multiplier * (1 - bonus_discount))
+        base_price = air_cost + production_cost
         final_price = max(base_price, MIN_BUDGET)
-        discount = 0  # Убрали скидку 50%
+        discount = 0
         
         # РАСЧЕТ ОХВАТА
         total_listeners = sum(STATION_COVERAGE.get(radio, 0) for radio in selected_radios)
@@ -138,15 +133,6 @@ def calculate_campaign_price_and_reach(user_data):
     except Exception as e:
         logger.error(f"Ошибка расчета стоимости: {e}")
         return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
-
-def get_branded_section_name(section):
-    names = {
-        "auto": "Авторубрики (+20%)",
-        "realty": "Недвижимость (+15%)",
-        "medical": "Медицинские рубрики (+25%)",
-        "custom": "Индивидуальная рубрика (+30%)"
-    }
-    return names.get(section, "Не выбрана")
 
 def get_time_slots_text(selected_slots):
     """Получить текстовое представление выбранных слотов"""
