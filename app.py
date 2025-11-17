@@ -12,10 +12,11 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import requests
+import signal
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='frontend')
+app = Flask(__name__, static_folder='./frontend', static_url_path='')
 CORS(app)
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
@@ -32,6 +33,27 @@ from campaign_calculator import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def timeout_handler(signum, frame):
+    raise TimeoutError("Operation timed out")
+
+# 🎯 ОСНОВНЫЕ МАРШРУТЫ ДЛЯ СТАТИЧЕСКИХ ФАЙЛОВ
+@app.route('/')
+def serve_index():
+    return send_from_directory('frontend', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('frontend', filename)
+
+# 🔧 WEBHOOK ДЛЯ TELEGRAM
+@app.route('/webhook', methods=['POST', 'GET'])
+def webhook():
+    """Обработчик вебхука для Telegram"""
+    if request.method == 'GET':
+        return jsonify({"status": "ok", "message": "Webhook is working"})
+    return jsonify({"status": "method not allowed"}), 405
+
+# 🗄️ ФУНКЦИИ РАБОТЫ С БАЗОЙ ДАННЫХ
 def init_db():
     """Инициализация базы данных"""
     try:
@@ -155,6 +177,10 @@ def create_excel_file_from_db(campaign_number):
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
+        # Устанавливаем таймаут для тяжелых операций
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(30)  # 30 секунд таймаут
+        
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM campaigns WHERE campaign_number = ?", (campaign_number,))
@@ -163,6 +189,7 @@ def create_excel_file_from_db(campaign_number):
         
         if not campaign_data:
             logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
+            signal.alarm(0)
             return None
             
         user_data = {
@@ -376,21 +403,20 @@ def create_excel_file_from_db(campaign_number):
         wb.save(buffer)
         buffer.seek(0)
         
+        signal.alarm(0)  # Отключаем таймаут
         logger.info(f"✅ Excel файл успешно создан для кампании #{campaign_number}")
         return buffer
         
+    except TimeoutError:
+        logger.error(f"❌ Таймаут при создании Excel для кампании #{campaign_number}")
+        signal.alarm(0)
+        return None
     except Exception as e:
         logger.error(f"❌ Ошибка при создании Excel: {e}")
+        signal.alarm(0)
         return None
 
-@app.route('/')
-def serve_frontend():
-    return send_from_directory('frontend', 'index.html')
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('frontend', filename)
-
+# 🌐 API МАРШРУТЫ
 @app.route('/api/health')
 def health_check():
     return jsonify({
@@ -710,9 +736,10 @@ def get_campaign_confirmation(campaign_number):
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-# В app.py ДОБАВЬТЕ в конец:
+# 🚀 ЗАПУСК ПРИЛОЖЕНИЯ
 if __name__ == '__main__':
+    init_db()
     port = int(os.environ.get('PORT', 5000))
-    # Увеличиваем таймаут для тяжелых операций
+    logger.info(f"🚀 Запуск приложения на порту {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
 # [file content end]
