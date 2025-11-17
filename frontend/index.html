@@ -16,7 +16,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
             width: 100%;
         }
@@ -27,10 +27,11 @@
             background: white;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         
         .header {
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background: linear-gradient(135deg, #1e40af, #3730a3);
             color: white;
             padding: 30px 20px;
             text-align: center;
@@ -46,50 +47,74 @@
         .location {
             font-size: 16px;
             opacity: 0.9;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
-        .stats {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
+        .stats-section {
+            padding: 0 20px;
+            margin-bottom: 25px;
+        }
+        
+        .stats-title {
             text-align: center;
-            margin: 0 20px 25px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+        
+        .stats-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
         
         .stat-item {
-            padding: 8px;
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            font-size: 16px;
+            color: #475569;
         }
         
-        .stat-number {
+        .stat-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .cta-section {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin: 0 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .cta-text {
             font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            opacity: 0.9;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
         
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 15px;
             padding: 0 20px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         .menu-btn {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            border: none;
-            padding: 20px 15px;
-            border-radius: 12px;
+            background: white;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            padding: 25px 15px;
+            border-radius: 16px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -99,29 +124,43 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            min-height: 80px;
+            min-height: 100px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         
         .menu-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border-color: #3b82f6;
         }
         
         .menu-btn i {
-            font-size: 24px;
-            margin-bottom: 8px;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-campaign { 
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-color: #10b981;
         }
         
         .btn-statistics { 
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed); 
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border-color: #8b5cf6;
         }
         
         .btn-about { 
-            background: linear-gradient(135deg, #f59e0b, #d97706); 
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-color: #f59e0b;
         }
         
         .btn-cabinet { 
-            background: linear-gradient(135deg, #64748b, #475569); 
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+            border-color: #64748b;
         }
 
         @media (min-width: 768px) {
@@ -140,27 +179,34 @@
             <div class="location">📍 Ялуторовск • Заводоуковск</div>
         </div>
 
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number">200+</div>
-                <div class="stat-label">кампаний</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">7 000₽</div>
-                <div class="stat-label">от</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">~15 100</div>
-                <div class="stat-label">в день</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">52%</div>
-                <div class="stat-label">рынка</div>
+        <div class="stats-section">
+            <div class="stats-title">НАША СТАТИСТИКА</div>
+            <div class="stats-list">
+                <div class="stat-item">
+                    <div class="stat-icon">💫</div>
+                    <div>10+ лет на местном рынке</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">✨</div>
+                    <div>200+ кампаний в 2025</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">👑</div>
+                    <div>~охват до 15 100 в день</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">🏆</div>
+                    <div>52% местного рынка</div>
+                </div>
             </div>
         </div>
 
+        <div class="cta-section">
+            <div class="cta-text">🎯 Рассчитайте стоимость за 2 минуты</div>
+        </div>
+
         <div class="menu-grid">
-            <button class="menu-btn" onclick="showPage('campaign')">
+            <button class="menu-btn btn-campaign" onclick="showPage('campaign')">
                 <i>🚀</i>
                 НАЧАТЬ РАСЧЕТ
             </button>
@@ -183,10 +229,8 @@
     </div>
 
     <script>
-        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
         
-        // 🚀 ФУНКЦИИ НАВИГАЦИИ
         function showPage(pageName) {
             console.log('Переход на страницу:', pageName);
             
@@ -205,20 +249,17 @@
                     break;
             }
             
-            // Раскрываем Telegram Web App на полный экран
             if (tg && tg.expand) {
                 tg.expand();
             }
         }
         
-        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Главная страница загружена!');
             
-            // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
-                tg.expand(); // Раскрываем на весь экран
+                tg.expand();
             }
         });
     </script>
