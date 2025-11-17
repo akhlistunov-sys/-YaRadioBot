@@ -68,6 +68,20 @@
             color: #2c3e50;
         }
         
+        .progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 6px;
+            margin: 10px 0 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
         .btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
@@ -155,6 +169,32 @@
             justify-content: space-between;
             margin: 6px 0;
             font-size: 14px;
+        }
+        
+        .bonus-section {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px auto;
+            width: 95%;
+            border-left: 4px solid #28a745;
+            display: none;
+        }
+        
+        .bonus-section.active {
+            display: block;
+        }
+        
+        .bonus-title {
+            font-weight: 600;
+            color: #155724;
+            margin-bottom: 8px;
+        }
+        
+        .bonus-list {
+            font-size: 14px;
+            color: #0f5132;
+            line-height: 1.4;
         }
         
         .form-group {
@@ -257,6 +297,10 @@
             <div id="step1" class="step-content active">
                 <div class="step-title">📻 ВЫБОР РАДИОСТАНЦИЙ</div>
                 
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 11%"></div>
+                </div>
+                
                 <button class="btn btn-secondary" onclick="selectAllRadios()" style="width: 95%; margin: 0 auto 12px;">
                     ✅ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
                 </button>
@@ -288,9 +332,16 @@
             <div id="step2" class="step-content">
                 <div class="step-title">📅 ВЫБОР ДАТ КАМПАНИИ</div>
                 
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 22%"></div>
+                </div>
+                
                 <div class="form-group">
                     <label class="form-label">Дата начала кампании:</label>
                     <input type="date" id="startDate" class="form-input" onchange="updateCampaignDates()">
+                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 4px;">
+                        Рекомендуем начать с завтрашнего дня
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -327,9 +378,23 @@
             <div id="step3" class="step-content">
                 <div class="step-title">⏰ ВЫБОР ВРЕМЕНИ ВЫХОДА</div>
                 
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 33%"></div>
+                </div>
+                
                 <button class="btn btn-secondary" onclick="selectAllTimeSlots()" style="width: 95%; margin: 0 auto 12px;">
-                    ✅ ВЫБРАТЬ ВСЕ СЛОТЫ
+                    ✅ ВЫБРАТЬ ВСЕ 15 СЛОТОВ (МАКСИМАЛЬНЫЙ ОХВАТ)
                 </button>
+                
+                <!-- БЛОК БОНУСОВ -->
+                <div id="maxCoverageBonus" class="bonus-section">
+                    <div class="bonus-title">🎯 МАКСИМУМ ОХВАТА АКТИВИРОВАН!</div>
+                    <div class="bonus-list">
+                        • Премиум-слоты бесплатно<br>
+                        • Доп. скидка 5%<br>
+                        • +50% выходов за +28% стоимости
+                    </div>
+                </div>
                 
                 <div id="timeSlotsList">
                     <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
@@ -354,6 +419,10 @@
                         <span>Общий охват:</span>
                         <span id="totalCoverage">~0 чел.</span>
                     </div>
+                    <div id="bonusStats" class="stat-item hidden" style="color: #28a745; font-weight: 600;">
+                        <span>🎁 Ваш бонус:</span>
+                        <span>Премиум-слоты + 5% скидка</span>
+                    </div>
                 </div>
                 
                 <div class="btn-container">
@@ -362,39 +431,16 @@
                 </div>
             </div>
             
-            <!-- ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ -->
+            <!-- ШАГ 4: РОЛИК -->
             <div id="step4" class="step-content">
-                <div class="step-title">🏷️ БРЕНДИРОВАННЫЕ РУБРИКИ</div>
+                <div class="step-title">🎙️ РОЛИК</div>
                 
-                <div id="brandedSectionsList">
-                    <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
-                        Загрузка рубрик...
-                    </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 44%"></div>
                 </div>
-                
-                <button class="btn btn-secondary" onclick="skipBrandedSection()" style="width: 95%; margin: 12px auto;">
-                    ⏭️ ПРОПУСТИТЬ РУБРИКУ
-                </button>
-                
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Доплата за рубрику:</span>
-                        <span id="brandedBonus">+0%</span>
-                    </div>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="validateStep4()">➡️ ДАЛЕЕ</button>
-                </div>
-            </div>
-            
-            <!-- ШАГ 5: СОЗДАНИЕ РОЛИКА -->
-            <div id="step5" class="step-content">
-                <div class="step-title">🎙️ СОЗДАНИЕ РОЛИКА</div>
                 
                 <div style="text-align: center; margin-bottom: 20px; font-size: 14px; color: #7f8c8d;">
-                    Выберите способ создания рекламного ролика:
+                    Выберите способ создания ролика:
                 </div>
                 
                 <button class="btn" onclick="selectTextPath()" style="margin-bottom: 10px;">
@@ -413,13 +459,17 @@
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
+                    <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
                 </div>
             </div>
             
-            <!-- ШАГ 6: ВВОД ТЕКСТА РОЛИКА -->
-            <div id="step6" class="step-content">
+            <!-- ШАГ 5: ВВОД ТЕКСТА РОЛИКА -->
+            <div id="step5" class="step-content">
                 <div class="step-title">📝 ВВОД ТЕКСТА РОЛИКА</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 55%"></div>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Текст радиоролика (до 500 символов):</label>
@@ -429,6 +479,10 @@
                     </div>
                 </div>
                 
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 13px; color: #7f8c8d;">
+                    💡 Профессиональная озвучка и музыкальное оформление включены в стоимость производства
+                </div>
+                
                 <div class="stats">
                     <div class="stat-item">
                         <span>Автохронометраж:</span>
@@ -436,45 +490,50 @@
                     </div>
                     <div class="stat-item">
                         <span>Рекомендуемая длительность:</span>
-                        <span>20 секунд</span>
+                        <span>до 20 секунд</span>
                     </div>
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="validateStep6()">➡️ ДАЛЕЕ</button>
+                    <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="validateStep5()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- ШАГ 7: ВВОД ХРОНОМЕТРАЖА -->
-            <div id="step7" class="step-content">
+            <!-- ШАГ 6: ВВОД ХРОНОМЕТРАЖА -->
+            <div id="step6" class="step-content">
                 <div class="step-title">⏱️ ВВОД ХРОНОМЕТРАЖА</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 55%"></div>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Длительность ролика (10-25 секунд):</label>
                     <input type="number" id="durationInput" class="form-input" min="10" max="25" value="20" onchange="validateDuration()">
                 </div>
                 
+                <div style="font-size: 13px; color: #7f8c8d; margin: 10px 0;">
+                    💡 Рекомендуемая длительность: до 20 секунд
+                </div>
+                
                 <div id="durationError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0; font-size: 13px;">
                     ❌ Длительность должна быть от 10 до 25 секунд
                 </div>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Рекомендуемая длительность:</span>
-                        <span>20 секунд</span>
-                    </div>
-                </div>
-                
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="validateStep7()">➡️ ДАЛЕЕ</button>
+                    <button class="btn btn-secondary" onclick="prevStep(4)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="validateStep6()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- ШАГ 8: ПРОИЗВОДСТВО РОЛИКА -->
-            <div id="step8" class="step-content">
+            <!-- ШАГ 7: ПРОИЗВОДСТВО РОЛИКА -->
+            <div id="step7" class="step-content">
                 <div class="step-title">🎬 ПРОИЗВОДСТВО РОЛИКА</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 66%"></div>
+                </div>
                 
                 <div id="productionOptionsList">
                     <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
@@ -490,14 +549,22 @@
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(6)">◀️ НАЗАД</button>
-                    <button class="btn" onclick="validateStep8()">➡️ ДАЛЕЕ</button>
+                    <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
+                    <button class="btn" onclick="validateStep7()">➡️ ДАЛЕЕ</button>
                 </div>
             </div>
             
-            <!-- ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ -->
-            <div id="step9" class="step-content">
+            <!-- ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ -->
+            <div id="step8" class="step-content">
                 <div class="step-title">👤 КОНТАКТНЫЕ ДАННЫЕ</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 77%"></div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 0 auto 20px; width: 95%; text-align: center;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Заполните для получения персонального медиаплана и специальных условий</div>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Ваше имя:</label>
@@ -519,15 +586,25 @@
                     <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
                 </div>
                 
+                <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 15px auto; width: 95%; font-size: 13px;">
+                    💎 После заполнения менеджер:<br>
+                    • Подготовит индивидуальное предложение<br>
+                    • Обсудит дополнительные скидки
+                </div>
+                
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(8)">◀️ НАЗАД</button>
+                    <button class="btn btn-secondary" onclick="prevStep(7)">◀️ НАЗАД</button>
                     <button class="btn" onclick="goToFinalCalculation()">➡️ ПЕРЕЙТИ К ИТОГАМ</button>
                 </div>
             </div>
             
-            <!-- ШАГ 10: ИТОГОВЫЙ РАСЧЕТ -->
-            <div id="step10" class="step-content">
+            <!-- ШАГ 9: ИТОГОВЫЙ РАСЧЕТ -->
+            <div id="step9" class="step-content">
                 <div class="step-title">🎯 ИТОГОВЫЙ РАСЧЕТ</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 88%"></div>
+                </div>
                 
                 <div class="stats">
                     <div class="stat-item">
@@ -554,14 +631,15 @@
                         <span>Производство:</span>
                         <span id="finalProduction">Не выбрано</span>
                     </div>
-                    <div class="stat-item">
-                        <span>Рубрика:</span>
-                        <span id="finalBranded">Не выбрана</span>
-                    </div>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin: 15px auto; width: 95%; font-size: 13px;">
+                    🎯 Рассчитанная стоимость: <span id="displayFinalPrice">0</span> ₽<br>
+                    <em>*При заключении договора возможны дополнительные скидки*</em>
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(9)">◀️ НАЗАД</button>
+                    <button class="btn btn-secondary" onclick="prevStep(8)">◀️ НАЗАД</button>
                     <button class="btn btn-success" onclick="submitCampaign()">✅ ОТПРАВИТЬ ЗАЯВКУ</button>
                 </div>
             </div>
@@ -572,12 +650,11 @@
         // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
         
-        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ (без brandedSection)
         let campaignState = {
             currentStep: 1,
             selectedRadios: [],
             selectedTimeSlots: [],
-            brandedSection: '',
             selectedPath: null,
             campaignText: '',
             duration: 20,
@@ -598,22 +675,25 @@
         }
 
         function showStep(stepNumber) {
-            // Скрываем все шаги
             document.querySelectorAll('.step-content').forEach(step => {
                 step.classList.remove('active');
             });
             
-            // Показываем нужный шаг
             const stepElement = document.getElementById(`step${stepNumber}`);
             if (stepElement) {
                 stepElement.classList.add('active');
             }
             
-            // Сохраняем текущий шаг
             campaignState.currentStep = stepNumber;
-            
-            // Загружаем данные для шага
+            updateProgressBar(stepNumber);
             loadStepData(stepNumber);
+        }
+
+        function updateProgressBar(stepNumber) {
+            const progress = (stepNumber / 9) * 100;
+            document.querySelectorAll('.progress-fill').forEach(fill => {
+                fill.style.width = `${progress}%`;
+            });
         }
 
         function nextStep(nextStepNumber) {
@@ -633,16 +713,10 @@
                 case 3:
                     loadTimeSlots();
                     break;
-                case 4:
-                    loadBrandedSections();
-                    break;
-                case 5:
-                    updateProductionCost();
-                    break;
-                case 8:
+                case 7:
                     loadProductionOptions();
                     break;
-                case 10:
+                case 9:
                     loadFinalCalculation();
                     break;
             }
@@ -689,7 +763,7 @@
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
                         <div class="radio-name">${station.name}</div>
                         <div class="radio-listeners">👥 ${formatNumber(station.listeners)} слушателей/день</div>
-                        <div class="radio-listeners">👥 ${station.audience}</div>
+                        <div class="radio-listeners">🎯 ${station.audience}</div>
                     </div>
                 `;
             });
@@ -753,7 +827,6 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
-                // Проверка на прошедшие даты
                 if (start < today) {
                     document.getElementById('dateError').textContent = '❌ Дата начала не может быть в прошлом';
                     document.getElementById('dateError').classList.remove('hidden');
@@ -771,7 +844,6 @@
                 document.getElementById('endDateDisplay').textContent = formatDate(endDate);
                 document.getElementById('periodDisplay').textContent = diffDays + ' дней';
                 
-                // Показываем/скрываем ошибку
                 const errorElement = document.getElementById('dateError');
                 if (diffDays < 15) {
                     errorElement.textContent = '❌ Минимальный период кампании - 15 дней';
@@ -879,7 +951,18 @@
             document.getElementById('selectedSlotsCount').textContent = selectedCount;
             document.getElementById('outputsPerDay').textContent = outputsPerDay;
             
-            // Расчет охвата
+            // Показываем/скрываем бонусы
+            const bonusSection = document.getElementById('maxCoverageBonus');
+            const bonusStats = document.getElementById('bonusStats');
+            
+            if (selectedCount === 15) {
+                bonusSection.classList.add('active');
+                bonusStats.classList.remove('hidden');
+            } else {
+                bonusSection.classList.remove('active');
+                bonusStats.classList.add('hidden');
+            }
+            
             calculateCoverage();
         }
 
@@ -925,66 +1008,15 @@
             nextStep(4);
         }
 
-        // 🏷️ ШАГ 4: БРЕНДИРОВАННЫЕ РУБРИКИ
-        function loadBrandedSections() {
-            const sections = {
-                "auto": { name: "АВТОРУБРИКИ", bonus: "+20%", desc: "Готовые сценарии для автосалонов" },
-                "realty": { name: "НЕДВИЖИМОСТЬ", bonus: "+15%", desc: "Рубрики для агентств недвижимости" },
-                "medical": { name: "МЕДИЦИНСКИЕ", bonus: "+25%", desc: "Экспертные форматы для клиник" },
-                "custom": { name: "ИНДИВИДУАЛЬНАЯ", bonus: "+30%", desc: "Разработка под ваш бизнес" }
-            };
-            
-            let html = '';
-            Object.entries(sections).forEach(([key, section]) => {
-                const isSelected = campaignState.brandedSection === key;
-                html += `
-                    <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="selectBrandedSection('${key}')">
-                        <div class="radio-name">${section.name}</div>
-                        <div class="radio-listeners">${section.bonus} к стоимости</div>
-                        <div class="radio-listeners">${section.desc}</div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('brandedSectionsList').innerHTML = html;
-            updateBrandedBonus();
-        }
-
-        function selectBrandedSection(section) {
-            campaignState.brandedSection = section;
-            loadBrandedSections();
-        }
-
-        function skipBrandedSection() {
-            campaignState.brandedSection = '';
-            nextStep(5);
-        }
-
-        function updateBrandedBonus() {
-            const bonuses = {
-                "auto": "+20%",
-                "realty": "+15%", 
-                "medical": "+25%",
-                "custom": "+30%"
-            };
-            
-            const bonus = campaignState.brandedSection ? bonuses[campaignState.brandedSection] : "+0%";
-            document.getElementById('brandedBonus').textContent = bonus;
-        }
-
-        function validateStep4() {
-            nextStep(5);
-        }
-
-        // 🎙️ ШАГ 5: СОЗДАНИЕ РОЛИКА
+        // 🎙️ ШАГ 4: РОЛИК
         function selectTextPath() {
             campaignState.selectedPath = 'text';
-            nextStep(6);
+            nextStep(5);
         }
 
         function selectAudioPath() {
             campaignState.selectedPath = 'audio';
-            nextStep(7);
+            nextStep(6);
         }
 
         function updateProductionCost() {
@@ -993,13 +1025,12 @@
             document.getElementById('productionCost').textContent = formatNumber(cost) + ' ₽';
         }
 
-        // 📝 ШАГ 6: ВВОД ТЕКСТА РОЛИКА
+        // 📝 ШАГ 5: ВВОД ТЕКСТА РОЛИКА
         function updateCharCount() {
             const text = document.getElementById('campaignText').value;
             const charCount = text.length;
             document.getElementById('charCount').textContent = charCount;
             
-            // Автохронометраж
             let duration = 20;
             if (charCount <= 75) duration = 15;
             else if (charCount <= 100) duration = 20;
@@ -1010,7 +1041,7 @@
             campaignState.campaignText = text;
         }
 
-        function validateStep6() {
+        function validateStep5() {
             if (!campaignState.campaignText.trim()) {
                 alert('❌ Введите текст ролика');
                 return;
@@ -1019,10 +1050,10 @@
                 alert('❌ Текст ролика должен содержать минимум 10 символов');
                 return;
             }
-            nextStep(8);
+            nextStep(7);
         }
 
-        // ⏱️ ШАГ 7: ВВОД ХРОНОМЕТРАЖА
+        // ⏱️ ШАГ 6: ВВОД ХРОНОМЕТРАЖА
         function validateDuration() {
             const duration = parseInt(document.getElementById('durationInput').value);
             const errorElement = document.getElementById('durationError');
@@ -1035,15 +1066,15 @@
             }
         }
 
-        function validateStep7() {
+        function validateStep6() {
             if (campaignState.duration < 10 || campaignState.duration > 25) {
                 alert('❌ Длительность должна быть от 10 до 25 секунд');
                 return;
             }
-            nextStep(9);
+            nextStep(8);
         }
 
-        // 🎬 ШАГ 8: ПРОИЗВОДСТВО РОЛИКА
+        // 🎬 ШАГ 7: ПРОИЗВОДСТВО РОЛИКА
         function loadProductionOptions() {
             const options = {
                 "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление"},
@@ -1077,23 +1108,21 @@
             document.getElementById('finalProductionCost').textContent = formatNumber(cost) + ' ₽';
         }
 
-        function validateStep8() {
+        function validateStep7() {
             if (!campaignState.productionOption) {
                 alert('❌ Выберите вариант производства ролика');
                 return;
             }
-            nextStep(9);
+            nextStep(8);
         }
 
-        // 👤 ШАГ 9: КОНТАКТНЫЕ ДАННЫЕ
+        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ
         function goToFinalCalculation() {
-            // Сохраняем контакты
             campaignState.contactName = document.getElementById('contactName').value.trim();
             campaignState.phone = document.getElementById('contactPhone').value.trim();
             campaignState.email = document.getElementById('contactEmail').value.trim();
             campaignState.company = document.getElementById('contactCompany').value.trim();
             
-            // Валидация
             if (!campaignState.contactName) {
                 alert('❌ Введите ваше имя');
                 return;
@@ -1104,10 +1133,10 @@
                 return;
             }
             
-            nextStep(10);
+            nextStep(9);
         }
 
-        // 🎯 ШАГ 10: ИТОГОВЫЙ РАСЧЕТ
+        // 🎯 ШАГ 9: ИТОГОВЫЙ РАСЧЕТ
         function loadFinalCalculation() {
             const requestData = {
                 selected_radios: campaignState.selectedRadios,
@@ -1115,7 +1144,6 @@
                 start_date: campaignState.startDate,
                 end_date: campaignState.endDate,
                 campaign_days: campaignState.campaignDays,
-                branded_section: campaignState.brandedSection,
                 duration: campaignState.duration,
                 production_option: campaignState.productionOption,
                 production_cost: campaignState.productionOption ? 
@@ -1135,6 +1163,7 @@
                     campaignState.calculation = data.calculation;
                     
                     document.getElementById('finalPrice').textContent = formatNumber(data.calculation.final_price) + ' ₽';
+                    document.getElementById('displayFinalPrice').textContent = formatNumber(data.calculation.final_price);
                     document.getElementById('finalReach').textContent = '~' + formatNumber(data.calculation.total_reach) + ' чел.';
                     document.getElementById('finalPeriod').textContent = campaignState.campaignDays + ' дней';
                     document.getElementById('finalStations').textContent = campaignState.selectedRadios.join(', ');
@@ -1146,15 +1175,6 @@
                     };
                     document.getElementById('finalProduction').textContent = campaignState.productionOption ? 
                         productionNames[campaignState.productionOption] : 'Не выбрано';
-                    
-                    const brandedNames = {
-                        "auto": "Авторубрики",
-                        "realty": "Недвижимость", 
-                        "medical": "Медицинские",
-                        "custom": "Индивидуальная"
-                    };
-                    document.getElementById('finalBranded').textContent = campaignState.brandedSection ? 
-                        brandedNames[campaignState.brandedSection] : 'Не выбрана';
                 }
             })
             .catch(error => {
@@ -1165,12 +1185,12 @@
         function submitCampaign() {
             const submitData = {
                 user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
+                user_telegram_id: tg?.initDataUnsafe?.user?.id,
                 selected_radios: campaignState.selectedRadios,
                 selected_time_slots: campaignState.selectedTimeSlots,
                 start_date: campaignState.startDate,
                 end_date: campaignState.endDate,
                 campaign_days: campaignState.campaignDays,
-                branded_section: campaignState.brandedSection,
                 campaign_text: campaignState.campaignText,
                 production_option: campaignState.productionOption,
                 contact_name: campaignState.contactName,
@@ -1180,7 +1200,6 @@
                 duration: campaignState.duration
             };
             
-            // Добавляем расчет если есть
             if (campaignState.calculation) {
                 submitData.base_price = campaignState.calculation.base_price;
                 submitData.discount = campaignState.calculation.discount;
@@ -1192,7 +1211,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
+                    },
                 body: JSON.stringify(submitData)
             })
             .then(response => response.json())
@@ -1218,22 +1237,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Campaign App запущен!');
             
-            // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
                 tg.expand();
             }
             
-            // Устанавливаем минимальные даты для календаря
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').min = today;
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            document.getElementById('startDate').min = tomorrow.toISOString().split('T')[0];
             
             const nextYear = new Date();
             nextYear.setFullYear(nextYear.getFullYear() + 1);
             document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
             document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
             
-            // Показываем первый шаг и загружаем данные
             showStep(1);
         });
     </script>
