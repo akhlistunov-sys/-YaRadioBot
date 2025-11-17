@@ -1,5 +1,3 @@
-<!-- [file name]: frontend/campaign.html -->
-<!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -32,7 +30,7 @@
         .header {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white;
-            padding: 20px;
+            padding: 20px 12px;
             text-align: center;
             flex-shrink: 0;
         }
@@ -44,7 +42,7 @@
         
         .content {
             flex: 1;
-            padding: 20px;
+            padding: 12px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -62,7 +60,7 @@
         
         .step-title {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-size: 18px;
             font-weight: 600;
             color: #2c3e50;
@@ -72,7 +70,7 @@
             background: #ecf0f1;
             border-radius: 10px;
             height: 6px;
-            margin: 10px 0 20px;
+            margin: 8px 0 15px;
             overflow: hidden;
         }
         
@@ -86,13 +84,13 @@
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            margin: 8px 0;
+            margin: 6px 0;
             transition: all 0.3s ease;
             text-align: center;
             flex-shrink: 0;
@@ -113,7 +111,7 @@
         
         .btn-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: auto;
             flex-shrink: 0;
         }
@@ -127,13 +125,11 @@
             background: white;
             border: 2px solid #ecf0f1;
             border-radius: 10px;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 10px;
+            margin: 6px 0;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 95%;
-            margin-left: auto;
-            margin-right: auto;
+            width: 100%;
         }
         
         .radio-station.selected {
@@ -143,40 +139,38 @@
         
         .radio-name {
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
+            font-size: 15px;
+            margin-bottom: 4px;
             color: #2c3e50;
         }
         
         .radio-listeners {
             color: #7f8c8d;
-            font-size: 14px;
+            font-size: 13px;
         }
         
         .stats {
             background: #f8f9fa;
-            padding: 12px;
+            padding: 10px;
             border-radius: 10px;
-            margin: 12px 0;
+            margin: 10px 0;
             border-left: 4px solid #3498db;
-            width: 95%;
-            margin-left: auto;
-            margin-right: auto;
+            width: 100%;
         }
         
         .stat-item {
             display: flex;
             justify-content: space-between;
-            margin: 6px 0;
-            font-size: 14px;
+            margin: 5px 0;
+            font-size: 13px;
         }
         
         .bonus-section {
             background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
-            margin: 10px auto;
-            width: 95%;
+            margin: 8px 0;
+            width: 100%;
             border-left: 4px solid #28a745;
             display: none;
         }
@@ -188,25 +182,24 @@
         .bonus-title {
             font-weight: 600;
             color: #155724;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-size: 13px;
         }
         
         .bonus-list {
-            font-size: 14px;
+            font-size: 12px;
             color: #0f5132;
-            line-height: 1.4;
+            line-height: 1.3;
         }
         
         .form-group {
-            margin-bottom: 16px;
-            width: 95%;
-            margin-left: auto;
-            margin-right: auto;
+            margin-bottom: 12px;
+            width: 100%;
         }
         
         .form-label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-weight: 600;
             color: #2c3e50;
             font-size: 14px;
@@ -227,7 +220,7 @@
         }
         
         .form-textarea {
-            min-height: 100px;
+            height: 100px;
             resize: vertical;
         }
         
@@ -242,13 +235,11 @@
             background: white;
             border: 2px solid #ecf0f1;
             border-radius: 10px;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 10px;
+            margin: 6px 0;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 95%;
-            margin-left: auto;
-            margin-right: auto;
+            width: 100%;
         }
         
         .production-option.selected {
@@ -258,19 +249,20 @@
         
         .production-name {
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 4px;
+            font-size: 14px;
+            margin-bottom: 3px;
         }
         
         .production-price {
             color: #27ae60;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
+            font-size: 13px;
         }
         
         .production-desc {
             color: #7f8c8d;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .hidden {
@@ -301,7 +293,7 @@
                     <div class="progress-fill" style="width: 11%"></div>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="selectAllRadios()" style="width: 95%; margin: 0 auto 12px;">
+                <button class="btn btn-secondary" onclick="selectAllRadios()" style="margin-bottom: 8px;">
                     ✅ ВЫБРАТЬ ВСЕ 6 РАДИОСТАНЦИЙ
                 </button>
                 
@@ -318,7 +310,7 @@
                     </div>
                     <div class="stat-item">
                         <span>Общий охват:</span>
-                        <span id="totalListenersCount">0 слушателей</span>
+                        <span id="totalListenersCount">~0 слушателей</span>
                     </div>
                 </div>
                 
@@ -349,7 +341,7 @@
                     <input type="date" id="endDate" class="form-input" onchange="updateCampaignDates()">
                 </div>
                 
-                <div id="dateError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0; font-size: 13px;">
+                <div id="dateError" class="hidden" style="color: #e74c3c; text-align: center; margin: 8px 0; font-size: 12px;">
                     ❌ Минимальный период кампании - 15 дней
                 </div>
                 
@@ -382,7 +374,7 @@
                     <div class="progress-fill" style="width: 33%"></div>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="selectAllTimeSlots()" style="width: 95%; margin: 0 auto 12px;">
+                <button class="btn btn-secondary" onclick="selectAllTimeSlots()" style="margin-bottom: 8px;">
                     ✅ ВЫБРАТЬ ВСЕ 15 СЛОТОВ (МАКСИМАЛЬНЫЙ ОХВАТ)
                 </button>
                 
@@ -439,11 +431,11 @@
                     <div class="progress-fill" style="width: 44%"></div>
                 </div>
                 
-                <div style="text-align: center; margin-bottom: 20px; font-size: 14px; color: #7f8c8d;">
+                <div style="text-align: center; margin-bottom: 15px; font-size: 14px; color: #7f8c8d;">
                     Выберите способ создания ролика:
                 </div>
                 
-                <button class="btn" onclick="selectTextPath()" style="margin-bottom: 10px;">
+                <button class="btn" onclick="selectTextPath()" style="margin-bottom: 8px;">
                     📝 ВВЕСТИ ТЕКСТ РОЛИКА
                 </button>
                 
@@ -479,7 +471,7 @@
                     </div>
                 </div>
                 
-                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 13px; color: #7f8c8d;">
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 8px 0; font-size: 12px; color: #7f8c8d;">
                     💡 Профессиональная озвучка и музыкальное оформление включены в стоимость производства
                 </div>
                 
@@ -513,11 +505,11 @@
                     <input type="number" id="durationInput" class="form-input" min="10" max="25" value="20" onchange="validateDuration()">
                 </div>
                 
-                <div style="font-size: 13px; color: #7f8c8d; margin: 10px 0;">
+                <div style="font-size: 12px; color: #7f8c8d; margin: 8px 0;">
                     💡 Рекомендуемая длительность: до 20 секунд
                 </div>
                 
-                <div id="durationError" class="hidden" style="color: #e74c3c; text-align: center; margin: 10px 0; font-size: 13px;">
+                <div id="durationError" class="hidden" style="color: #e74c3c; text-align: center; margin: 8px 0; font-size: 12px;">
                     ❌ Длительность должна быть от 10 до 25 секунд
                 </div>
                 
@@ -562,8 +554,8 @@
                     <div class="progress-fill" style="width: 77%"></div>
                 </div>
                 
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 0 auto 20px; width: 95%; text-align: center;">
-                    <div style="font-weight: 600; margin-bottom: 8px;">Заполните для получения персонального медиаплана и специальных условий</div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 10px; margin: 0 0 15px; text-align: center;">
+                    <div style="font-weight: 600; margin-bottom: 6px; font-size: 14px;">Заполните для получения персонального медиаплана и специальных условий</div>
                 </div>
                 
                 <div class="form-group">
@@ -586,7 +578,7 @@
                     <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
                 </div>
                 
-                <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 15px auto; width: 95%; font-size: 13px;">
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 12px;">
                     💎 После заполнения менеджер:<br>
                     • Подготовит индивидуальное предложение<br>
                     • Обсудит дополнительные скидки
@@ -613,7 +605,7 @@
                     </div>
                     <div class="stat-item">
                         <span>Охват:</span>
-                        <span id="finalReach">0 чел.</span>
+                        <span id="finalReach">~0 чел.</span>
                     </div>
                     <div class="stat-item">
                         <span>Период:</span>
@@ -633,7 +625,7 @@
                     </div>
                 </div>
                 
-                <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin: 15px auto; width: 95%; font-size: 13px;">
+                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 12px;">
                     🎯 Рассчитанная стоимость: <span id="displayFinalPrice">0</span> ₽<br>
                     <em>*При заключении договора возможны дополнительные скидки*</em>
                 </div>
@@ -650,7 +642,7 @@
         // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
         
-        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ (без brandedSection)
+        // 🗄️ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
         let campaignState = {
             currentStep: 1,
             selectedRadios: [],
@@ -762,7 +754,7 @@
                 html += `
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleRadioStation('${station.name}')">
                         <div class="radio-name">${station.name}</div>
-                        <div class="radio-listeners">👥 ${formatNumber(station.listeners)} слушателей/день</div>
+                        <div class="radio-listeners">👥 ~${formatNumber(station.listeners)} слушателей/день</div>
                         <div class="radio-listeners">🎯 ${station.audience}</div>
                     </div>
                 `;
@@ -805,7 +797,7 @@
             }, 0);
             
             document.getElementById('selectedRadiosCount').textContent = campaignState.selectedRadios.length;
-            document.getElementById('totalListenersCount').textContent = formatNumber(totalListeners) + ' слушателей';
+            document.getElementById('totalListenersCount').textContent = '~' + formatNumber(totalListeners) + ' слушателей';
         }
 
         function validateStep1() {
@@ -914,10 +906,9 @@
             
             slots.forEach((slot, index) => {
                 const isSelected = campaignState.selectedTimeSlots.includes(index);
-                const premiumEmoji = slot.premium ? '🚀' : '📊';
                 html += `
                     <div class="radio-station ${isSelected ? 'selected' : ''}" onclick="toggleTimeSlot(${index})">
-                        <div class="radio-name">${slot.time} - ${slot.label} ${premiumEmoji}</div>
+                        <div class="radio-name">${slot.time} - ${slot.label}</div>
                         <div class="radio-listeners">👥 ${slot.coverage_percent}% суточного охвата</div>
                     </div>
                 `;
@@ -1258,4 +1249,3 @@
     </script>
 </body>
 </html>
-<!-- [file content end] -->
