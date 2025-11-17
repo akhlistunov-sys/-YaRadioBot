@@ -77,6 +77,10 @@
             background: linear-gradient(135deg, #1e8449, #186a3b);
         }
         
+        .btn-delete {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -222,6 +226,15 @@
             display: none !important;
         }
 
+        .contact-note {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+
         @media (min-width: 768px) {
             .container {
                 max-width: 400px;
@@ -246,6 +259,11 @@
                         <p>Загрузка статистики...</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="contact-note">
+                📞 Для обсуждения специальных условий<br>
+                свяжитесь с менеджером
             </div>
 
             <div class="info-section">
@@ -287,12 +305,58 @@
             window.location.href = '/index.html';
         }
 
-        function downloadExcel(campaignNumber) {
-            window.open(`/api/campaign-excel/${campaignNumber}`, '_blank');
+        function sendExcelToTelegram(campaignNumber) {
+            const userTelegramId = tg?.initDataUnsafe?.user?.id;
+            
+            if (!userTelegramId) {
+                alert('❌ Не удалось определить ваш Telegram ID');
+                return;
+            }
+
+            fetch('/api/send-excel/' + campaignNumber, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_telegram_id: userTelegramId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Excel медиаплан отправлен в ваш Telegram!');
+                } else {
+                    alert('❌ Ошибка отправки: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка отправки Excel:', error);
+                alert('❌ Ошибка отправки. Попробуйте еще раз.');
+            });
         }
 
-        function viewCampaignDetails(campaignNumber) {
-            alert(`Детали кампании ${campaignNumber} - в разработке`);
+        function deleteCampaign(campaignNumber) {
+            if (!confirm('🗑️ Вы уверены, что хотите удалить эту кампанию?')) {
+                return;
+            }
+
+            fetch('/api/delete-campaign/' + campaignNumber, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Кампания удалена!');
+                    loadUserData(); // Перезагружаем список
+                } else {
+                    alert('❌ Ошибка удаления: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка удаления:', error);
+                alert('❌ Ошибка удаления. Попробуйте еще раз.');
+            });
         }
 
         // 📊 ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
@@ -306,7 +370,6 @@
 
             userState.userId = userId;
             
-            // Загрузка кампаний пользователя
             fetch(`/api/user-campaigns/${userId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -393,6 +456,7 @@
             campaigns.forEach(campaign => {
                 const statusClass = campaign.status === 'active' ? 'status-active' : 'status-completed';
                 const statusText = campaign.status === 'active' ? 'АКТИВНА' : 'ЗАВЕРШЕНА';
+                const canDelete = campaign.status === 'active' && new Date(campaign.start_date) > new Date();
                 
                 html += `
                     <div class="campaign-item">
@@ -407,12 +471,14 @@
                             <div>🕐 ${new Date(campaign.created_at).toLocaleDateString('ru-RU')}</div>
                         </div>
                         <div class="campaign-actions">
-                            <button class="btn btn-excel" onclick="downloadExcel('${campaign.campaign_number}')">
-                                📊 Excel
+                            <button class="btn btn-excel" onclick="sendExcelToTelegram('${campaign.campaign_number}')">
+                                📊 Excel в Telegram
                             </button>
-                            <button class="btn btn-secondary" onclick="viewCampaignDetails('${campaign.campaign_number}')">
-                                📋 Детали
+                            ${canDelete ? `
+                            <button class="btn btn-delete" onclick="deleteCampaign('${campaign.campaign_number}')">
+                                🗑️ Удалить
                             </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -458,13 +524,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Личный кабинет запущен!');
             
-            // Инициализация Telegram Web App
             if (tg) {
                 tg.ready();
                 tg.expand();
             }
             
-            // Загрузка данных пользователя
             loadUserData();
         });
     </script>
