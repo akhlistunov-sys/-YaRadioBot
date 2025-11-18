@@ -151,7 +151,7 @@ def send_excel_to_client(campaign_number, user_telegram_id):
         return False
 
 def create_excel_file_from_db(campaign_number):
-    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА БЕЗ РУБРИК"""
+    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА БЕЗ РУБРИК И СКИДКИ"""
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
@@ -307,14 +307,12 @@ def create_excel_file_from_db(campaign_number):
         ws.append([])
         row += 1
         
+        # УБРАНА СТРОКА СО СКИДКОЙ (discount всегда 0)
         ws[f"A{row}"] = "Базовая стоимость"
         ws[f"B{row}"] = user_data["base_price"]
         row += 1
         
-        ws[f"A{row}"] = "Скидка"
-        ws[f"B{row}"] = f"-{user_data['discount']}"
-        row += 1
-        
+        # Пропускаем строку со скидкой
         ws.append([])
         row += 1
         
@@ -356,11 +354,12 @@ def create_excel_file_from_db(campaign_number):
         row += 2
         
         ws.merge_cells(f"A{row}:B{row}")
+        # ИЗМЕНЕНО: 24 часа вместо 3 дней
         ws[f"A{row}"] = "🎯 СТАРТ КАМПАНИИ:"
         ws[f"A{row}"].font = title_font
         row += 1
         
-        ws[f"A{row}"] = "В течение 3 рабочих дней после подтверждения"
+        ws[f"A{row}"] = "В течение 24 часов после подтверждения"
         
         ws.append([])
         row += 2
@@ -465,7 +464,7 @@ def get_radio_stations():
 
 @app.route('/api/create-campaign', methods=['POST'])
 def create_campaign():
-    """СОЗДАНИЕ НОВОЙ КАМПАНИИ"""
+    """СОЗДАНИЕ НОВОЙ КАМПАНИИ С ЛИМИТОМ 2 В ДЕНЬ"""
     try:
         if not init_db():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
@@ -482,11 +481,12 @@ def create_campaign():
         """, (user_id,))
         count = cursor.fetchone()[0]
         
-        if count >= 5:
+        # ИЗМЕНЕНО: лимит с 5 на 2 кампании в день
+        if count >= 2:
             conn.close()
             return jsonify({
                 "success": False, 
-                "error": "Превышен лимит в 5 заявок в день. Попробуйте завтра."
+                "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
             }), 400
         
         calculation_data = {
