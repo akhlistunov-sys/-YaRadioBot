@@ -79,17 +79,38 @@
         }
         
         .cta-section {
-    color: #2c3e50;
-    padding: 12px;
-    text-align: center;
-    margin: 0 12px 15px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    background: transparent;
-    box-shadow: none;
-    border: none;
-}
+            color: #2c3e50;
+            padding: 12px;
+            text-align: center;
+            margin: 0 12px 15px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+        }
+        
+        .main-cta {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: calc(100% - 24px);
+            margin: 0 12px 20px;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .main-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
         
         .menu-grid {
             display: grid;
@@ -129,12 +150,6 @@
             margin-bottom: 6px;
         }
         
-        .btn-campaign { 
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            border-color: #10b981;
-        }
-        
         .btn-statistics { 
             background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             color: white;
@@ -165,44 +180,44 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
-            <div class="location">🎙️ Ялуторовск • Заводоуковск</div>
+            <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
+            <div class="location">✦ ─────────────────────── ✦<br>Ялуторовск • Заводоуковск</div>
         </div>
 
         <div class="stats-section">
             <div class="stats-list">
                 <div class="stat-item">
-                    <div class="stat-icon">🌸</div>
+                    <div class="stat-icon">🏆</div>
                     <div>10+ лет на рынке</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">✨</div>
+                    <div class="stat-icon">📈</div>
                     <div>200+ кампаний за 2025 год</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">👑</div>
+                    <div class="stat-icon">👥</div>
                     <div>~15,100 охват в день</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">💫</div>
-                    <div>52% местного рынка</div>
+                    <div class="stat-icon">🎯</div>
+                    <div>~52% местного рынка</div>
                 </div>
             </div>
         </div>
 
         <div class="cta-section">
-            Узнайте стоимость за 2 минуты 💫
+            🎯 Узнайте стоимость за 2 минуты<br>
+            <small>Получите точный расчет охвата</small>
         </div>
 
+        <button class="main-cta" onclick="showPage('campaign')">
+            🚀 НАЧАТЬ РАСЧЕТ
+        </button>
+
         <div class="menu-grid">
-            <button class="menu-btn btn-campaign" onclick="showPage('campaign')">
-                <i>🚀</i>
-                НАЧАТЬ РАСЧЕТ
-            </button>
-            
             <button class="menu-btn btn-statistics" onclick="showPage('statistics')">
                 <i>📊</i>
-                СТАТИСТИКА АУДИТОРИИ
+                СТАТИСТИКА ОХВАТА
             </button>
             
             <button class="menu-btn btn-about" onclick="showPage('about')">
