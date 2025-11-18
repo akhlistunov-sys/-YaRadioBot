@@ -101,7 +101,7 @@
             font-weight: 600;
             cursor: pointer;
             width: calc(100% - 24px);
-            margin: 0 12px 20px;
+            margin: 0 12px 15px;
             transition: all 0.3s ease;
             text-align: center;
             box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
@@ -112,20 +112,41 @@
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
         }
         
-        .menu-grid {
+        .cabinet-cta {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: calc(100% - 24px);
+            margin: 0 12px 20px;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3);
+        }
+        
+        .cabinet-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
+        }
+        
+        .small-buttons-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             padding: 0 12px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
-        .menu-btn {
+        .small-btn {
             background: white;
             color: #1e293b;
             border: 2px solid #e2e8f0;
-            padding: 15px 10px;
-            border-radius: 16px;
+            padding: 12px 8px;
+            border-radius: 12px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
@@ -135,19 +156,19 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            min-height: 80px;
+            min-height: 60px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
         
-        .menu-btn:hover {
+        .small-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0,0,0,0.1);
             border-color: #3b82f6;
         }
         
-        .menu-btn i {
-            font-size: 24px;
-            margin-bottom: 6px;
+        .small-btn i {
+            font-size: 20px;
+            margin-bottom: 4px;
         }
         
         .btn-statistics { 
@@ -160,12 +181,6 @@
             background: linear-gradient(135deg, #f59e0b, #d97706);
             color: white;
             border-color: #f59e0b;
-        }
-        
-        .btn-cabinet { 
-            background: linear-gradient(135deg, #64748b, #475569);
-            color: white;
-            border-color: #64748b;
         }
 
         @media (min-width: 768px) {
@@ -214,22 +229,21 @@
             🚀 НАЧАТЬ РАСЧЕТ
         </button>
 
-        <div class="menu-grid">
-            <button class="menu-btn btn-statistics" onclick="showPage('statistics')">
+        <div class="small-buttons-grid">
+            <button class="small-btn btn-statistics" onclick="showPage('statistics')">
                 <i>📊</i>
                 СТАТИСТИКА ОХВАТА
             </button>
             
-            <button class="menu-btn btn-about" onclick="showPage('about')">
+            <button class="small-btn btn-about" onclick="showPage('about')">
                 <i>🏆</i>
                 О НАС
             </button>
-            
-            <button class="menu-btn btn-cabinet" onclick="showPage('cabinet')">
-                <i>📋</i>
-                ЛИЧНЫЙ КАБИНЕТ
-            </button>
         </div>
+
+        <button class="cabinet-cta" onclick="showPage('cabinet')">
+            📋 ЛИЧНЫЙ КАБИНЕТ
+        </button>
     </div>
 
     <script>
