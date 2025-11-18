@@ -52,10 +52,21 @@
             display: none;
             flex: 1;
             flex-direction: column;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .step-content.hidden {
+            opacity: 0;
+            transform: translateX(20px);
+            display: none !important;
         }
         
         .step-content.active {
-            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+            display: flex !important;
         }
         
         .step-title {
@@ -269,6 +280,45 @@
             display: none !important;
         }
 
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .form-input.error {
+            border-color: #e74c3c;
+        }
+
+        .form-input.success {
+            border-color: #27ae60;
+        }
+
+        .validation-message {
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .validation-message.error {
+            color: #e74c3c;
+            display: block;
+        }
+
+        .validation-message.success {
+            color: #27ae60;
+            display: block;
+        }
+
         @media (min-width: 768px) {
             .container {
                 max-width: 400px;
@@ -322,14 +372,14 @@
             
             <!-- ШАГ 2: ВЫБОР ДАТ -->
             <div id="step2" class="step-content">
-                <div class="step-title">📅 ВЫБОР ДАТ КАМПАНИИ</div>
+                <div class="step-title">📅 ВЫБЕРИТЕ ДАТЫ РАЗМЕЩЕНИЯ</div>
                 
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: 22%"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Дата начала кампании:</label>
+                    <label class="form-label">🗓️ ДАТА НАЧАЛА КАМПАНИИ:</label>
                     <input type="date" id="startDate" class="form-input" onchange="updateCampaignDates()">
                     <div style="font-size: 12px; color: #7f8c8d; margin-top: 4px;">
                         Рекомендуем начать с завтрашнего дня
@@ -337,7 +387,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Дата окончания кампании:</label>
+                    <label class="form-label">🗓️ ДАТА ОКОНЧАНИЯ КАМПАНИИ:</label>
                     <input type="date" id="endDate" class="form-input" onchange="updateCampaignDates()">
                 </div>
                 
@@ -443,13 +493,6 @@
                     🎧 ПРИСЛАТЬ СВОЙ РОЛИК
                 </button>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Стоимость производства:</span>
-                        <span id="productionCost">0 ₽</span>
-                    </div>
-                </div>
-                
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(3)">◀️ НАЗАД</button>
                 </div>
@@ -533,13 +576,6 @@
                     </div>
                 </div>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Стоимость производства:</span>
-                        <span id="finalProductionCost">0 ₽</span>
-                    </div>
-                </div>
-                
                 <div class="btn-container">
                     <button class="btn btn-secondary" onclick="prevStep(5)">◀️ НАЗАД</button>
                     <button class="btn" onclick="validateStep7()">➡️ ДАЛЕЕ</button>
@@ -560,22 +596,26 @@
                 
                 <div class="form-group">
                     <label class="form-label">Ваше имя:</label>
-                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя">
+                    <input type="text" id="contactName" class="form-input" placeholder="Введите ваше имя" oninput="validateName(this)">
+                    <div class="validation-message" id="nameValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Телефон:</label>
-                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX">
+                    <input type="tel" id="contactPhone" class="form-input" placeholder="+7 (XXX) XXX-XX-XX" oninput="validatePhone(this)">
+                    <div class="validation-message" id="phoneValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Email:</label>
-                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com">
+                    <input type="email" id="contactEmail" class="form-input" placeholder="your@email.com" oninput="validateEmail(this)">
+                    <div class="validation-message" id="emailValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Название компании:</label>
-                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании">
+                    <input type="text" id="contactCompany" class="form-input" placeholder="Введите название компании" oninput="validateCompany(this)">
+                    <div class="validation-message" id="companyValidation"></div>
                 </div>
                 
                 <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 12px;">
@@ -598,36 +638,43 @@
                     <div class="progress-fill" style="width: 88%"></div>
                 </div>
                 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span>Стоимость:</span>
-                        <span id="finalPrice">0 ₽</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Охват:</span>
-                        <span id="finalReach">~0 чел.</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Период:</span>
-                        <span id="finalPeriod">0 дней</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Станций:</span>
-                        <span id="finalStations">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Выходов в день:</span>
-                        <span id="finalOutputs">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Производство:</span>
-                        <span id="finalProduction">Не выбрано</span>
-                    </div>
+                <div id="calculationLoading" style="text-align: center; padding: 20px; display: none;">
+                    <div class="loading-spinner"></div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">Рассчитываем стоимость...</div>
                 </div>
                 
-                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 12px;">
-                    🎯 Рассчитанная стоимость: <span id="displayFinalPrice">0</span> ₽<br>
-                    <em>*При заключении договора возможны дополнительные скидки*</em>
+                <div id="finalCalculation">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span>Стоимость:</span>
+                            <span id="finalPrice">0 ₽</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Охват:</span>
+                            <span id="finalReach">~0 чел.</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Период:</span>
+                            <span id="finalPeriod">0 дней</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Станций:</span>
+                            <span id="finalStations">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Выходов в день:</span>
+                            <span id="finalOutputs">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Производство:</span>
+                            <span id="finalProduction">Не выбрано</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 12px;">
+                        🎯 Рассчитанная стоимость: <span id="displayFinalPrice">0</span> ₽<br>
+                        <em>*При заключении договора возможны дополнительные скидки*</em>
+                    </div>
                 </div>
                 
                 <div class="btn-container">
@@ -667,18 +714,26 @@
         }
 
         function showStep(stepNumber) {
-            document.querySelectorAll('.step-content').forEach(step => {
-                step.classList.remove('active');
-            });
-            
-            const stepElement = document.getElementById(`step${stepNumber}`);
-            if (stepElement) {
-                stepElement.classList.add('active');
+            const currentStep = document.querySelector('.step-content.active');
+            if (currentStep) {
+                currentStep.classList.remove('active');
+                currentStep.classList.add('hidden');
             }
             
-            campaignState.currentStep = stepNumber;
-            updateProgressBar(stepNumber);
-            loadStepData(stepNumber);
+            setTimeout(() => {
+                document.querySelectorAll('.step-content').forEach(step => {
+                    step.classList.remove('active', 'hidden');
+                });
+                
+                const stepElement = document.getElementById(`step${stepNumber}`);
+                if (stepElement) {
+                    stepElement.classList.add('active');
+                }
+                
+                campaignState.currentStep = stepNumber;
+                updateProgressBar(stepNumber);
+                loadStepData(stepNumber);
+            }, 300);
         }
 
         function updateProgressBar(stepNumber) {
@@ -1010,12 +1065,6 @@
             nextStep(6);
         }
 
-        function updateProductionCost() {
-            const cost = campaignState.productionOption ? 
-                (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0;
-            document.getElementById('productionCost').textContent = formatNumber(cost) + ' ₽';
-        }
-
         // 📝 ШАГ 5: ВВОД ТЕКСТА РОЛИКА
         function updateCharCount() {
             const text = document.getElementById('campaignText').value;
@@ -1069,7 +1118,7 @@
         function loadProductionOptions() {
             const options = {
                 "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление"},
-                "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная музыка"}
+                "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка 2-мя голосами, индивидуальная música"}
             };
             
             let html = '';
@@ -1085,18 +1134,11 @@
             });
             
             document.getElementById('productionOptionsList').innerHTML = html;
-            updateProductionCostDisplay();
         }
 
         function selectProductionOption(option) {
             campaignState.productionOption = option;
             loadProductionOptions();
-        }
-
-        function updateProductionCostDisplay() {
-            const cost = campaignState.productionOption ? 
-                (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0;
-            document.getElementById('finalProductionCost').textContent = formatNumber(cost) + ' ₽';
         }
 
         function validateStep7() {
@@ -1107,20 +1149,102 @@
             nextStep(8);
         }
 
-        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ
-        function goToFinalCalculation() {
-            campaignState.contactName = document.getElementById('contactName').value.trim();
-            campaignState.phone = document.getElementById('contactPhone').value.trim();
-            campaignState.email = document.getElementById('contactEmail').value.trim();
-            campaignState.company = document.getElementById('contactCompany').value.trim();
+        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ - ВАЛИДАЦИЯ
+        function validateName(input) {
+            const value = input.value.trim();
+            const validation = document.getElementById('nameValidation');
             
-            if (!campaignState.contactName) {
-                alert('❌ Введите ваше имя');
-                return;
+            if (value.length < 2) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите имя (минимум 2 буквы)';
+                validation.className = 'validation-message error';
+                return false;
+            } else if (!/^[a-zA-Zа-яА-ЯёЁ\s]+$/.test(value)) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Имя должно содержать только буквы';
+                validation.className = 'validation-message error';
+                return false;
+            } else {
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректное имя';
+                validation.className = 'validation-message success';
+                campaignState.contactName = value;
+                return true;
             }
+        }
+
+        function validatePhone(input) {
+            const value = input.value.trim();
+            const validation = document.getElementById('phoneValidation');
+            const digits = value.replace(/\D/g, '');
             
-            if (!campaignState.phone) {
-                alert('❌ Введите ваш телефон');
+            if (digits.length < 5) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите корректный телефон (минимум 5 цифр)';
+                validation.className = 'validation-message error';
+                return false;
+            } else {
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректный телефон';
+                validation.className = 'validation-message success';
+                campaignState.phone = value;
+                return true;
+            }
+        }
+
+        function validateEmail(input) {
+            const value = input.value.trim();
+            const validation = document.getElementById('emailValidation');
+            
+            if (!value.includes('@') || !value.includes('.') || value.length < 5) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите корректный email';
+                validation.className = 'validation-message error';
+                return false;
+            } else {
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректный email';
+                validation.className = 'validation-message success';
+                campaignState.email = value;
+                return true;
+            }
+        }
+
+        function validateCompany(input) {
+            const value = input.value.trim();
+            const validation = document.getElementById('companyValidation');
+            
+            if (value.length === 0) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите название компании';
+                validation.className = 'validation-message error';
+                return false;
+            } else {
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректное название';
+                validation.className = 'validation-message success';
+                campaignState.company = value;
+                return true;
+            }
+        }
+
+        function goToFinalCalculation() {
+            const nameValid = validateName(document.getElementById('contactName'));
+            const phoneValid = validatePhone(document.getElementById('contactPhone'));
+            const emailValid = validateEmail(document.getElementById('contactEmail'));
+            const companyValid = validateCompany(document.getElementById('contactCompany'));
+            
+            if (!nameValid || !phoneValid || !emailValid || !companyValid) {
+                alert('❌ Заполните все поля корректно');
                 return;
             }
             
@@ -1129,6 +1253,9 @@
 
         // 🎯 ШАГ 9: ИТОГОВЫЙ РАСЧЕТ
         function loadFinalCalculation() {
+            document.getElementById('calculationLoading').style.display = 'block';
+            document.getElementById('finalCalculation').style.display = 'none';
+            
             const requestData = {
                 selected_radios: campaignState.selectedRadios,
                 selected_time_slots: campaignState.selectedTimeSlots,
@@ -1145,11 +1272,14 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
+                    },
                 body: JSON.stringify(requestData)
             })
             .then(response => response.json())
             .then(data => {
+                document.getElementById('calculationLoading').style.display = 'none';
+                document.getElementById('finalCalculation').style.display = 'block';
+                
                 if (data.success) {
                     campaignState.calculation = data.calculation;
                     
@@ -1170,6 +1300,8 @@
             })
             .catch(error => {
                 console.error('Ошибка расчета:', error);
+                document.getElementById('calculationLoading').style.display = 'none';
+                document.getElementById('finalCalculation').style.display = 'block';
             });
         }
 
