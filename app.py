@@ -712,23 +712,73 @@ def get_campaign_confirmation(campaign_number):
 import threading
 import time
 import requests
+import atexit
 
-def start_keep_alive():
-    def keep_alive():
-        while True:
-            try:
-                requests.get('https://yaradiobot.onrender.com/', timeout=5)
-            except:
-                pass
-            time.sleep(600)  # 10 минут
+class KeepAlive:
+    def __init__(self):
+        self.is_running = False
+        self.thread = None
+        
+    def start(self):
+        """Запуск фонового пинга"""
+        if self.is_running:
+            return
+            
+        self.is_running = True
+        self.thread = threading.Thread(target=self._keep_alive_loop, daemon=True)
+        self.thread.start()
+        logger.info("🚀 Фоновый самопинг запущен (интервал: 8 минут)")
     
-    thread = threading.Thread(target=keep_alive, daemon=True)
-    thread.start()
+    def _keep_alive_loop(self):
+        """Основной цикл пинга"""
+        while self.is_running:
+            try:
+                # Пингуем основной URL
+                response = requests.get('https://yaradiobot.onrender.com/', timeout=30)
+                logger.info(f"✅ Самопинг успешен: {response.status_code} - {datetime.now().strftime('%H:%M:%S')}")
+            except requests.exceptions.Timeout:
+                logger.warning("⏰ Таймаут самопинга")
+            except Exception as e:
+                logger.warning(f"⚠️ Ошибка самопинга: {str(e)[:100]}")  # Обрезаем длинные сообщения
+            
+            # Ждем 8 минут (меньше 10, чтобы Render не успел уснуть)
+            for _ in range(48):  # 48 * 10 сек = 8 минут
+                if not self.is_running:
+                    break
+                time.sleep(10)
+    
+    def stop(self):
+        """Остановка пинга"""
+        self.is_running = False
+        logger.info("🛑 Фоновый самопинг остановлен")
 
-# Добавляем перед запуском приложения
+# Глобальный объект
+keep_alive = KeepAlive()
+
+# Добавьте в конец файла перед if __name__ == '__main__':
+def setup_keep_alive():
+    """Настройка и запуск самопинга"""
+    # Регистрируем остановку при выходе
+    atexit.register(keep_alive.stop)
+    
+    # Ждем немного перед стартом (чтобы приложение точно запустилось)
+    def delayed_start():
+        time.sleep(10)
+        keep_alive.start()
+    
+    start_thread = threading.Thread(target=delayed_start, daemon=True)
+    start_thread.start()
+
+# В основном блоке:
 if __name__ == '__main__':
-    start_keep_alive()
-    # остальной код...
+    # Запускаем самопинг
+    setup_keep_alive()
+    
+    # Существующий код
+    init_db()
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"🚀 Запуск приложения на порту {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
