@@ -712,37 +712,23 @@ def get_campaign_confirmation(campaign_number):
 import threading
 import time
 import requests
-from datetime import datetime
 
 def start_keep_alive():
-    """Фоновая задача для самопинга приложения"""
     def keep_alive():
         while True:
             try:
-                # Пингуем собственное приложение
-                response = requests.get('https://yaradiobot.onrender.com/api/health', timeout=10)
-                logger.info(f"✅ Самопинг успешен: {response.status_code} - {datetime.now().strftime('%H:%M:%S')}")
-            except Exception as e:
-                logger.warning(f"⚠️ Самопинг не удался: {e}")
-            
-            # Ждем 10 минут до следующего пинга
-            time.sleep(600)
+                requests.get('https://yaradiobot.onrender.com/', timeout=5)
+            except:
+                pass
+            time.sleep(600)  # 10 минут
     
-    # Запускаем в фоновом потоке
     thread = threading.Thread(target=keep_alive, daemon=True)
     thread.start()
-    logger.info("🚀 Фоновый самопинг запущен (интервал: 10 минут)")
 
-# В основном блоке приложения добавляем:
+# Добавляем перед запуском приложения
 if __name__ == '__main__':
-    # Запускаем самопинг при старте
     start_keep_alive()
-    
-    # Существующий код запуска
-    init_db()
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"🚀 Запуск приложения на порту {port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # остальной код...
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
