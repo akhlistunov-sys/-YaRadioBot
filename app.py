@@ -397,7 +397,13 @@ def health_check():
         "database": "connected" if init_db() else "error",
         "timestamp": datetime.now().isoformat()
     })
-
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "running", 
+        "service": "YaRadioBot",
+        "timestamp": datetime.now().isoformat()
+    })
 @app.route('/api/calculate', methods=['POST'])
 def calculate_campaign():
     """Расчет стоимости кампании"""
