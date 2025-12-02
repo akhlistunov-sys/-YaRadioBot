@@ -625,7 +625,7 @@
                 </div>
                 
                 <div class="btn-container">
-                    <button class="btn btn-secondary" onclick="prevStep(7)">◀️ НАЗАД</button>
+                    <button class="btn btn-secondary" onclick="goBackFromStep8()">◀️ НАЗАД</button>
                     <button class="btn" onclick="goToFinalCalculation()">➡️ ПЕРЕЙТИ К ИТОГАМ</button>
                 </div>
             </div>
@@ -1077,19 +1077,25 @@
             else duration = 25;
             
             document.getElementById('autoDuration').textContent = duration + ' секунд';
-            campaignState.duration = duration;
+            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
             campaignState.campaignText = text;
+            campaignState.duration = duration;
         }
 
         function validateStep5() {
-            if (!campaignState.campaignText.trim()) {
+            const text = document.getElementById('campaignText').value.trim();
+            
+            if (!text) {
                 alert('❌ Введите текст ролика');
                 return;
             }
-            if (campaignState.campaignText.trim().length < 10) {
+            if (text.length < 10) {
                 alert('❌ Текст ролика должен содержать минимум 10 символов');
                 return;
             }
+            
+            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
+            campaignState.campaignText = text;
             nextStep(7);
         }
 
@@ -1149,7 +1155,7 @@
             nextStep(8);
         }
 
-        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ - ВАЛИДАЦИЯ
+        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ
         function validateName(input) {
             const value = input.value.trim();
             const validation = document.getElementById('nameValidation');
@@ -1237,6 +1243,17 @@
             }
         }
 
+        // ✅ НОВАЯ ФУНКЦИЯ: УМНАЯ НАВИГАЦИЯ "НАЗАД" ИЗ ШАГА 8
+        function goBackFromStep8() {
+            // Если выбран путь "Прислать ролик" → назад на шаг 6
+            // Если выбран путь "Ввести текст" → назад на шаг 7
+            if (campaignState.selectedPath === 'audio') {
+                showStep(6);
+            } else {
+                showStep(7);
+            }
+        }
+
         function goToFinalCalculation() {
             const nameValid = validateName(document.getElementById('contactName'));
             const phoneValid = validatePhone(document.getElementById('contactPhone'));
@@ -1272,7 +1289,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    },
+                },
                 body: JSON.stringify(requestData)
             })
             .then(response => response.json())
@@ -1334,7 +1351,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    },
+                },
                 body: JSON.stringify(submitData)
             })
             .then(response => response.json())
