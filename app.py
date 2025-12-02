@@ -485,24 +485,30 @@ def create_campaign():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
             
         data = request.json
-        user_id = data.get('user_id', 0)
-        user_telegram_id = data.get('user_telegram_id')
-        
-        conn = sqlite3.connect("campaigns.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT COUNT(*) FROM campaigns 
-            WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
-        """, (user_id,))
-        count = cursor.fetchone()[0]
-        
-        # ИЗМЕНЕНО: лимит с 5 на 2 кампании в день
-        if count >= 2:
-            conn.close()
-            return jsonify({
-                "success": False, 
-                "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
-            }), 400
+user_id = data.get('user_id', 0)
+user_telegram_id = data.get('user_telegram_id')
+
+conn = sqlite3.connect("campaigns.db")
+cursor = conn.cursor()
+
+# ✅ ИСПРАВЛЕНИЕ: СНИМАЕМ ЛИМИТ ДЛЯ АДМИНА
+if user_id != ADMIN_TELEGRAM_ID:  # Только для не-админов
+    cursor.execute("""
+        SELECT COUNT(*) FROM campaigns 
+        WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
+    """, (user_id,))
+    count = cursor.fetchone()[0]
+    
+    # ИЗМЕНЕНО: лимит с 5 на 2 кампании в день
+    if count >= 2:
+        conn.close()
+        return jsonify({
+            "success": False, 
+            "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
+        }), 400
+# Конец проверки лимита
+
+# Дальше идет остальной код создания кампании...
         
         calculation_data = {
             "selected_radios": data.get('selected_radios', []),
