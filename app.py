@@ -12,6 +12,7 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import requests
+import textwrap
 
 load_dotenv()
 
@@ -151,7 +152,7 @@ def send_excel_to_client(campaign_number, user_telegram_id):
         return False
 
 def create_excel_file_from_db(campaign_number):
-    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА БЕЗ РУБРИК И СКИДКИ"""
+    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА С ТЕКСТОМ РОЛИКА"""
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
@@ -212,58 +213,83 @@ def create_excel_file_from_db(campaign_number):
         
         ws.append([])
         
-        ws.merge_cells("A6:B6")
-        ws["A6"] = "📊 ПАРАМЕТРЫ КАМПАНИИ:"
-        ws["A6"].font = title_font
+        # 📊 ПАРАМЕТРЫ КАМПАНИИ (динамическая нумерация строк)
+        current_row = 6
         
-        ws["A7"] = "• Радиостанции: " + ", ".join(user_data["selected_radios"])
-        ws["A8"] = f"• Период: {user_data['start_date']} - {user_data['end_date']} ({user_data['campaign_days']} дней)"
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "📊 ПАРАМЕТРЫ КАМПАНИИ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
+        
+        ws[f"A{current_row}"] = "• Радиостанции: " + ", ".join(user_data["selected_radios"])
+        current_row += 1
+        
+        ws[f"A{current_row}"] = f"• Период: {user_data['start_date']} - {user_data['end_date']} ({user_data['campaign_days']} дней)"
+        current_row += 1
         
         spots_per_day = len(user_data["selected_time_slots"]) * len(user_data["selected_radios"])
-        ws["A9"] = f"• Выходов в день: {spots_per_day}"
-        ws["A10"] = f"• Всего выходов за период: {spots_per_day * user_data['campaign_days']}"
-        ws["A11"] = f"• Хронометраж ролика: {user_data['duration']} сек"
+        ws[f"A{current_row}"] = f"• Выходов в день: {spots_per_day}"
+        current_row += 1
+        
+        ws[f"A{current_row}"] = f"• Всего выходов за период: {spots_per_day * user_data['campaign_days']}"
+        current_row += 1
+        
+        ws[f"A{current_row}"] = f"• Хронометраж ролика: {user_data['duration']} сек"
+        current_row += 1
+        
+        # 📝 ТЕКСТ РОЛИКА (если есть)
+        if user_data["campaign_text"] and user_data["campaign_text"].strip():
+            ws[f"A{current_row}"] = "• Текст ролика:"
+            current_row += 1
+            
+            # Разбиваем текст на строки по 70 символов
+            text_lines = textwrap.wrap(user_data["campaign_text"].strip(), width=70)
+            for line in text_lines:
+                ws[f"A{current_row}"] = f"  {line}"
+                current_row += 1
+            
+            # Пустая строка после текста
+            current_row += 1
         
         production_name = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("name", "Не выбрано")
-        ws["A12"] = f"• Производство: {production_name}"
+        ws[f"A{current_row}"] = f"• Производство: {production_name}"
+        current_row += 1
         
-        ws.append([])
+        # 📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
-        ws.merge_cells("A14:B14")
-        ws["A14"] = "📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ:"
-        ws["A14"].font = title_font
-        
-        row = 15
         total_listeners = 0
         for radio in user_data["selected_radios"]:
             listeners = STATION_COVERAGE.get(radio, 0)
             total_listeners += listeners
-            ws[f"A{row}"] = f"• {radio}: ~{format_number(listeners)} слушателей"
-            row += 1
+            ws[f"A{current_row}"] = f"• {radio}: ~{format_number(listeners)} слушателей"
+            current_row += 1
         
-        ws[f"A{row}"] = f"• ИТОГО: ~{format_number(total_listeners)} слушателей"
+        ws[f"A{current_row}"] = f"• ИТОГО: ~{format_number(total_listeners)} слушателей"
+        current_row += 2
         
-        ws.append([])
-        row += 2
-        
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = "🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
+        # 🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
         for slot_index in user_data["selected_time_slots"]:
             if 0 <= slot_index < len(TIME_SLOTS_DATA):
                 slot = TIME_SLOTS_DATA[slot_index]
-                ws[f"A{row}"] = f"• {slot['time']} - {slot['label']}"
-                row += 1
+                ws[f"A{current_row}"] = f"• {slot['time']} - {slot['label']}"
+                current_row += 1
         
-        ws.append([])
-        row += 1
+        current_row += 2
         
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
+        # 🎯 РАСЧЕТНЫЙ ОХВАТ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
         calculation_data = {
             "selected_radios": user_data["selected_radios"],
@@ -274,99 +300,88 @@ def create_excel_file_from_db(campaign_number):
         
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(calculation_data)
         
-        ws[f"A{row}"] = f"• Выходов в день: {spots_per_day}"
-        row += 1
-        ws[f"A{row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
-        row += 1
-        ws[f"A{row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
+        ws[f"A{current_row}"] = f"• Выходов в день: {spots_per_day}"
+        current_row += 1
+        ws[f"A{current_row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
+        current_row += 1
+        ws[f"A{current_row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
+        current_row += 1
         
-        ws.append([])
-        row += 2
+        # 💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = "💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
+        ws[f"A{current_row}"] = "Позиция"
+        ws[f"B{current_row}"] = "Сумма (₽)"
+        current_row += 1
         
-        ws[f"A{row}"] = "Позиция"
-        ws[f"B{row}"] = "Сумма (₽)"
-        row += 1
-        
-        production_cost = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("price", 0)
+        production_cost = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get('price', 0)
         air_cost = user_data["base_price"] - production_cost
         
-        ws[f"A{row}"] = "Эфирное время"
-        ws[f"B{row}"] = air_cost
-        row += 1
+        ws[f"A{current_row}"] = "Эфирное время"
+        ws[f"B{current_row}"] = air_cost
+        current_row += 1
         
         if user_data["production_option"]:
-            ws[f"A{row}"] = "Производство ролика"
-            ws[f"B{row}"] = production_cost
-            row += 1
+            ws[f"A{current_row}"] = "Производство ролика"
+            ws[f"B{current_row}"] = production_cost
+            current_row += 1
         
-        ws.append([])
-        row += 1
+        current_row += 1
         
-        # УБРАНА СТРОКА СО СКИДКОЙ (discount всегда 0)
-        ws[f"A{row}"] = "Базовая стоимость"
-        ws[f"B{row}"] = user_data["base_price"]
-        row += 1
+        ws[f"A{current_row}"] = "Базовая стоимость"
+        ws[f"B{current_row}"] = user_data["base_price"]
+        current_row += 1
         
-        # Пропускаем строку со скидкой
-        ws.append([])
-        row += 1
+        current_row += 1
         
-        ws[f"A{row}"] = "ИТОГО"
-        ws[f"B{row}"] = user_data["final_price"]
-        ws[f"A{row}"].font = Font(bold=True)
-        ws[f"B{row}"].font = Font(bold=True)
+        ws[f"A{current_row}"] = "ИТОГО"
+        ws[f"B{current_row}"] = user_data["final_price"]
+        ws[f"A{current_row}"].font = Font(bold=True)
+        ws[f"B{current_row}"].font = Font(bold=True)
+        current_row += 3
         
-        for i in range(2):
-            ws.append([])
-            row += 1
+        # 👤 ВАШИ КОНТАКТЫ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "👤 ВАШИ КОНТАКТЫ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = "👤 ВАШИ КОНТАКТЫ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
+        ws[f"A{current_row}"] = f"• Имя: {user_data['contact_name']}"
+        current_row += 1
+        ws[f"A{current_row}"] = f"• Телефон: {user_data['phone']}"
+        current_row += 1
+        ws[f"A{current_row}"] = f"• Email: {user_data['email']}"
+        current_row += 1
+        ws[f"A{current_row}"] = f"• Компания: {user_data['company']}"
+        current_row += 2
         
-        ws[f"A{row}"] = f"• Имя: {user_data['contact_name']}"
-        row += 1
-        ws[f"A{row}"] = f"• Телефон: {user_data['phone']}"
-        row += 1
-        ws[f"A{row}"] = f"• Email: {user_data['email']}"
-        row += 1
-        ws[f"A{row}"] = f"• Компания: {user_data['company']}"
+        # 📞 НАШИ КОНТАКТЫ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "📞 НАШИ КОНТАКТЫ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
-        ws.append([])
-        row += 2
+        ws[f"A{current_row}"] = "• Email: man@ya-radio.ru"
+        current_row += 1
+        ws[f"A{current_row}"] = "• Telegram: @AlexeyKhlistunov"
+        current_row += 2
         
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = "📞 НАШИ КОНТАКТЫ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
+        # 🎯 СТАРТ КАМПАНИИ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "🎯 СТАРТ КАМПАНИИ:"
+        ws[f"A{current_row}"].font = title_font
+        current_row += 1
         
-        ws[f"A{row}"] = "• Email: man@ya-radio.ru"
-        row += 1
-        ws[f"A{row}"] = "• Telegram: @AlexeyKhlistunov"
+        ws[f"A{current_row}"] = "В течение 24 часов после подтверждения"
+        current_row += 2
         
-        ws.append([])
-        row += 2
-        
-        ws.merge_cells(f"A{row}:B{row}")
-        # ИЗМЕНЕНО: 24 часа вместо 3 дней
-        ws[f"A{row}"] = "🎯 СТАРТ КАМПАНИИ:"
-        ws[f"A{row}"].font = title_font
-        row += 1
-        
-        ws[f"A{row}"] = "В течение 24 часов после подтверждения"
-        
-        ws.append([])
-        row += 2
-        
-        ws.merge_cells(f"A{row}:B{row}")
-        ws[f"A{row}"] = f"📅 Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
-        ws[f"A{row}"].font = Font(size=9, italic=True)
+        # 📅 ДАТА ФОРМИРОВАНИЯ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = f"📅 Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        ws[f"A{current_row}"].font = Font(size=9, italic=True)
         
         ws.column_dimensions['A'].width = 50
         ws.column_dimensions['B'].width = 15
@@ -397,13 +412,7 @@ def health_check():
         "database": "connected" if init_db() else "error",
         "timestamp": datetime.now().isoformat()
     })
-@app.route('/')
-def home():
-    return jsonify({
-        "status": "running", 
-        "service": "YaRadioBot",
-        "timestamp": datetime.now().isoformat()
-    })
+
 @app.route('/api/calculate', methods=['POST'])
 def calculate_campaign():
     """Расчет стоимости кампании"""
@@ -715,6 +724,7 @@ def get_campaign_confirmation(campaign_number):
     except Exception as e:
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 import threading
 import time
 import requests
@@ -739,16 +749,14 @@ class KeepAlive:
         """Основной цикл пинга"""
         while self.is_running:
             try:
-                # Пингуем основной URL
                 response = requests.get('https://yaradiobot.onrender.com/', timeout=30)
                 logger.info(f"✅ Самопинг успешен: {response.status_code} - {datetime.now().strftime('%H:%M:%S')}")
             except requests.exceptions.Timeout:
                 logger.warning("⏰ Таймаут самопинга")
             except Exception as e:
-                logger.warning(f"⚠️ Ошибка самопинга: {str(e)[:100]}")  # Обрезаем длинные сообщения
+                logger.warning(f"⚠️ Ошибка самопинга: {str(e)[:100]}")
             
-            # Ждем 8 минут (меньше 10, чтобы Render не успел уснуть)
-            for _ in range(48):  # 48 * 10 сек = 8 минут
+            for _ in range(48):
                 if not self.is_running:
                     break
                 time.sleep(10)
@@ -758,16 +766,12 @@ class KeepAlive:
         self.is_running = False
         logger.info("🛑 Фоновый самопинг остановлен")
 
-# Глобальный объект
 keep_alive = KeepAlive()
 
-# Добавьте в конец файла перед if __name__ == '__main__':
 def setup_keep_alive():
     """Настройка и запуск самопинга"""
-    # Регистрируем остановку при выходе
     atexit.register(keep_alive.stop)
     
-    # Ждем немного перед стартом (чтобы приложение точно запустилось)
     def delayed_start():
         time.sleep(10)
         keep_alive.start()
@@ -775,17 +779,8 @@ def setup_keep_alive():
     start_thread = threading.Thread(target=delayed_start, daemon=True)
     start_thread.start()
 
-# В основном блоке:
 if __name__ == '__main__':
-    # Запускаем самопинг
     setup_keep_alive()
-    
-    # Существующий код
-    init_db()
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"🚀 Запуск приложения на порту {port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
-if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"🚀 Запуск приложения на порту {port}")
