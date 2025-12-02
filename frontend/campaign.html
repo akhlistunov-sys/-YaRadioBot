@@ -1323,22 +1323,25 @@
         }
 
         function submitCampaign() {
-            const submitData = {
-                user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
-                user_telegram_id: tg?.initDataUnsafe?.user?.id,
-                selected_radios: campaignState.selectedRadios,
-                selected_time_slots: campaignState.selectedTimeSlots,
-                start_date: campaignState.startDate,
-                end_date: campaignState.endDate,
-                campaign_days: campaignState.campaignDays,
-                campaign_text: campaignState.campaignText,
-                production_option: campaignState.productionOption,
-                contact_name: campaignState.contactName,
-                phone: campaignState.phone,
-                email: campaignState.email,
-                company: campaignState.company,
-                duration: campaignState.duration
-            };
+    // ВРЕМЕННО ФИКСИРУЕМ ТВОЙ ID
+    const MY_ADMIN_ID = 174046571;
+    
+    const submitData = {
+        user_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
+        user_telegram_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
+        selected_radios: campaignState.selectedRadios,
+        selected_time_slots: campaignState.selectedTimeSlots,
+        start_date: campaignState.startDate,
+        end_date: campaignState.endDate,
+        campaign_days: campaignState.campaignDays,
+        campaign_text: campaignState.campaignText,
+        production_option: campaignState.productionOption,
+        contact_name: campaignState.contactName,
+        phone: campaignState.phone,
+        email: campaignState.email,
+        company: campaignState.company,
+        duration: campaignState.duration
+    };
             
             if (campaignState.calculation) {
                 submitData.base_price = campaignState.calculation.base_price;
