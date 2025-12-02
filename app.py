@@ -488,20 +488,26 @@ def create_campaign():
         user_id = data.get('user_id', 0)
         user_telegram_id = data.get('user_telegram_id')
         
+        # ДЕБАГ
+        print(f"🔍 Получен user_id: {user_id}")
+        
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
         
-        # ✅ ИСПРАВЛЕНИЕ: СНИМАЕМ ЛИМИТ ДЛЯ АДМИНА (твой айди 174046571)
-        ADMIN_ID = 174046571  # ← ТВОЙ АЙДИ НАПРЯМУЮ В КОДЕ
-        
-        if int(user_id) != ADMIN_ID:  # ← ПРИВОДИМ К INT И СРАВНИВАЕМ
+        # ✅ ПРОСТАЯ ПРОВЕРКА: ВСЕГДА ПРОПУСКАЕМ ID 174046571
+        if user_id == 174046571:
+            print(f"✅ АДМИН {user_id} - без лимита")
+            # Не проверяем лимит для админа
+        else:
+            # Проверяем лимит для всех остальных
             cursor.execute("""
                 SELECT COUNT(*) FROM campaigns 
                 WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
             """, (user_id,))
             count = cursor.fetchone()[0]
             
-            # ИЗМЕНЕНО: лимит с 5 на 2 кампании в день
+            print(f"📊 Пользователь {user_id}: {count}/2 заявок за сутки")
+            
             if count >= 2:
                 conn.close()
                 return jsonify({
