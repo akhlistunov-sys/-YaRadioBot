@@ -485,14 +485,16 @@ def create_campaign():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
             
         data = request.json
-        user_id = data.get('user_id', 0)  # ← ОТСТУП 8 ПРОБЕЛОВ
-        user_telegram_id = data.get('user_telegram_id')  # ← ОТСТУП 8 ПРОБЕЛОВ
-
+        user_id = data.get('user_id', 0)
+        user_telegram_id = data.get('user_telegram_id')
+        
         conn = sqlite3.connect("campaigns.db")
         cursor = conn.cursor()
-
-        # ✅ ИСПРАВЛЕНИЕ: СНИМАЕМ ЛИМИТ ДЛЯ АДМИНА
-        if user_id != ADMIN_TELEGRAM_ID:  # Только для не-админов
+        
+        # ✅ ИСПРАВЛЕНИЕ: СНИМАЕМ ЛИМИТ ДЛЯ АДМИНА (твой айди 174046571)
+        ADMIN_ID = 174046571  # ← ТВОЙ АЙДИ НАПРЯМУЮ В КОДЕ
+        
+        if int(user_id) != ADMIN_ID:  # ← ПРИВОДИМ К INT И СРАВНИВАЕМ
             cursor.execute("""
                 SELECT COUNT(*) FROM campaigns 
                 WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
@@ -506,6 +508,8 @@ def create_campaign():
                     "success": False, 
                     "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
                 }), 400
+        else:
+            logger.info(f"✅ Админ {user_id} создает заявку без лимита")
 # Конец проверки лимита
 
 # Дальше идет остальной код создания кампании...
