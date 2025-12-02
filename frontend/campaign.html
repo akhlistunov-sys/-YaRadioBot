@@ -695,7 +695,7 @@
             selectedRadios: [],
             selectedTimeSlots: [],
             selectedPath: null,
-            campaignText: '',
+            campaignText: '',  // ✅ Здесь хранится текст ролика
             duration: 20,
             productionOption: '',
             contactName: '',
@@ -1078,7 +1078,7 @@
             
             document.getElementById('autoDuration').textContent = duration + ' секунд';
             campaignState.duration = duration;
-            campaignState.campaignText = text;
+            campaignState.campaignText = text;  // ✅ Сохраняем текст в состояние
         }
 
         function validateStep5() {
@@ -1306,6 +1306,7 @@
         }
 
         function submitCampaign() {
+            // 🔥 ИЗМЕНЕНИЕ: Проверяем что campaign_text передается
             const submitData = {
                 user_id: tg?.initDataUnsafe?.user?.id || Date.now(),
                 user_telegram_id: tg?.initDataUnsafe?.user?.id,
@@ -1314,7 +1315,7 @@
                 start_date: campaignState.startDate,
                 end_date: campaignState.endDate,
                 campaign_days: campaignState.campaignDays,
-                campaign_text: campaignState.campaignText,
+                campaign_text: campaignState.campaignText,  // ✅ ЭТО ПЕРЕДАЕТСЯ
                 production_option: campaignState.productionOption,
                 contact_name: campaignState.contactName,
                 phone: campaignState.phone,
@@ -1329,6 +1330,8 @@
                 submitData.final_price = campaignState.calculation.final_price;
                 submitData.total_reach = campaignState.calculation.total_reach;
             }
+            
+            console.log('📤 Отправка данных:', submitData);  // Для отладки
             
             fetch('/api/create-campaign', {
                 method: 'POST',
