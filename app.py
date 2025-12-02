@@ -20,7 +20,7 @@ app = Flask(__name__, static_folder='frontend')
 CORS(app)
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
-ADMIN_TELEGRAM_ID = os.getenv('ADMIN_TELEGRAM_ID', '174046571')
+ADMIN_TELEGRAM_ID = 174046571  # ← ТВОЙ АЙДИ ЖЕСТКО В КОДЕ
 
 from campaign_calculator import (
     calculate_campaign_price_and_reach,
@@ -488,7 +488,6 @@ def create_campaign():
         user_id = data.get('user_id', 0)
         user_telegram_id = data.get('user_telegram_id')
         
-        # ДЕБАГ
         print(f"🔍 Получен user_id: {user_id}")
         
         conn = sqlite3.connect("campaigns.db")
@@ -514,11 +513,8 @@ def create_campaign():
                     "success": False, 
                     "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
                 }), 400
-        else:
-            logger.info(f"✅ Админ {user_id} создает заявку без лимита")
-# Конец проверки лимита
-
-# Дальше идет остальной код создания кампании...
+        
+        # Конец проверки лимита
         
         calculation_data = {
             "selected_radios": data.get('selected_radios', []),
