@@ -38,21 +38,26 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
-        .header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 6px;
+        .header img {
+            max-width: 100%;
+            height: auto;
+            max-height: 120px; /* Ограничение высоты логотипа */
+            margin-bottom: 10px;
+            border-radius: 8px; /* Немного скруглим углы логотипа */
         }
         
         .location {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-bottom: 15px;
+            font-size: 15px;
+            font-weight: 500;
+            opacity: 0.95;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
         }
         
         .stats-section {
             padding: 0 12px;
             margin-bottom: 15px;
+            margin-top: 15px;
         }
         
         .stats-list {
@@ -195,7 +200,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎙️ РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</h1>
+            <!-- Логотип по прямой ссылке -->
+            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg" alt="РАДИО ТЮМЕНСКОЙ ОБЛАСТИ">
             <div class="location">✦ ─────────────────────── ✦<br>Ялуторовск • Заводоуковск</div>
         </div>
 
