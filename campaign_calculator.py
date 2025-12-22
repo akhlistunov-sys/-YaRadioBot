@@ -55,7 +55,7 @@ def format_number(num):
     return f"{num:,}".replace(",", " ")
 
 def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА БЕЗ РУБРИК + COST PER CONTACT"""
+    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА БЕЗ РУБРИК"""
     try:
         base_duration = user_data.get("duration", 20)
         campaign_days = user_data.get("campaign_days", 30)
@@ -123,7 +123,7 @@ def calculate_campaign_price_and_reach(user_data):
             for slot_index in selected_time_slots 
             if 0 <= slot_index < len(TIME_SLOTS_DATA)
         )
-
+        
         # РАСЧЕТ СТОИМОСТИ КОНТАКТА
         if total_reach > 0:
             cost_per_contact = round(final_price / total_reach, 2)
