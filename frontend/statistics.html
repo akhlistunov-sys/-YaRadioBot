@@ -7,35 +7,73 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { margin:0; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; }
-        .container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; }
-        .header { text-align: center; padding: 20px; border-bottom: 1px solid #f0f0f0; }
+        .container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { text-align: center; padding: 20px; border-bottom: 1px solid #f0f0f0; background: white; }
         .header img { max-width: 150px; }
-        .content { padding: 20px; }
-        .stat-box { background: #f9fafb; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .stat-num { font-size: 24px; font-weight: bold; color: #2563eb; }
-        .btn { display: block; width: 100%; padding: 15px; text-align: center; background: #e5e7eb; border-radius: 12px; text-decoration: none; color: #1f2937; font-weight: 600; margin-top: 20px; border: none; }
+        .content { padding: 20px; flex: 1; }
+        
+        .info-section { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; line-height: 1.5; color: #4b5563; }
+        .info-section h3 { color: #1f2937; margin-top: 0; margin-bottom: 10px; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; display: inline-block; }
+        
+        .station-item { margin-bottom: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+        .station-item:last-child { border-bottom: none; }
+        .station-name { font-weight: bold; color: #2563eb; }
+        
+        .btn { display: block; width: 100%; padding: 15px; text-align: center; background: #e5e7eb; border-radius: 12px; text-decoration: none; color: #1f2937; font-weight: 600; margin-top: 20px; border: none; cursor: pointer; }
+        .btn-calc { background: #3b82f6; color: white; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg">
+            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg" alt="Logo">
         </div>
+        
         <div class="content">
-            <h3>📊 Статистика охвата</h3>
-            <div class="stat-box">
-                <div class="stat-num">~15 100</div>
-                <div>Ежедневный охват</div>
+            <div class="info-section">
+                <h3>📈 РАСЧЕТНЫЕ ДАННЫЕ ОХВАТА</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                    На основе: численности населения (66,000 суммарно), возрастной структуры и зоны покрытия передатчиков.
+                </p>
+                
+                <div class="station-item">
+                    <div class="station-name">🎵 РЕТРО FM</div>
+                    3,200-4,000 слушателей (35-65 лет)<br><i>Ядро взрослой аудитории</i>
+                </div>
+                <div class="station-item">
+                    <div class="station-name">🚗 АВТОРАДИО</div>
+                    2,900-3,600 слушателей (25-55 лет)<br><i>Автомобилисты с доходом</i>
+                </div>
+                <div class="station-item">
+                    <div class="station-name">🏠 РАДИО ДАЧА</div>
+                    2,900-3,600 слушателей (35-60 лет)<br><i>Семейная аудитория</i>
+                </div>
+                <div class="station-item">
+                    <div class="station-name">🎸 РАДИО ШАНСОН</div>
+                    2,600-3,200 слушателей (30-60+ лет)<br><i>Мужская аудитория 30+</i>
+                </div>
+                <div class="station-item">
+                    <div class="station-name">🎭 ЮМОР FM</div>
+                    1,800-2,400 слушателей (25-45 лет)<br><i>Активные 25+</i>
+                </div>
+                <div class="station-item">
+                    <div class="station-name">💖 LOVE RADIO</div>
+                    600-800 слушателей (18-35 лет)<br><i>Молодежь</i>
+                </div>
             </div>
-            <div class="stat-box">
-                <div class="stat-num">~52%</div>
-                <div>Доля рынка (Ялуторовск + Заводоуковск)</div>
+
+            <div class="info-section">
+                <h3>🏙️ ОСОБЕННОСТИ РЕГИОНА</h3>
+                <p>• <strong>Ялуторовск:</strong> высокая доля аудитории 45-65 лет</p>
+                <p>• <strong>Заводоуковск:</strong> преобладание аудитории 30-55 лет</p>
+                <p>• <strong>Общий тренд:</strong> 68% аудитории старше 35 лет с высокой покупательной способностью</p>
             </div>
-            <div class="stat-box">
-                <div class="stat-num">68%</div>
-                <div>Аудитория 35-60 лет</div>
-            </div>
-            <button class="btn" onclick="window.location.href='/index.html'">◀️ На главную</button>
+
+            <button class="btn btn-calc" onclick="window.location.href='/campaign.html'">
+                🚀 РАССЧИТАТЬ КАМПАНИЮ
+            </button>
+            
+            <button class="btn" onclick="window.location.href='/index.html'">◀️ НАЗАД В МЕНЮ</button>
         </div>
     </div>
     <script>let tg=window.Telegram.WebApp; if(tg) tg.ready();</script>
