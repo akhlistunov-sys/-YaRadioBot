@@ -331,7 +331,6 @@
 <body>
     <div class="container">
         <div class="header">
-            <!-- ЛОГОТИП УБРАН, ТЕКСТОВЫЙ ЗАГОЛОВОК -->
             <h1>🚀 СОЗДАНИЕ КАМПАНИИ</h1>
         </div>
         
@@ -1345,8 +1344,11 @@
         }
 
         function submitCampaign() {
-            // ВРЕМЕННО ФИКСИРУЕМ ТВОЙ ID
-            const MY_ADMIN_ID = 174046571;
+            // ✅ ИСПРАВЛЕНИЕ: ПОЛУЧАЕМ РЕАЛЬНЫЙ ID КЛИЕНТА
+            const telegramUserId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+            
+            // Если ID нет (браузер), используем твой ID как запасной для тестов
+            const finalUserId = telegramUserId || 174046571;
             
             // ✅ ФИНАЛЬНАЯ ПРОВЕРКА ТЕКСТА ПЕРЕД ОТПРАВКОЙ
             const txtInput = document.getElementById('campaignText');
@@ -1355,8 +1357,8 @@
             }
             
             const submitData = {
-                user_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
-                user_telegram_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
+                user_id: finalUserId,  // <-- ТЕПЕРЬ ТУТ РЕАЛЬНЫЙ ID
+                user_telegram_id: finalUserId, // <-- И ТУТ ТОЖЕ
                 selected_radios: campaignState.selectedRadios,
                 selected_time_slots: campaignState.selectedTimeSlots,
                 start_date: campaignState.startDate,
