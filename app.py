@@ -14,7 +14,11 @@ import textwrap
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='frontend')
+# ОПРЕДЕЛЯЕМ ПУТЬ К ПАПКЕ FRONTEND (ВАЖНО ДЛЯ VERCEL)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
+
+app = Flask(__name__, static_folder=FRONTEND_DIR)
 CORS(app)
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8281804030:AAEFEYgqigL3bdH4DL0zl1tW71fwwo_8cyU')
@@ -220,12 +224,14 @@ Email: {row[13]}
         return False
 
 def create_excel_file_from_db(campaign_number):
-    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА (ПОЛНАЯ ВЕРСИЯ)"""
+    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА С ТЕКСТОМ РОЛИКА (ПОЛНАЯ ВЕРСИЯ)"""
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
         conn = get_db_connection()
-        if not conn: return None
+        if not conn:
+            return None
+            
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign_data = cursor.fetchone()
@@ -233,6 +239,7 @@ def create_excel_file_from_db(campaign_number):
         conn.close()
         
         if not campaign_data:
+            logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
             return None
             
         user_data = {
@@ -282,7 +289,7 @@ def create_excel_file_from_db(campaign_number):
         
         ws.append([])
         
-        # 📊 ПАРАМЕТРЫ КАМПАНИИ
+        # 📊 ПАРАМЕТРЫ КАМПАНИИ (динамическая нумерация строк)
         current_row = 6
         
         ws.merge_cells(f"A{current_row}:B{current_row}")
@@ -306,15 +313,18 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{current_row}"] = f"• Хронометраж ролика: {user_data['duration']} сек"
         current_row += 1
         
-        # 📝 ТЕКСТ РОЛИКА
+        # 📝 ТЕКСТ РОЛИКА (если есть)
         if user_data["campaign_text"] and user_data["campaign_text"].strip():
             ws[f"A{current_row}"] = "• Текст ролика:"
             current_row += 1
             
+            # Разбиваем текст на строки по 70 символов
             text_lines = textwrap.wrap(user_data["campaign_text"].strip(), width=70)
             for line in text_lines:
                 ws[f"A{current_row}"] = f"  {line}"
                 current_row += 1
+            
+            # Пустая строка после текста
             current_row += 1
         
         production_name = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("name", "Не выбрано")
@@ -555,9 +565,11 @@ def create_campaign():
         conn = get_db_connection()
         cursor = conn.cursor()
         
+        # ✅ ПРОСТАЯ ПРОВЕРКА: ВСЕГДА ПРОПУСКАЕМ ID 174046571
         if user_id == 174046571:
             pass # АДМИН БЕЗ ЛИМИТА
         else:
+            # Проверяем лимит для всех остальных
             cursor.execute("""
                 SELECT COUNT(*) FROM campaigns 
                 WHERE user_id = %s AND created_at >= NOW() - INTERVAL '1 day'
@@ -807,6 +819,15 @@ def get_campaign_confirmation(campaign_number):
     except Exception as e:
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+# ВАЖНО: ЭТИ МАРШРУТЫ ДОЛЖНЫ БЫТЬ В САМОМ КОНЦЕ
+@app.route('/')
+def serve_frontend():
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
 
 if __name__ == '__main__':
     init_db()
