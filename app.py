@@ -49,7 +49,6 @@ def init_db():
             
         cursor = conn.cursor()
         
-        # Используем SERIAL вместо AUTOINCREMENT и TIMESTAMP вместо TEXT для дат где нужно
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS campaigns (
                 id SERIAL PRIMARY KEY,
@@ -95,7 +94,6 @@ def send_telegram_to_admin(campaign_number, user_data):
     try:
         stations_text = "\n".join([f"• {radio}" for radio in user_data.get("selected_radios", [])])
         
-        # Считаем стоимость контакта для админа
         final_price = user_data.get('final_price', 0)
         total_reach = user_data.get('total_reach', 0)
         cpc = 0.0
@@ -181,7 +179,6 @@ def create_excel_file_from_db(campaign_number):
             return None
             
         cursor = conn.cursor()
-        # %s для Postgres
         cursor.execute("SELECT * FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign_data = cursor.fetchone()
         cursor.close()
@@ -238,7 +235,7 @@ def create_excel_file_from_db(campaign_number):
         
         ws.append([])
         
-        # 📊 ПАРАМЕТРЫ КАМПАНИИ (динамическая нумерация строк)
+        # 📊 ПАРАМЕТРЫ КАМПАНИИ
         current_row = 6
         
         ws.merge_cells(f"A{current_row}:B{current_row}")
@@ -262,18 +259,14 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{current_row}"] = f"• Хронометраж ролика: {user_data['duration']} сек"
         current_row += 1
         
-        # 📝 ТЕКСТ РОЛИКА (если есть)
+        # 📝 ТЕКСТ РОЛИКА
         if user_data["campaign_text"] and user_data["campaign_text"].strip():
             ws[f"A{current_row}"] = "• Текст ролика:"
             current_row += 1
-            
-            # Разбиваем текст на строки по 70 символов
             text_lines = textwrap.wrap(user_data["campaign_text"].strip(), width=70)
             for line in text_lines:
                 ws[f"A{current_row}"] = f"  {line}"
                 current_row += 1
-            
-            # Пустая строка после текста
             current_row += 1
         
         production_name = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("name", "Не выбрано")
@@ -360,7 +353,7 @@ def create_excel_file_from_db(campaign_number):
         ws[f"B{current_row}"] = user_data["base_price"]
         current_row += 1
         
-        # ДОБАВЛЕНИЕ СТОИМОСТИ КОНТАКТА В EXCEL
+        # СТОИМОСТЬ КОНТАКТА
         ws[f"A{current_row}"] = "Стоимость 1 контакта"
         ws[f"B{current_row}"] = cost_per_contact
         current_row += 1
@@ -480,34 +473,6 @@ def calculate_campaign():
         logger.error(f"Ошибка расчета стоимости: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/api/time-slots', methods=['GET'])
-def get_time_slots():
-    """Получить временные слоты"""
-    try:
-        return jsonify({
-            "success": True,
-            "time_slots": TIME_SLOTS_DATA
-        })
-    except Exception as e:
-        logger.error(f"Ошибка получения временных слотов: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/api/production-options', methods=['GET'])
-def get_production_options():
-    """Получить варианты производства"""
-    return jsonify({
-        "success": True,
-        "production_options": PRODUCTION_OPTIONS
-    })
-
-@app.route('/api/radio-stations', methods=['GET'])
-def get_radio_stations():
-    """Получить список радиостанций с охватами"""
-    return jsonify({
-        "success": True,
-        "stations": STATION_COVERAGE
-    })
-
 @app.route('/api/create-campaign', methods=['POST'])
 def create_campaign():
     """СОЗДАНИЕ НОВОЙ КАМПАНИИ С ЛИМИТОМ 2 В ДЕНЬ"""
@@ -519,24 +484,17 @@ def create_campaign():
         user_id = data.get('user_id', 0)
         user_telegram_id = data.get('user_telegram_id')
         
-        print(f"🔍 Получен user_id: {user_id}")
-        
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # ✅ ПРОСТАЯ ПРОВЕРКА: ВСЕГДА ПРОПУСКАЕМ ID 174046571
         if user_id == 174046571:
-            print(f"✅ АДМИН {user_id} - без лимита")
-            # Не проверяем лимит для админа
+            pass # АДМИН БЕЗ ЛИМИТА
         else:
-            # Postgres syntax for date interval
             cursor.execute("""
                 SELECT COUNT(*) FROM campaigns 
                 WHERE user_id = %s AND created_at >= NOW() - INTERVAL '1 day'
             """, (user_id,))
             count = cursor.fetchone()[0]
-            
-            print(f"📊 Пользователь {user_id}: {count}/2 заявок за сутки")
             
             if count >= 2:
                 cursor.close()
@@ -559,7 +517,6 @@ def create_campaign():
         
         campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
         
-        # Используем %s для Postgres
         cursor.execute("""
             INSERT INTO campaigns 
             (user_id, campaign_number, radio_stations, start_date, end_date, campaign_days,
@@ -591,11 +548,9 @@ def create_campaign():
         cursor.close()
         conn.close()
         
-        # Обновляем данные для уведомления с новой метрикой
         notification_data = data.copy()
         notification_data['final_price'] = final_price
         notification_data['total_reach'] = total_reach
-        
         send_telegram_to_admin(campaign_number, notification_data)
         
         if user_telegram_id:
@@ -750,7 +705,7 @@ def get_campaign_confirmation(campaign_number):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at
+            SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at, start_date, end_date
             FROM campaigns 
             WHERE campaign_number = %s
         """, (campaign_number,))
@@ -762,17 +717,26 @@ def get_campaign_confirmation(campaign_number):
         if not campaign:
             return jsonify({"success": False, "error": "Кампания не найдена"}), 404
         
+        final_price = campaign[1]
+        actual_reach = campaign[2]
+        cpc = 0.0
+        if actual_reach > 0:
+            cpc = round(final_price / actual_reach, 2)
+            
         return jsonify({
             "success": True,
             "campaign": {
                 "campaign_number": campaign[0],
-                "final_price": campaign[1],
-                "actual_reach": campaign[2],
+                "final_price": final_price,
+                "actual_reach": actual_reach,
                 "contact_name": campaign[3],
                 "phone": campaign[4],
                 "email": campaign[5],
                 "company": campaign[6],
-                "created_at": campaign[7]
+                "created_at": campaign[7],
+                "start_date": campaign[8],
+                "end_date": campaign[9],
+                "cost_per_contact": cpc
             }
         })
         
