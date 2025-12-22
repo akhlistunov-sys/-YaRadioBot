@@ -12,9 +12,10 @@
         .status { font-size: 12px; padding: 4px 8px; border-radius: 8px; background: #dcfce7; color: #166534; }
         .row { font-size: 14px; color: #4b5563; margin-bottom: 5px; }
         .actions { display: flex; gap: 8px; margin-top: 15px; }
-        .btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; text-align: center; }
-        .btn-share { background: #3b82f6; color: white; }
-        .btn-excel { background: #22c55e; color: white; }
+        .btn { padding: 8px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; text-align: center; }
+        .btn-share { background: #3b82f6; color: white; flex: 1; }
+        .btn-excel { background: #22c55e; color: white; flex: 1; }
+        .btn-delete { background: #fee2e2; color: #ef4444; width: 40px; display: flex; align-items: center; justify-content: center; }
         .empty { text-align: center; color: #9ca3af; margin-top: 50px; }
     </style>
 </head>
@@ -27,37 +28,43 @@
         let tg = window.Telegram.WebApp;
         if(tg) tg.ready();
 
+        // Фоллбэк ID для тестов в браузере, иначе реальный ID из Telegram
         const userId = tg.initDataUnsafe?.user?.id || 174046571;
 
-        fetch(`/api/user-campaigns/${userId}`)
-            .then(r => r.json())
-            .then(data => {
-                const list = document.getElementById('list');
-                list.innerHTML = '';
-                
-                if(!data.campaigns || data.campaigns.length === 0) {
-                    list.innerHTML = '<div class="empty">У вас пока нет заявок</div>';
-                    return;
-                }
+        function loadCampaigns() {
+            fetch(`/api/user-campaigns/${userId}`)
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('list');
+                    list.innerHTML = '';
+                    
+                    if(!data.campaigns || data.campaigns.length === 0) {
+                        list.innerHTML = '<div class="empty">У вас пока нет заявок</div>';
+                        return;
+                    }
 
-                data.campaigns.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `
-                        <div class="header">
-                            <span>#${c.campaign_number}</span>
-                            <span class="status">АКТИВНА</span>
-                        </div>
-                        <div class="row">💰 ${formatNum(c.final_price)} ₽</div>
-                        <div class="row">📅 ${formatDate(c.start_date)} - ${formatDate(c.end_date)}</div>
-                        <div class="actions">
-                            <button class="btn btn-share" onclick="share('${c.campaign_number}', ${c.final_price}, ${c.actual_reach})">📤</button>
-                            <button class="btn btn-excel" onclick="sendExcel('${c.campaign_number}')">Excel</button>
-                        </div>
-                    `;
-                    list.appendChild(div);
+                    data.campaigns.forEach(c => {
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.innerHTML = `
+                            <div class="header">
+                                <span>#${c.campaign_number}</span>
+                                <span class="status">АКТИВНА</span>
+                            </div>
+                            <div class="row">💰 ${formatNum(c.final_price)} ₽</div>
+                            <div class="row">📅 ${formatDate(c.start_date)} - ${formatDate(c.end_date)}</div>
+                            <div class="actions">
+                                <button class="btn btn-share" onclick="share('${c.campaign_number}', ${c.final_price}, ${c.actual_reach})">📤</button>
+                                <button class="btn btn-excel" onclick="sendExcel('${c.campaign_number}')">Excel</button>
+                                <button class="btn btn-delete" onclick="deleteCampaign('${c.campaign_number}')">🗑️</button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    });
                 });
-            });
+        }
+
+        loadCampaigns();
 
         function formatNum(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
         function formatDate(d) { return new Date(d).toLocaleDateString('ru-RU'); }
@@ -65,17 +72,40 @@
         function share(num, price, reach) {
             const text = `📊 Кампания #${num}\n💰 ${formatNum(price)} ₽\n👥 Охват: ~${formatNum(reach)}`;
             const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/yaradiobot')}&text=${encodeURIComponent(text)}`;
-            tg.openTelegramLink(url);
+            
+            if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+            else window.open(url, '_blank');
         }
 
         function sendExcel(num) {
+            if (!tg.initData && userId === 174046571) {
+                 // Если мы в браузере, просто скажем ОК (для тестов)
+                 alert('В браузере Excel не отправляется, но запрос идет.');
+            }
+            
             fetch(`/api/send-excel/${num}`, {
                  method: 'POST',
                  headers: {'Content-Type': 'application/json'},
                  body: JSON.stringify({user_telegram_id: userId})
              }).then(r => r.json()).then(d => {
-                 if(d.success) alert('Excel отправлен!');
+                 if(d.success) alert('✅ Excel отправлен в чат!');
+                 else alert('❌ Ошибка: ' + d.error);
              });
+        }
+
+        function deleteCampaign(num) {
+            if(!confirm('Удалить эту кампанию?')) return;
+            
+            fetch(`/api/delete-campaign/${num}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(d => {
+                    if(d.success) {
+                        alert('🗑️ Кампания удалена');
+                        loadCampaigns();
+                    } else {
+                        alert('❌ ' + d.error);
+                    }
+                });
         }
     </script>
 </body>
