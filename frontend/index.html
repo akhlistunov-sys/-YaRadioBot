@@ -14,7 +14,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: #f8f9fa;
             min-height: 100vh;
             width: 100%;
         }
@@ -22,270 +22,172 @@
         .container {
             width: 100%;
             min-height: 100vh;
-            background: white;
+            background: #f8f9fa;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            max-width: 480px;
+            margin: 0 auto;
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px 12px;
+            background: white;
+            padding: 20px 15px;
             text-align: center;
-            flex-shrink: 0;
-            border-radius: 0 0 20px 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
         }
         
         .header img {
-            max-width: 100%;
+            max-width: 180px;
             height: auto;
-            max-height: 120px; /* Ограничение высоты логотипа */
-            margin-bottom: 10px;
-            border-radius: 8px; /* Немного скруглим углы логотипа */
+            margin-bottom: 12px;
+            object-fit: contain;
         }
         
         .location {
-            font-size: 15px;
+            font-size: 13px;
+            color: #6c757d;
             font-weight: 500;
-            opacity: 0.95;
-            margin-bottom: 5px;
             letter-spacing: 0.5px;
         }
         
-        .stats-section {
-            padding: 0 12px;
-            margin-bottom: 15px;
-            margin-top: 15px;
-        }
-        
-        .stats-list {
-            background: white;
-            border-radius: 12px;
-            padding: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            font-size: 13px;
-            line-height: 1.3;
-        }
-        
-        .stat-item {
-            display: flex;
-            align-items: center;
-            margin: 8px 0;
-            color: #475569;
-        }
-        
-        .stat-icon {
-            font-size: 16px;
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .cta-section {
-            color: #2c3e50;
-            padding: 12px;
-            text-align: center;
-            margin: 0 12px 15px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            background: transparent;
-            box-shadow: none;
-            border: none;
-        }
-        
-        .main-cta {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: calc(100% - 24px);
-            margin: 0 12px 15px;
-            transition: all 0.3s ease;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-        }
-        
-        .main-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-        }
-        
-        .cabinet-cta {
-            background: linear-gradient(135deg, #64748b, #475569);
-            color: white;
-            border: none;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: calc(100% - 24px);
-            margin: 0 12px 20px;
-            transition: all 0.3s ease;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3);
-        }
-        
-        .cabinet-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
-        }
-        
-        .small-buttons-grid {
+        .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            padding: 0 12px;
-            margin-bottom: 15px;
+            gap: 12px;
+            padding: 0 16px;
+            margin-bottom: 24px;
         }
         
-        .small-btn {
+        .stat-card {
             background: white;
-            color: #1e293b;
-            border: 2px solid #e2e8f0;
-            padding: 12px 8px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            padding: 15px 10px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            min-height: 60px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            min-height: 90px;
         }
         
-        .small-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            border-color: #3b82f6;
-        }
-        
-        .small-btn i {
+        .stat-icon {
             font-size: 20px;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         
-        .btn-statistics { 
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-            border-color: #8b5cf6;
+        .stat-text {
+            font-size: 13px;
+            color: #212529;
+            font-weight: 600;
+            line-height: 1.3;
         }
         
-        .btn-about { 
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+        .cta-section {
+            padding: 0 16px;
+            text-align: center;
+        }
+        
+        .main-cta {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
-            border-color: #f59e0b;
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
         }
-
-        @media (min-width: 768px) {
-            .container {
-                max-width: 400px;
-                margin: 0 auto;
-                min-height: 100vh;
-            }
+        
+        .main-cta:active {
+            transform: scale(0.98);
         }
+        
+        .secondary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .secondary-btn {
+            background: white;
+            border: none;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            cursor: pointer;
+        }
+        
+        .cabinet-btn {
+            background: transparent;
+            border: 2px solid #e9ecef;
+            color: #6c757d;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+        }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <!-- Логотип по прямой ссылке -->
-            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg" alt="РАДИО ТЮМЕНСКОЙ ОБЛАСТИ">
+            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg" alt="Logo">
             <div class="location">✦ ─────────────────────── ✦<br>Ялуторовск • Заводоуковск</div>
         </div>
 
-        <div class="stats-section">
-            <div class="stats-list">
-                <div class="stat-item">
-                    <div class="stat-icon">🏆</div>
-                    <div>10+ лет на рынке</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon">📈</div>
-                    <div>200+ кампаний за 2025 год</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon">👥</div>
-                    <div>~15,100 охват в день</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon">🎯</div>
-                    <div>~52% местного рынка</div>
-                </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-text">10+ лет<br>на рынке</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-text">200+ кампаний<br>в 2025 г.</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-text">~15 100<br>охват</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-text">~52%<br>рынка</div>
             </div>
         </div>
 
         <div class="cta-section">
-            🎯 Узнайте стоимость за пару минут<br>
-            <small>Получите расчет охвата</small>
-        </div>
-
-        <button class="main-cta" onclick="showPage('campaign')">
-            🚀 НАЧАТЬ РАСЧЕТ
-        </button>
-
-        <div class="small-buttons-grid">
-            <button class="small-btn btn-statistics" onclick="showPage('statistics')">
-                <i>📊</i>
-                СТАТИСТИКА ОХВАТА
+            <button class="main-cta" onclick="window.location.href='/campaign.html'">
+                🚀 РАССЧИТАТЬ СТОИМОСТЬ
             </button>
             
-            <button class="small-btn btn-about" onclick="showPage('about')">
-                <i>🏆</i>
-                О НАС
+            <div class="secondary-grid">
+                <button class="secondary-btn" onclick="window.location.href='/statistics.html'">📊 Статистика</button>
+                <button class="secondary-btn" onclick="window.location.href='/about.html'">🏆 О нас</button>
+            </div>
+            
+            <button class="cabinet-btn" onclick="window.location.href='/cabinet.html'">
+                👤 Личный кабинет
             </button>
         </div>
-
-        <button class="cabinet-cta" onclick="showPage('cabinet')">
-            📋 ЛИЧНЫЙ КАБИНЕТ
-        </button>
     </div>
-
+    
     <script>
         let tg = window.Telegram.WebApp;
-        
-        function showPage(pageName) {
-            console.log('Переход на страницу:', pageName);
-            
-            switch(pageName) {
-                case 'campaign':
-                    window.location.href = '/campaign.html';
-                    break;
-                case 'statistics':
-                    window.location.href = '/statistics.html';
-                    break;
-                case 'about':
-                    window.location.href = '/about.html';
-                    break;
-                case 'cabinet':
-                    window.location.href = '/cabinet.html';
-                    break;
-            }
-            
-            if (tg && tg.expand) {
-                tg.expand();
-            }
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Главная страница загружена!');
-            
-            if (tg) {
-                tg.ready();
-                tg.expand();
-            }
-        });
+        if(tg) { tg.ready(); tg.expand(); }
     </script>
 </body>
 </html>
