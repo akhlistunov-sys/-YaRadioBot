@@ -120,7 +120,7 @@ Email: {user_data.get('email', 'Не указан')}
 
 📅 ПЕРИОД: {user_data.get('start_date')} - {user_data.get('end_date')} ({user_data.get('campaign_days')} дней)
 💰 СТОИМОСТЬ: {format_number(final_price)}₽
-👥 ОХВАТ: ~{format_number(total_reach)} чел.
+👥 КОНТАКТОВ ЗА ПЕРИОД: ~{format_number(total_reach)}
 👤 ЦЕНА КОНТАКТА: {cpc}₽
 """
         
@@ -192,7 +192,7 @@ Email: {row[13]}
 
 📅 <b>ПЕРИОД:</b> {row[4]} - {row[5]} ({row[6]} дней)
 💰 <b>СТОИМОСТЬ:</b> {format_number(final_price)}₽
-👥 <b>ОХВАТ:</b> ~{format_number(reach)} чел.
+👥 <b>КОНТАКТОВ ЗА ПЕРИОД:</b> ~{format_number(reach)}
 👤 <b>ЦЕНА КОНТАКТА:</b> {cpc}₽
 
 📎 <i>Ваш подробный медиаплан во вложении.</i>
@@ -380,7 +380,8 @@ def create_excel_file_from_db(campaign_number):
         current_row += 1
         ws[f"A{current_row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
         current_row += 1
-        ws[f"A{current_row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
+        # ИЗМЕНЕНО НАЗВАНИЕ
+        ws[f"A{current_row}"] = f"• Общее количество контактов: ~{format_number(total_reach)}"
         current_row += 1
         
         # 💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ
@@ -819,15 +820,6 @@ def get_campaign_confirmation(campaign_number):
     except Exception as e:
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
-
-# ВАЖНО: ЭТИ МАРШРУТЫ ДОЛЖНЫ БЫТЬ В САМОМ КОНЦЕ
-@app.route('/')
-def serve_frontend():
-    return send_from_directory(FRONTEND_DIR, 'index.html')
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(FRONTEND_DIR, filename)
 
 if __name__ == '__main__':
     init_db()
