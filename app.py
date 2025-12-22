@@ -1,8 +1,6 @@
-# [file name]: app.py
-# [file content begin]
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
-import sqlite3
+import psycopg2
 import os
 from datetime import datetime, timedelta
 import logging
@@ -33,16 +31,29 @@ from campaign_calculator import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def init_db():
-    """Инициализация базы данных"""
+def get_db_connection():
+    """Создание подключения к PostgreSQL"""
     try:
-        conn = sqlite3.connect("campaigns.db")
+        conn = psycopg2.connect(os.environ["POSTGRES_URL"])
+        return conn
+    except Exception as e:
+        logger.error(f"❌ Ошибка подключения к БД: {e}")
+        return None
+
+def init_db():
+    """Инициализация базы данных PostgreSQL"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return False
+            
         cursor = conn.cursor()
         
+        # Используем SERIAL вместо AUTOINCREMENT и TIMESTAMP вместо TEXT для дат где нужно
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS campaigns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT,
                 campaign_number TEXT UNIQUE,
                 radio_stations TEXT,
                 start_date TEXT,
@@ -70,6 +81,7 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON campaigns(created_at)")
         
         conn.commit()
+        cursor.close()
         conn.close()
         logger.info("✅ База данных инициализирована успешно")
         return True
@@ -83,6 +95,13 @@ def send_telegram_to_admin(campaign_number, user_data):
     try:
         stations_text = "\n".join([f"• {radio}" for radio in user_data.get("selected_radios", [])])
         
+        # Считаем стоимость контакта для админа
+        final_price = user_data.get('final_price', 0)
+        total_reach = user_data.get('total_reach', 0)
+        cpc = 0.0
+        if total_reach > 0:
+            cpc = round(final_price / total_reach, 2)
+
         notification_text = f"""
 🔔 НОВАЯ ЗАЯВКА ИЗ MINI APP #{campaign_number}
 
@@ -96,8 +115,9 @@ Email: {user_data.get('email', 'Не указан')}
 {stations_text}
 
 📅 ПЕРИОД: {user_data.get('start_date')} - {user_data.get('end_date')} ({user_data.get('campaign_days')} дней)
-💰 СТОИМОСТЬ: {format_number(user_data.get('final_price', 0))}₽
-👥 ОХВАТ: ~{format_number(user_data.get('total_reach', 0))} чел.
+💰 СТОИМОСТЬ: {format_number(final_price)}₽
+👥 ОХВАТ: ~{format_number(total_reach)} чел.
+👤 ЦЕНА КОНТАКТА: {cpc}₽
 """
         
         text_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -156,10 +176,15 @@ def create_excel_file_from_db(campaign_number):
     try:
         logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
         
-        conn = sqlite3.connect("campaigns.db")
+        conn = get_db_connection()
+        if not conn:
+            return None
+            
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM campaigns WHERE campaign_number = ?", (campaign_number,))
+        # %s для Postgres
+        cursor.execute("SELECT * FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign_data = cursor.fetchone()
+        cursor.close()
         conn.close()
         
         if not campaign_data:
@@ -298,7 +323,7 @@ def create_excel_file_from_db(campaign_number):
             "duration": user_data["duration"]
         }
         
-        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(calculation_data)
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count, cost_per_contact = calculate_campaign_price_and_reach(calculation_data)
         
         ws[f"A{current_row}"] = f"• Выходов в день: {spots_per_day}"
         current_row += 1
@@ -333,6 +358,11 @@ def create_excel_file_from_db(campaign_number):
         
         ws[f"A{current_row}"] = "Базовая стоимость"
         ws[f"B{current_row}"] = user_data["base_price"]
+        current_row += 1
+        
+        # ДОБАВЛЕНИЕ СТОИМОСТИ КОНТАКТА В EXCEL
+        ws[f"A{current_row}"] = "Стоимость 1 контакта"
+        ws[f"B{current_row}"] = cost_per_contact
         current_row += 1
         
         current_row += 1
@@ -429,7 +459,7 @@ def calculate_campaign():
             "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
         }
         
-        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(user_data)
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count, cost_per_contact = calculate_campaign_price_and_reach(user_data)
         
         return jsonify({
             "success": True,
@@ -441,7 +471,8 @@ def calculate_campaign():
                 "daily_coverage": daily_coverage,
                 "spots_per_day": spots_per_day,
                 "total_coverage_percent": total_coverage_percent,
-                "premium_count": premium_count
+                "premium_count": premium_count,
+                "cost_per_contact": cost_per_contact
             }
         })
         
@@ -490,7 +521,7 @@ def create_campaign():
         
         print(f"🔍 Получен user_id: {user_id}")
         
-        conn = sqlite3.connect("campaigns.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # ✅ ПРОСТАЯ ПРОВЕРКА: ВСЕГДА ПРОПУСКАЕМ ID 174046571
@@ -498,23 +529,22 @@ def create_campaign():
             print(f"✅ АДМИН {user_id} - без лимита")
             # Не проверяем лимит для админа
         else:
-            # Проверяем лимит для всех остальных
+            # Postgres syntax for date interval
             cursor.execute("""
                 SELECT COUNT(*) FROM campaigns 
-                WHERE user_id = ? AND created_at >= datetime('now', '-1 day')
+                WHERE user_id = %s AND created_at >= NOW() - INTERVAL '1 day'
             """, (user_id,))
             count = cursor.fetchone()[0]
             
             print(f"📊 Пользователь {user_id}: {count}/2 заявок за сутки")
             
             if count >= 2:
+                cursor.close()
                 conn.close()
                 return jsonify({
                     "success": False, 
                     "error": "Превышен лимит в 2 заявки в день. Попробуйте завтра."
                 }), 400
-        
-        # Конец проверки лимита
         
         calculation_data = {
             "selected_radios": data.get('selected_radios', []),
@@ -525,16 +555,17 @@ def create_campaign():
             "production_cost": PRODUCTION_OPTIONS.get(data.get('production_option'), {}).get('price', 0)
         }
         
-        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count = calculate_campaign_price_and_reach(calculation_data)
+        base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count, cost_per_contact = calculate_campaign_price_and_reach(calculation_data)
         
         campaign_number = f"R-{datetime.now().strftime('%H%M%S')}"
         
+        # Используем %s для Postgres
         cursor.execute("""
             INSERT INTO campaigns 
             (user_id, campaign_number, radio_stations, start_date, end_date, campaign_days,
              time_slots, campaign_text, production_option, contact_name,
              company, phone, email, duration, base_price, discount, final_price, actual_reach)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             user_id,
             campaign_number,
@@ -557,9 +588,15 @@ def create_campaign():
         ))
         
         conn.commit()
+        cursor.close()
         conn.close()
         
-        send_telegram_to_admin(campaign_number, data)
+        # Обновляем данные для уведомления с новой метрикой
+        notification_data = data.copy()
+        notification_data['final_price'] = final_price
+        notification_data['total_reach'] = total_reach
+        
+        send_telegram_to_admin(campaign_number, notification_data)
         
         if user_telegram_id:
             send_excel_to_client(campaign_number, user_telegram_id)
@@ -575,7 +612,8 @@ def create_campaign():
                 "daily_coverage": daily_coverage,
                 "spots_per_day": spots_per_day,
                 "total_coverage_percent": total_coverage_percent,
-                "premium_count": premium_count
+                "premium_count": premium_count,
+                "cost_per_contact": cost_per_contact
             }
         })
         
@@ -590,13 +628,13 @@ def get_user_campaigns(user_id):
         if not init_db():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
             
-        conn = sqlite3.connect("campaigns.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
             SELECT campaign_number, start_date, end_date, final_price, actual_reach, status, created_at
             FROM campaigns 
-            WHERE user_id = ?
+            WHERE user_id = %s
             ORDER BY created_at DESC
         """, (user_id,))
         
@@ -612,6 +650,7 @@ def get_user_campaigns(user_id):
                 "created_at": row[6]
             })
         
+        cursor.close()
         conn.close()
         
         return jsonify({
@@ -651,13 +690,14 @@ def delete_campaign(campaign_number):
         if not init_db():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
             
-        conn = sqlite3.connect("campaigns.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT status, start_date FROM campaigns WHERE campaign_number = ?", (campaign_number,))
+        cursor.execute("SELECT status, start_date FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign = cursor.fetchone()
         
         if not campaign:
+            cursor.close()
             conn.close()
             return jsonify({"success": False, "error": "Кампания не найдена"}), 404
             
@@ -666,11 +706,13 @@ def delete_campaign(campaign_number):
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d') if start_date else datetime.now()
         
         if status != 'active' or start_date_obj <= datetime.now():
+            cursor.close()
             conn.close()
             return jsonify({"success": False, "error": "Можно удалять только активные кампании с будущей датой старта"}), 400
         
-        cursor.execute("DELETE FROM campaigns WHERE campaign_number = ?", (campaign_number,))
+        cursor.execute("DELETE FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         conn.commit()
+        cursor.close()
         conn.close()
         
         return jsonify({"success": True, "message": "Кампания удалена"})
@@ -704,16 +746,17 @@ def get_campaign_confirmation(campaign_number):
         if not init_db():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
             
-        conn = sqlite3.connect("campaigns.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
             SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at
             FROM campaigns 
-            WHERE campaign_number = ?
+            WHERE campaign_number = %s
         """, (campaign_number,))
         
         campaign = cursor.fetchone()
+        cursor.close()
         conn.close()
         
         if not campaign:
@@ -737,64 +780,9 @@ def get_campaign_confirmation(campaign_number):
         logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-import threading
-import time
-import requests
-import atexit
-
-class KeepAlive:
-    def __init__(self):
-        self.is_running = False
-        self.thread = None
-        
-    def start(self):
-        """Запуск фонового пинга"""
-        if self.is_running:
-            return
-            
-        self.is_running = True
-        self.thread = threading.Thread(target=self._keep_alive_loop, daemon=True)
-        self.thread.start()
-        logger.info("🚀 Фоновый самопинг запущен (интервал: 8 минут)")
-    
-    def _keep_alive_loop(self):
-        """Основной цикл пинга"""
-        while self.is_running:
-            try:
-                response = requests.get('https://yaradiobot.onrender.com/', timeout=30)
-                logger.info(f"✅ Самопинг успешен: {response.status_code} - {datetime.now().strftime('%H:%M:%S')}")
-            except requests.exceptions.Timeout:
-                logger.warning("⏰ Таймаут самопинга")
-            except Exception as e:
-                logger.warning(f"⚠️ Ошибка самопинга: {str(e)[:100]}")
-            
-            for _ in range(48):
-                if not self.is_running:
-                    break
-                time.sleep(10)
-    
-    def stop(self):
-        """Остановка пинга"""
-        self.is_running = False
-        logger.info("🛑 Фоновый самопинг остановлен")
-
-keep_alive = KeepAlive()
-
-def setup_keep_alive():
-    """Настройка и запуск самопинга"""
-    atexit.register(keep_alive.stop)
-    
-    def delayed_start():
-        time.sleep(10)
-        keep_alive.start()
-    
-    start_thread = threading.Thread(target=delayed_start, daemon=True)
-    start_thread.start()
-
 if __name__ == '__main__':
-    setup_keep_alive()
+    # KeepAlive удален для Vercel
     init_db()
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"🚀 Запуск приложения на порту {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
-# [file content end]
