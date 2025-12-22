@@ -14,7 +14,7 @@
         }
         
         body {
-            background: #f8f9fa; /* Светлый фон как утвердили */
+            background: #f8f9fa;
             min-height: 100vh;
             width: 100%;
         }
@@ -37,12 +37,11 @@
             flex-shrink: 0;
         }
         
-        /* Исправленный стиль логотипа */
-        .header img {
-            max-width: 280px;
-            width: 100%;
-            height: auto;
-            object-fit: contain;
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+            color: #2c3e50;
         }
         
         .content {
@@ -332,8 +331,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <!-- ЛОГОТИП С ЗАЩИТОЙ ОТ КЭША И НОВЫМ РАЗМЕРОМ -->
-            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg?v=2" alt="Logo">
+            <!-- ЛОГОТИП УБРАН, ТЕКСТОВЫЙ ЗАГОЛОВОК -->
+            <h1>🚀 СОЗДАНИЕ КАМПАНИИ</h1>
         </div>
         
         <div class="content">
@@ -1064,11 +1063,17 @@
         // 🎙️ ШАГ 4: РОЛИК
         function selectTextPath() {
             campaignState.selectedPath = 'text';
+            // Если выбрали текст, очищаем заглушку аудио
+            if (campaignState.campaignText === "🎤 Клиент предоставит готовый аудиоролик") {
+                campaignState.campaignText = "";
+            }
             nextStep(5);
         }
 
         function selectAudioPath() {
             campaignState.selectedPath = 'audio';
+            // АВТОМАТИЧЕСКИ ЗАПОЛНЯЕМ ТЕКСТ
+            campaignState.campaignText = "🎤 Клиент предоставит готовый аудиоролик";
             nextStep(6);
         }
 
@@ -1085,7 +1090,6 @@
             
             document.getElementById('autoDuration').textContent = duration + ' секунд';
             
-            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
             campaignState.campaignText = text;
             campaignState.duration = duration;
         }
@@ -1102,7 +1106,6 @@
                 return;
             }
             
-            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
             campaignState.campaignText = text;
             nextStep(7);
         }
@@ -1282,8 +1285,9 @@
             document.getElementById('finalCalculation').style.display = 'none';
             
             // ✅ ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА ТЕКСТА
+            // Если мы на пути "Текст", берем из поля. Если "Аудио", там уже лежит заглушка.
             const txtInput = document.getElementById('campaignText');
-            if (txtInput && txtInput.value) {
+            if (txtInput && txtInput.value && campaignState.selectedPath === 'text') {
                 campaignState.campaignText = txtInput.value;
             }
             
@@ -1346,7 +1350,7 @@
             
             // ✅ ФИНАЛЬНАЯ ПРОВЕРКА ТЕКСТА ПЕРЕД ОТПРАВКОЙ
             const txtInput = document.getElementById('campaignText');
-            if (txtInput && txtInput.value) {
+            if (txtInput && txtInput.value && campaignState.selectedPath === 'text') {
                 campaignState.campaignText = txtInput.value;
             }
             
