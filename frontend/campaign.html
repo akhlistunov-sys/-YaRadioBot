@@ -14,7 +14,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa; /* Светлый фон как утвердили */
             min-height: 100vh;
             width: 100%;
         }
@@ -25,19 +25,24 @@
             background: white;
             display: flex;
             flex-direction: column;
+            max-width: 480px;
+            margin: 0 auto;
         }
         
         .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 20px 12px;
+            background: white;
+            padding: 20px 15px;
             text-align: center;
+            border-bottom: 1px solid #eee;
             flex-shrink: 0;
         }
         
-        .header h1 {
-            font-size: 20px;
-            font-weight: 700;
+        /* Исправленный стиль логотипа */
+        .header img {
+            max-width: 280px;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
         }
         
         .content {
@@ -95,7 +100,7 @@
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 10px 14px;
+            padding: 12px 14px;
             border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
@@ -161,20 +166,24 @@
         }
         
         .stats {
-            background: #f8f9fa;
-            padding: 10px;
+            background: #fff;
+            padding: 15px;
             border-radius: 10px;
             margin: 10px 0;
-            border-left: 4px solid #3498db;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             width: 100%;
         }
         
         .stat-item {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
-            font-size: 13px;
+            margin: 8px 0;
+            font-size: 14px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 5px;
         }
+        .stat-item:last-child { border-bottom: none; }
         
         .bonus-section {
             background: linear-gradient(135deg, #d4edda, #c3e6cb);
@@ -218,7 +227,7 @@
         
         .form-input, .form-textarea {
             width: 100%;
-            padding: 10px 12px;
+            padding: 12px 12px;
             border: 2px solid #ecf0f1;
             border-radius: 8px;
             font-size: 14px;
@@ -231,7 +240,7 @@
         }
         
         .form-textarea {
-            height: 100px;
+            height: 120px;
             resize: vertical;
         }
         
@@ -318,20 +327,13 @@
             color: #27ae60;
             display: block;
         }
-
-        @media (min-width: 768px) {
-            .container {
-                max-width: 400px;
-                margin: 0 auto;
-                min-height: 100vh;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 СОЗДАНИЕ КАМПАНИИ</h1>
+            <!-- ЛОГОТИП С ЗАЩИТОЙ ОТ КЭША И НОВЫМ РАЗМЕРОМ -->
+            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg?v=2" alt="Logo">
         </div>
         
         <div class="content">
@@ -653,8 +655,8 @@
                             <span>Охват:</span>
                             <span id="finalReach">~0 чел.</span>
                         </div>
-                        <!-- НОВОЕ: ЦЕНА КОНТАКТА -->
-                        <div class="stat-item" style="color: #2c3e50; font-weight: 600;">
+                        <!-- ДОБАВЛЕНА СТОИМОСТЬ КОНТАКТА -->
+                        <div class="stat-item" style="color: #27ae60; font-weight: bold;">
                             <span>Цена контакта:</span>
                             <span id="costPerContact">0.00 ₽</span>
                         </div>
@@ -776,12 +778,36 @@
 
         function loadRadioStations() {
             const stations = [
-                { name: "LOVE RADIO", listeners: 700, audience: "Молодёжь 18-35 лет" },
-                { name: "АВТОРАДИО", listeners: 3250, audience: "Автомобилисты 25-50 лет" },
-                { name: "РАДИО ДАЧА", listeners: 3250, audience: "Семья 35-65 лет" },
-                { name: "РАДИО ШАНСОН", listeners: 2900, audience: "Мужчины 30-60 лет" },
-                { name: "РЕТРО FM", listeners: 3600, audience: "Ценители хитов 30-55 лет" },
-                { name: "ЮМОР FM", listeners: 2100, audience: "Слушатели 25-45 лет" }
+                {
+                    name: "LOVE RADIO",
+                    listeners: 700,
+                    audience: "Молодёжь 18-35 лет"
+                },
+                {
+                    name: "АВТОРАДИО", 
+                    listeners: 3250,
+                    audience: "Автомобилисты 25-50 лет"
+                },
+                {
+                    name: "РАДИО ДАЧА",
+                    listeners: 3250,
+                    audience: "Семья 35-65 лет"
+                },
+                {
+                    name: "РАДИО ШАНСОН",
+                    listeners: 2900,
+                    audience: "Мужчины 30-60 лет"
+                },
+                {
+                    name: "РЕТРО FM",
+                    listeners: 3600,
+                    audience: "Ценители хитов 30-55 лет"
+                },
+                {
+                    name: "ЮМОР FM",
+                    listeners: 2100,
+                    audience: "Слушатели 25-45 лет"
+                }
             ];
             
             let html = '';
@@ -808,14 +834,30 @@
 
         function toggleRadioStation(stationName) {
             const index = campaignState.selectedRadios.indexOf(stationName);
-            if (index === -1) campaignState.selectedRadios.push(stationName);
-            else campaignState.selectedRadios.splice(index, 1);
+            
+            if (index === -1) {
+                campaignState.selectedRadios.push(stationName);
+            } else {
+                campaignState.selectedRadios.splice(index, 1);
+            }
+            
             loadRadioStations();
         }
 
         function updateRadioStats() {
-            const stationListeners = { 'LOVE RADIO': 700, 'АВТОРАДИО': 3250, 'РАДИО ДАЧА': 3250, 'РАДИО ШАНСОН': 2900, 'РЕТРО FM': 3600, 'ЮМОР FM': 2100 };
-            const totalListeners = campaignState.selectedRadios.reduce((total, radio) => total + (stationListeners[radio] || 0), 0);
+            const stationListeners = {
+                'LOVE RADIO': 700,
+                'АВТОРАДИО': 3250,
+                'РАДИО ДАЧА': 3250,
+                'РАДИО ШАНСОН': 2900,
+                'РЕТРО FM': 3600,
+                'ЮМОР FM': 2100
+            };
+            
+            const totalListeners = campaignState.selectedRadios.reduce((total, radio) => {
+                return total + (stationListeners[radio] || 0);
+            }, 0);
+            
             document.getElementById('selectedRadiosCount').textContent = campaignState.selectedRadios.length;
             document.getElementById('totalListenersCount').textContent = '~' + formatNumber(totalListeners) + ' слушателей';
         }
@@ -888,8 +930,11 @@
             fetch('/api/time-slots')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) renderTimeSlots(data.time_slots);
-                    else renderTimeSlots(getDefaultTimeSlots());
+                    if (data.success) {
+                        renderTimeSlots(data.time_slots);
+                    } else {
+                        renderTimeSlots(getDefaultTimeSlots());
+                    }
                 })
                 .catch(error => {
                     console.error('Ошибка загрузки слотов:', error);
@@ -920,6 +965,7 @@
         function renderTimeSlots(slots) {
             const container = document.getElementById('timeSlotsList');
             let html = '';
+            
             slots.forEach((slot, index) => {
                 const isSelected = campaignState.selectedTimeSlots.includes(index);
                 html += `
@@ -929,6 +975,7 @@
                     </div>
                 `;
             });
+            
             container.innerHTML = html;
             updateTimeSlotsStats();
         }
@@ -940,18 +987,27 @@
 
         function toggleTimeSlot(slotIndex) {
             const index = campaignState.selectedTimeSlots.indexOf(slotIndex);
-            if (index === -1) campaignState.selectedTimeSlots.push(slotIndex);
-            else campaignState.selectedTimeSlots.splice(index, 1);
+            
+            if (index === -1) {
+                campaignState.selectedTimeSlots.push(slotIndex);
+            } else {
+                campaignState.selectedTimeSlots.splice(index, 1);
+            }
+            
             loadTimeSlots();
         }
 
         function updateTimeSlotsStats() {
             const selectedCount = campaignState.selectedTimeSlots.length;
             const outputsPerDay = selectedCount * campaignState.selectedRadios.length;
+            
             document.getElementById('selectedSlotsCount').textContent = selectedCount;
             document.getElementById('outputsPerDay').textContent = outputsPerDay;
+            
+            // Показываем/скрываем бонусы
             const bonusSection = document.getElementById('maxCoverageBonus');
             const bonusStats = document.getElementById('bonusStats');
+            
             if (selectedCount === 15) {
                 bonusSection.classList.add('active');
                 bonusStats.classList.remove('hidden');
@@ -959,6 +1015,7 @@
                 bonusSection.classList.remove('active');
                 bonusStats.classList.add('hidden');
             }
+            
             calculateCoverage();
         }
 
@@ -968,23 +1025,31 @@
                 document.getElementById('totalCoverage').textContent = '~0 чел.';
                 return;
             }
+
+            const requestData = {
+                selected_radios: campaignState.selectedRadios,
+                selected_time_slots: campaignState.selectedTimeSlots,
+                campaign_days: campaignState.campaignDays,
+                duration: campaignState.duration
+            };
+            
             fetch('/api/calculate', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    selected_radios: campaignState.selectedRadios,
-                    selected_time_slots: campaignState.selectedTimeSlots,
-                    campaign_days: campaignState.campaignDays,
-                    duration: campaignState.duration
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
             })
-            .then(r => r.json())
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     campaignState.calculation = data.calculation;
                     document.getElementById('dailyCoverage').textContent = '~' + formatNumber(data.calculation.daily_coverage) + ' чел.';
                     document.getElementById('totalCoverage').textContent = '~' + formatNumber(data.calculation.total_reach) + ' чел.';
                 }
+            })
+            .catch(error => {
+                console.error('Ошибка расчета охвата:', error);
             });
         }
 
@@ -996,35 +1061,63 @@
             nextStep(4);
         }
 
-        function selectTextPath() { campaignState.selectedPath = 'text'; nextStep(5); }
-        function selectAudioPath() { campaignState.selectedPath = 'audio'; nextStep(6); }
+        // 🎙️ ШАГ 4: РОЛИК
+        function selectTextPath() {
+            campaignState.selectedPath = 'text';
+            nextStep(5);
+        }
 
+        function selectAudioPath() {
+            campaignState.selectedPath = 'audio';
+            nextStep(6);
+        }
+
+        // 📝 ШАГ 5: ВВОД ТЕКСТА РОЛИКА
         function updateCharCount() {
             const text = document.getElementById('campaignText').value;
             const charCount = text.length;
             document.getElementById('charCount').textContent = charCount;
+            
             let duration = 20;
             if (charCount <= 75) duration = 15;
             else if (charCount <= 100) duration = 20;
             else duration = 25;
+            
             document.getElementById('autoDuration').textContent = duration + ' секунд';
+            
+            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
             campaignState.campaignText = text;
             campaignState.duration = duration;
         }
 
         function validateStep5() {
             const text = document.getElementById('campaignText').value.trim();
-            if (!text) { alert('❌ Введите текст ролика'); return; }
-            if (text.length < 10) { alert('❌ Текст ролика должен содержать минимум 10 символов'); return; }
+            
+            if (!text) {
+                alert('❌ Введите текст ролика');
+                return;
+            }
+            if (text.length < 10) {
+                alert('❌ Текст ролика должен содержать минимум 10 символов');
+                return;
+            }
+            
+            // ✅ ИСПРАВЛЕНИЕ: СОХРАНЯЕМ ТЕКСТ
             campaignState.campaignText = text;
             nextStep(7);
         }
 
+        // ⏱️ ШАГ 6: ВВОД ХРОНОМЕТРАЖА
         function validateDuration() {
             const duration = parseInt(document.getElementById('durationInput').value);
             const errorElement = document.getElementById('durationError');
-            if (duration < 10 || duration > 25) errorElement.classList.remove('hidden');
-            else { errorElement.classList.add('hidden'); campaignState.duration = duration; }
+            
+            if (duration < 10 || duration > 25) {
+                errorElement.classList.remove('hidden');
+            } else {
+                errorElement.classList.add('hidden');
+                campaignState.duration = duration;
+            }
         }
 
         function validateStep6() {
@@ -1035,11 +1128,13 @@
             nextStep(8);
         }
 
+        // 🎬 ШАГ 7: ПРОИЗВОДСТВО РОЛИКА
         function loadProductionOptions() {
             const options = {
                 "standard": {"price": 2000, "name": "СТАНДАРТНЫЙ РОЛИК", "desc": "Профессиональная озвучка, музыкальное оформление"},
                 "premium": {"price": 5000, "name": "ПРЕМИУМ РОЛИК", "desc": "Озвучка двумя и более голосами, индивидуальная музыка"}
             };
+            
             let html = '';
             Object.entries(options).forEach(([key, option]) => {
                 const isSelected = campaignState.productionOption === key;
@@ -1051,6 +1146,7 @@
                     </div>
                 `;
             });
+            
             document.getElementById('productionOptionsList').innerHTML = html;
         }
 
@@ -1067,19 +1163,30 @@
             nextStep(8);
         }
 
+        // 👤 ШАГ 8: КОНТАКТНЫЕ ДАННЫЕ
         function validateName(input) {
             const value = input.value.trim();
             const validation = document.getElementById('nameValidation');
+            
             if (value.length < 2) {
-                input.classList.add('error'); input.classList.remove('success');
-                validation.textContent = '❌ Введите имя (минимум 2 буквы)'; validation.className = 'validation-message error'; return false;
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите имя (минимум 2 буквы)';
+                validation.className = 'validation-message error';
+                return false;
             } else if (!/^[a-zA-Zа-яА-ЯёЁ\s]+$/.test(value)) {
-                input.classList.add('error'); input.classList.remove('success');
-                validation.textContent = '❌ Имя должно содержать только буквы'; validation.className = 'validation-message error'; return false;
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Имя должно содержать только буквы';
+                validation.className = 'validation-message error';
+                return false;
             } else {
-                input.classList.add('success'); input.classList.remove('error');
-                validation.textContent = '✅ Корректное имя'; validation.className = 'validation-message success';
-                campaignState.contactName = value; return true;
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректное имя';
+                validation.className = 'validation-message success';
+                campaignState.contactName = value;
+                return true;
             }
         }
 
@@ -1087,105 +1194,165 @@
             const value = input.value.trim();
             const validation = document.getElementById('phoneValidation');
             const digits = value.replace(/\D/g, '');
+            
             if (digits.length < 5) {
-                input.classList.add('error'); input.classList.remove('success');
-                validation.textContent = '❌ Введите корректный телефон (минимум 5 цифр)'; validation.className = 'validation-message error'; return false;
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите корректный телефон (минимум 5 цифр)';
+                validation.className = 'validation-message error';
+                return false;
             } else {
-                input.classList.add('success'); input.classList.remove('error');
-                validation.textContent = '✅ Корректный телефон'; validation.className = 'validation-message success';
-                campaignState.phone = value; return true;
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректный телефон';
+                validation.className = 'validation-message success';
+                campaignState.phone = value;
+                return true;
             }
         }
 
         function validateEmail(input) {
             const value = input.value.trim();
             const validation = document.getElementById('emailValidation');
+            
             if (!value.includes('@') || !value.includes('.') || value.length < 5) {
-                input.classList.add('error'); input.classList.remove('success');
-                validation.textContent = '❌ Введите корректный email'; validation.className = 'validation-message error'; return false;
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите корректный email';
+                validation.className = 'validation-message error';
+                return false;
             } else {
-                input.classList.add('success'); input.classList.remove('error');
-                validation.textContent = '✅ Корректный email'; validation.className = 'validation-message success';
-                campaignState.email = value; return true;
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректный email';
+                validation.className = 'validation-message success';
+                campaignState.email = value;
+                return true;
             }
         }
 
         function validateCompany(input) {
             const value = input.value.trim();
             const validation = document.getElementById('companyValidation');
+            
             if (value.length === 0) {
-                input.classList.add('error'); input.classList.remove('success');
-                validation.textContent = '❌ Введите название компании'; validation.className = 'validation-message error'; return false;
+                input.classList.add('error');
+                input.classList.remove('success');
+                validation.textContent = '❌ Введите название компании';
+                validation.className = 'validation-message error';
+                return false;
             } else {
-                input.classList.add('success'); input.classList.remove('error');
-                validation.textContent = '✅ Корректное название'; validation.className = 'validation-message success';
-                campaignState.company = value; return true;
+                input.classList.add('success');
+                input.classList.remove('error');
+                validation.textContent = '✅ Корректное название';
+                validation.className = 'validation-message success';
+                campaignState.company = value;
+                return true;
             }
         }
 
+        // ✅ НОВАЯ ФУНКЦИЯ: УМНАЯ НАВИГАЦИЯ "НАЗАД" ИЗ ШАГА 8
         function goBackFromStep8() {
-            if (campaignState.selectedPath === 'audio') showStep(6);
-            else showStep(7);
+            // Если выбран путь "Прислать ролик" → назад на шаг 6
+            // Если выбран путь "Ввести текст" → назад на шаг 7
+            if (campaignState.selectedPath === 'audio') {
+                showStep(6);
+            } else {
+                showStep(7);
+            }
         }
 
         function goToFinalCalculation() {
-            if (!validateName(document.getElementById('contactName')) || 
-                !validatePhone(document.getElementById('contactPhone')) || 
-                !validateEmail(document.getElementById('contactEmail')) || 
-                !validateCompany(document.getElementById('contactCompany'))) {
+            const nameValid = validateName(document.getElementById('contactName'));
+            const phoneValid = validatePhone(document.getElementById('contactPhone'));
+            const emailValid = validateEmail(document.getElementById('contactEmail'));
+            const companyValid = validateCompany(document.getElementById('contactCompany'));
+            
+            if (!nameValid || !phoneValid || !emailValid || !companyValid) {
                 alert('❌ Заполните все поля корректно');
                 return;
             }
+            
             nextStep(9);
         }
 
+        // 🎯 ШАГ 9: ИТОГОВЫЙ РАСЧЕТ
         function loadFinalCalculation() {
             document.getElementById('calculationLoading').style.display = 'block';
             document.getElementById('finalCalculation').style.display = 'none';
             
+            // ✅ ЖЕЛЕЗОБЕТОННАЯ ПРОВЕРКА ТЕКСТА
+            const txtInput = document.getElementById('campaignText');
+            if (txtInput && txtInput.value) {
+                campaignState.campaignText = txtInput.value;
+            }
+            
+            const requestData = {
+                selected_radios: campaignState.selectedRadios,
+                selected_time_slots: campaignState.selectedTimeSlots,
+                start_date: campaignState.startDate,
+                end_date: campaignState.endDate,
+                campaign_days: campaignState.campaignDays,
+                duration: campaignState.duration,
+                production_option: campaignState.productionOption,
+                production_cost: campaignState.productionOption ? 
+                    (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0
+            };
+            
             fetch('/api/calculate', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    selected_radios: campaignState.selectedRadios,
-                    selected_time_slots: campaignState.selectedTimeSlots,
-                    start_date: campaignState.startDate,
-                    end_date: campaignState.endDate,
-                    campaign_days: campaignState.campaignDays,
-                    duration: campaignState.duration,
-                    production_option: campaignState.productionOption,
-                    production_cost: campaignState.productionOption ? (campaignState.productionOption === 'standard' ? 2000 : 5000) : 0
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
             })
-            .then(r => r.json())
+            .then(response => response.json())
             .then(data => {
                 document.getElementById('calculationLoading').style.display = 'none';
                 document.getElementById('finalCalculation').style.display = 'block';
+                
                 if (data.success) {
                     campaignState.calculation = data.calculation;
+                    
                     document.getElementById('finalPrice').textContent = formatNumber(data.calculation.final_price) + ' ₽';
                     document.getElementById('displayFinalPrice').textContent = formatNumber(data.calculation.final_price);
                     document.getElementById('finalReach').textContent = '~' + formatNumber(data.calculation.total_reach) + ' чел.';
                     
-                    // ЦЕНА КОНТАКТА
+                    // ДОБАВЛЕН ВЫВОД ЦЕНЫ КОНТАКТА
                     document.getElementById('costPerContact').textContent = (data.calculation.cost_per_contact || 0) + ' ₽';
                     
                     document.getElementById('finalPeriod').textContent = campaignState.campaignDays + ' дней';
                     document.getElementById('finalStations').textContent = campaignState.selectedRadios.join(', ');
                     document.getElementById('finalOutputs').textContent = data.calculation.spots_per_day + '/день';
-                    const productionNames = { "standard": "Стандартный ролик", "premium": "Премиум ролик" };
-                    document.getElementById('finalProduction').textContent = campaignState.productionOption ? productionNames[campaignState.productionOption] : 'Не выбрано';
+                    
+                    const productionNames = {
+                        "standard": "Стандартный ролик",
+                        "premium": "Премиум ролик"
+                    };
+                    document.getElementById('finalProduction').textContent = campaignState.productionOption ? 
+                        productionNames[campaignState.productionOption] : 'Не выбрано';
                 }
+            })
+            .catch(error => {
+                console.error('Ошибка расчета:', error);
+                document.getElementById('calculationLoading').style.display = 'none';
+                document.getElementById('finalCalculation').style.display = 'block';
             });
         }
 
         function submitCampaign() {
-            // ФИКСИРОВАННЫЙ ID
+            // ВРЕМЕННО ФИКСИРУЕМ ТВОЙ ID
             const MY_ADMIN_ID = 174046571;
             
+            // ✅ ФИНАЛЬНАЯ ПРОВЕРКА ТЕКСТА ПЕРЕД ОТПРАВКОЙ
+            const txtInput = document.getElementById('campaignText');
+            if (txtInput && txtInput.value) {
+                campaignState.campaignText = txtInput.value;
+            }
+            
             const submitData = {
-                user_id: MY_ADMIN_ID,
-                user_telegram_id: MY_ADMIN_ID,
+                user_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
+                user_telegram_id: MY_ADMIN_ID,  // ← ФИКСИРОВАННЫЙ ID
                 selected_radios: campaignState.selectedRadios,
                 selected_time_slots: campaignState.selectedTimeSlots,
                 start_date: campaignState.startDate,
@@ -1209,24 +1376,50 @@
             
             fetch('/api/create-campaign', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(submitData)
             })
-            .then(r => r.json())
+            .then(response => response.json())
             .then(data => {
-                if (data.success) window.location.href = `/confirmation.html?campaign=${data.campaign_number}`;
-                else alert('❌ Ошибка: ' + data.error);
+                if (data.success) {
+                    window.location.href = `/confirmation.html?campaign=${data.campaign_number}`;
+                } else {
+                    alert('❌ Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка отправки:', error);
+                alert('❌ Ошибка отправки заявки. Попробуйте еще раз.');
             });
         }
 
+        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         }
 
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
         document.addEventListener('DOMContentLoaded', function() {
-            if (tg) { tg.ready(); tg.expand(); }
-            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+            console.log('🚀 Campaign App запущен!');
+            
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+            
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
             document.getElementById('startDate').min = tomorrow.toISOString().split('T')[0];
+            
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            document.getElementById('startDate').max = nextYear.toISOString().split('T')[0];
+            document.getElementById('endDate').max = nextYear.toISOString().split('T')[0];
+            
             showStep(1);
         });
     </script>
