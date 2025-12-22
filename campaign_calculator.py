@@ -1,7 +1,3 @@
-# [file name]: campaign_calculator.py
-# [file content begin]
-import sqlite3
-from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,7 +55,7 @@ def format_number(num):
     return f"{num:,}".replace(",", " ")
 
 def calculate_campaign_price_and_reach(user_data):
-    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА БЕЗ РУБРИК"""
+    """ОБНОВЛЕННАЯ ФУНКЦИЯ РАСЧЕТА БЕЗ РУБРИК + COST PER CONTACT"""
     try:
         base_duration = user_data.get("duration", 20)
         campaign_days = user_data.get("campaign_days", 30)
@@ -67,7 +63,7 @@ def calculate_campaign_price_and_reach(user_data):
         selected_time_slots = user_data.get("selected_time_slots", [])
         
         if not selected_radios or not selected_time_slots:
-            return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
+            return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0, 0.0
             
         num_stations = len(selected_radios)
         spots_per_day = len(selected_time_slots) * num_stations
@@ -127,12 +123,18 @@ def calculate_campaign_price_and_reach(user_data):
             for slot_index in selected_time_slots 
             if 0 <= slot_index < len(TIME_SLOTS_DATA)
         )
+
+        # РАСЧЕТ СТОИМОСТИ КОНТАКТА
+        if total_reach > 0:
+            cost_per_contact = round(final_price / total_reach, 2)
+        else:
+            cost_per_contact = 0.0
         
-        return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent, premium_count
+        return base_price, discount, final_price, total_reach, unique_daily_coverage, spots_per_day, total_coverage_percent, premium_count, cost_per_contact
         
     except Exception as e:
         logger.error(f"Ошибка расчета стоимости: {e}")
-        return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0
+        return 0, 0, MIN_BUDGET, 0, 0, 0, 0, 0, 0.0
 
 def get_time_slots_text(selected_slots):
     """Получить текстовое представление выбранных слотов"""
@@ -147,4 +149,3 @@ def get_time_slots_text(selected_slots):
 def get_production_cost(production_option):
     """Получить стоимость производства ролика"""
     return PRODUCTION_OPTIONS.get(production_option, {}).get('price', 0)
-# [file content end]
