@@ -148,8 +148,58 @@ Email: {user_data.get('email', 'Не указан')}
         return False
 
 def send_excel_to_client(campaign_number, user_telegram_id):
-    """ОТПРАВКА EXCEL КЛИЕНТУ В TELEGRAM"""
+    """ОТПРАВКА ТЕКСТА И EXCEL КЛИЕНТУ В TELEGRAM"""
     try:
+        # 1. Сначала получаем данные о кампании для текста
+        conn = get_db_connection()
+        if not conn: return False
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM campaigns WHERE campaign_number = %s", (campaign_number,))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not row: return False
+
+        # Разбираем данные из базы (индексы соответствуют порядку в CREATE TABLE)
+        # 3: stations, 4: start, 5: end, 6: days, 17: final_price, 18: reach
+        stations_list = row[3].split(',') if row[3] else []
+        stations_text = "\n".join([f"• {s}" for s in stations_list])
+        start_date = row[4]
+        end_date = row[5]
+        days = row[6]
+        final_price = row[17]
+        reach = row[18]
+        
+        # Считаем цену контакта
+        cpc = 0.0
+        if reach and reach > 0:
+            cpc = round(final_price / reach, 2)
+
+        # 2. Формируем красивый текст для клиента
+        client_text = f"""
+✅ <b>ВАША ЗАЯВКА #{campaign_number} ПРИНЯТА!</b>
+
+📊 <b>ПАРАМЕТРЫ:</b>
+{stations_text}
+
+📅 <b>ПЕРИОД:</b> {start_date} - {end_date} ({days} дней)
+💰 <b>СТОИМОСТЬ:</b> {format_number(final_price)}₽
+👥 <b>ОХВАТ:</b> ~{format_number(reach)} чел.
+👤 <b>ЦЕНА КОНТАКТА:</b> {cpc}₽
+
+📎 <i>Ваш подробный медиаплан во вложении.</i>
+📞 <i>Менеджер свяжется с вами в ближайшее время для подтверждения.</i>
+"""
+
+        # 3. Отправляем ТЕКСТ клиенту
+        requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", json={
+            'chat_id': user_telegram_id,
+            'text': client_text,
+            'parse_mode': 'HTML'
+        })
+
+        # 4. Отправляем EXCEL клиенту
         excel_buffer = create_excel_file_from_db(campaign_number)
         if excel_buffer and user_telegram_id:
             files = {'document': (f'mediaplan_{campaign_number}.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
@@ -170,10 +220,8 @@ def send_excel_to_client(campaign_number, user_telegram_id):
         return False
 
 def create_excel_file_from_db(campaign_number):
-    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА С ТЕКСТОМ РОЛИКА"""
+    """СОЗДАНИЕ EXCEL МЕДИАПЛАНА"""
     try:
-        logger.info(f"🔍 Создание Excel для кампании #{campaign_number}")
-        
         conn = get_db_connection()
         if not conn:
             return None
@@ -185,7 +233,6 @@ def create_excel_file_from_db(campaign_number):
         conn.close()
         
         if not campaign_data:
-            logger.error(f"❌ Кампания #{campaign_number} не найдена в БД")
             return None
             
         user_data = {
@@ -214,7 +261,6 @@ def create_excel_file_from_db(campaign_number):
         header_font = Font(bold=True, size=14, color="FFFFFF")
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         title_font = Font(bold=True, size=12)
-        normal_font = Font(size=10)
         
         ws.merge_cells("A1:B1")
         ws["A1"] = f"МЕДИАПЛАН КАМПАНИИ #{campaign_number}"
@@ -226,18 +272,10 @@ def create_excel_file_from_db(campaign_number):
         ws["A2"] = "РАДИО ТЮМЕНСКОЙ ОБЛАСТИ"
         ws["A2"].font = title_font
         ws["A2"].alignment = Alignment(horizontal="center")
-        
-        ws.append([])
-        
-        ws.merge_cells("A4:B4")
-        ws["A4"] = "✅ Ваша заявка принята! Спасибо за доверие!"
-        ws["A4"].font = Font(bold=True, size=11)
-        
         ws.append([])
         
         # 📊 ПАРАМЕТРЫ КАМПАНИИ
         current_row = 6
-        
         ws.merge_cells(f"A{current_row}:B{current_row}")
         ws[f"A{current_row}"] = "📊 ПАРАМЕТРЫ КАМПАНИИ:"
         ws[f"A{current_row}"].font = title_font
@@ -245,21 +283,16 @@ def create_excel_file_from_db(campaign_number):
         
         ws[f"A{current_row}"] = "• Радиостанции: " + ", ".join(user_data["selected_radios"])
         current_row += 1
-        
         ws[f"A{current_row}"] = f"• Период: {user_data['start_date']} - {user_data['end_date']} ({user_data['campaign_days']} дней)"
         current_row += 1
-        
         spots_per_day = len(user_data["selected_time_slots"]) * len(user_data["selected_radios"])
         ws[f"A{current_row}"] = f"• Выходов в день: {spots_per_day}"
         current_row += 1
-        
         ws[f"A{current_row}"] = f"• Всего выходов за период: {spots_per_day * user_data['campaign_days']}"
         current_row += 1
-        
         ws[f"A{current_row}"] = f"• Хронометраж ролика: {user_data['duration']} сек"
         current_row += 1
         
-        # 📝 ТЕКСТ РОЛИКА
         if user_data["campaign_text"] and user_data["campaign_text"].strip():
             ws[f"A{current_row}"] = "• Текст ролика:"
             current_row += 1
@@ -271,59 +304,24 @@ def create_excel_file_from_db(campaign_number):
         
         production_name = PRODUCTION_OPTIONS.get(user_data["production_option"], {}).get("name", "Не выбрано")
         ws[f"A{current_row}"] = f"• Производство: {production_name}"
-        current_row += 1
-        
-        # 📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ
-        ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "📻 ВЫБРАННЫЕ РАДИОСТАНЦИИ:"
-        ws[f"A{current_row}"].font = title_font
-        current_row += 1
-        
-        total_listeners = 0
-        for radio in user_data["selected_radios"]:
-            listeners = STATION_COVERAGE.get(radio, 0)
-            total_listeners += listeners
-            ws[f"A{current_row}"] = f"• {radio}: ~{format_number(listeners)} слушателей"
-            current_row += 1
-        
-        ws[f"A{current_row}"] = f"• ИТОГО: ~{format_number(total_listeners)} слушателей"
         current_row += 2
         
-        # 🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ
-        ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "🕒 ВЫБРАННЫЕ ВРЕМЕННЫЕ СЛОТЫ:"
-        ws[f"A{current_row}"].font = title_font
-        current_row += 1
-        
-        for slot_index in user_data["selected_time_slots"]:
-            if 0 <= slot_index < len(TIME_SLOTS_DATA):
-                slot = TIME_SLOTS_DATA[slot_index]
-                ws[f"A{current_row}"] = f"• {slot['time']} - {slot['label']}"
-                current_row += 1
-        
-        current_row += 2
-        
-        # 🎯 РАСЧЕТНЫЙ ОХВАТ
-        ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
-        ws[f"A{current_row}"].font = title_font
-        current_row += 1
-        
+        # РАСЧЕТ ОХВАТА И ЦЕНЫ
         calculation_data = {
             "selected_radios": user_data["selected_radios"],
             "selected_time_slots": user_data["selected_time_slots"],
             "campaign_days": user_data["campaign_days"],
             "duration": user_data["duration"]
         }
-        
         base_price, discount, final_price, total_reach, daily_coverage, spots_per_day, total_coverage_percent, premium_count, cost_per_contact = calculate_campaign_price_and_reach(calculation_data)
         
-        ws[f"A{current_row}"] = f"• Выходов в день: {spots_per_day}"
-        current_row += 1
-        ws[f"A{current_row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
+        # 🎯 РАСЧЕТНЫЙ ОХВАТ
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
+        ws[f"A{current_row}"].font = title_font
         current_row += 1
         ws[f"A{current_row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
-        current_row += 1
+        current_row += 2
         
         # 💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ
         ws.merge_cells(f"A{current_row}:B{current_row}")
@@ -346,9 +344,8 @@ def create_excel_file_from_db(campaign_number):
             ws[f"A{current_row}"] = "Производство ролика"
             ws[f"B{current_row}"] = production_cost
             current_row += 1
-        
+            
         current_row += 1
-        
         ws[f"A{current_row}"] = "Базовая стоимость"
         ws[f"B{current_row}"] = user_data["base_price"]
         current_row += 1
@@ -359,7 +356,6 @@ def create_excel_file_from_db(campaign_number):
         current_row += 1
         
         current_row += 1
-        
         ws[f"A{current_row}"] = "ИТОГО"
         ws[f"B{current_row}"] = user_data["final_price"]
         ws[f"A{current_row}"].font = Font(bold=True)
@@ -371,7 +367,6 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{current_row}"] = "👤 ВАШИ КОНТАКТЫ:"
         ws[f"A{current_row}"].font = title_font
         current_row += 1
-        
         ws[f"A{current_row}"] = f"• Имя: {user_data['contact_name']}"
         current_row += 1
         ws[f"A{current_row}"] = f"• Телефон: {user_data['phone']}"
@@ -381,27 +376,7 @@ def create_excel_file_from_db(campaign_number):
         ws[f"A{current_row}"] = f"• Компания: {user_data['company']}"
         current_row += 2
         
-        # 📞 НАШИ КОНТАКТЫ
-        ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "📞 НАШИ КОНТАКТЫ:"
-        ws[f"A{current_row}"].font = title_font
-        current_row += 1
-        
-        ws[f"A{current_row}"] = "• Email: man@ya-radio.ru"
-        current_row += 1
-        ws[f"A{current_row}"] = "• Telegram: @AlexeyKhlistunov"
-        current_row += 2
-        
-        # 🎯 СТАРТ КАМПАНИИ
-        ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "🎯 СТАРТ КАМПАНИИ:"
-        ws[f"A{current_row}"].font = title_font
-        current_row += 1
-        
-        ws[f"A{current_row}"] = "В течение 24 часов после подтверждения"
-        current_row += 2
-        
-        # 📅 ДАТА ФОРМИРОВАНИЯ
+        # 📅 ДАТА
         ws.merge_cells(f"A{current_row}:B{current_row}")
         ws[f"A{current_row}"] = f"📅 Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
         ws[f"A{current_row}"].font = Font(size=9, italic=True)
@@ -412,8 +387,6 @@ def create_excel_file_from_db(campaign_number):
         buffer = io.BytesIO()
         wb.save(buffer)
         buffer.seek(0)
-        
-        logger.info(f"✅ Excel файл успешно создан для кампании #{campaign_number}")
         return buffer
         
     except Exception as e:
@@ -564,10 +537,6 @@ def create_campaign():
                 "discount": discount,
                 "final_price": final_price,
                 "total_reach": total_reach,
-                "daily_coverage": daily_coverage,
-                "spots_per_day": spots_per_day,
-                "total_coverage_percent": total_coverage_percent,
-                "premium_count": premium_count,
                 "cost_per_contact": cost_per_contact
             }
         })
@@ -578,21 +547,15 @@ def create_campaign():
 
 @app.route('/api/user-campaigns/<int:user_id>')
 def get_user_campaigns(user_id):
-    """ПОЛУЧЕНИЕ ИСТОРИИ КАМПАНИЙ ПОЛЬЗОВАТЕЛЯ"""
     try:
         if not init_db():
             return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
-            
         conn = get_db_connection()
         cursor = conn.cursor()
-        
         cursor.execute("""
             SELECT campaign_number, start_date, end_date, final_price, actual_reach, status, created_at
-            FROM campaigns 
-            WHERE user_id = %s
-            ORDER BY created_at DESC
+            FROM campaigns WHERE user_id = %s ORDER BY created_at DESC
         """, (user_id,))
-        
         campaigns = []
         for row in cursor.fetchall():
             campaigns.append({
@@ -604,125 +567,66 @@ def get_user_campaigns(user_id):
                 "status": row[5],
                 "created_at": row[6]
             })
-        
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "success": True,
-            "campaigns": campaigns
-        })
-        
+        return jsonify({"success": True, "campaigns": campaigns})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения кампаний: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/send-excel/<campaign_number>', methods=['POST'])
 def send_excel_to_user(campaign_number):
-    """ОТПРАВКА EXCEL КЛИЕНТУ ПО ТРЕБОВАНИЮ"""
     try:
         data = request.json
         user_telegram_id = data.get('user_telegram_id')
-        
         if not user_telegram_id:
             return jsonify({"success": False, "error": "Не указан Telegram ID"}), 400
-            
         success = send_excel_to_client(campaign_number, user_telegram_id)
-        
         if success:
-            return jsonify({"success": True, "message": "Excel отправлен в Telegram"})
+            return jsonify({"success": True, "message": "Excel отправлен"})
         else:
             return jsonify({"success": False, "error": "Ошибка отправки"}), 500
-            
     except Exception as e:
-        logger.error(f"❌ Ошибка отправки Excel: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/delete-campaign/<campaign_number>', methods=['DELETE'])
 def delete_campaign(campaign_number):
-    """УДАЛЕНИЕ КАМПАНИИ"""
     try:
         if not init_db():
-            return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
-            
+            return jsonify({"success": False, "error": "DB Error"}), 500
         conn = get_db_connection()
         cursor = conn.cursor()
-        
         cursor.execute("SELECT status, start_date FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign = cursor.fetchone()
-        
         if not campaign:
-            cursor.close()
-            conn.close()
+            cursor.close(); conn.close()
             return jsonify({"success": False, "error": "Кампания не найдена"}), 404
-            
         status, start_date = campaign
-        
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d') if start_date else datetime.now()
-        
         if status != 'active' or start_date_obj <= datetime.now():
-            cursor.close()
-            conn.close()
-            return jsonify({"success": False, "error": "Можно удалять только активные кампании с будущей датой старта"}), 400
-        
+            cursor.close(); conn.close()
+            return jsonify({"success": False, "error": "Нельзя удалить"}), 400
         cursor.execute("DELETE FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"success": True, "message": "Кампания удалена"})
-        
+        cursor.close(); conn.close()
+        return jsonify({"success": True, "message": "Удалено"})
     except Exception as e:
-        logger.error(f"❌ Ошибка удаления кампании: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/api/campaign-excel/<campaign_number>')
-def download_campaign_excel(campaign_number):
-    """СКАЧИВАНИЕ EXCEL МЕДИАПЛАНА КАМПАНИИ"""
-    try:
-        excel_buffer = create_excel_file_from_db(campaign_number)
-        if excel_buffer:
-            return send_file(
-                excel_buffer,
-                as_attachment=True,
-                download_name=f"mediaplan_{campaign_number}.xlsx",
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-        else:
-            return jsonify({"success": False, "error": "Файл не найден"}), 404
-    except Exception as e:
-        logger.error(f"❌ Ошибка скачивания Excel: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/confirmation/<campaign_number>')
 def get_campaign_confirmation(campaign_number):
-    """ПОЛУЧЕНИЕ ДАННЫХ ДЛЯ СТРАНИЦЫ ПОДТВЕРЖДЕНИЯ"""
     try:
-        if not init_db():
-            return jsonify({"success": False, "error": "Ошибка инициализации базы данных"}), 500
-            
+        if not init_db(): return jsonify({"success": False, "error": "DB Error"}), 500
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at, start_date, end_date
-            FROM campaigns 
-            WHERE campaign_number = %s
-        """, (campaign_number,))
-        
+        cursor.execute("SELECT campaign_number, final_price, actual_reach, contact_name, phone, email, company, created_at, start_date, end_date FROM campaigns WHERE campaign_number = %s", (campaign_number,))
         campaign = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if not campaign:
-            return jsonify({"success": False, "error": "Кампания не найдена"}), 404
+        cursor.close(); conn.close()
+        if not campaign: return jsonify({"success": False, "error": "Not found"}), 404
         
         final_price = campaign[1]
         actual_reach = campaign[2]
-        cpc = 0.0
-        if actual_reach > 0:
-            cpc = round(final_price / actual_reach, 2)
-            
+        cpc = round(final_price / actual_reach, 2) if actual_reach > 0 else 0
+        
         return jsonify({
             "success": True,
             "campaign": {
@@ -739,14 +643,10 @@ def get_campaign_confirmation(campaign_number):
                 "cost_per_contact": cpc
             }
         })
-        
     except Exception as e:
-        logger.error(f"❌ Ошибка получения данных подтверждения: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
-    # KeepAlive удален для Vercel
     init_db()
     port = int(os.environ.get('PORT', 5000))
-    logger.info(f"🚀 Запуск приложения на порту {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
