@@ -7,25 +7,77 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { margin:0; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; }
-        .container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; }
-        .header { text-align: center; padding: 20px; border-bottom: 1px solid #f0f0f0; }
+        .container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { text-align: center; padding: 20px; border-bottom: 1px solid #f0f0f0; background: white; }
         .header img { max-width: 150px; }
-        .content { padding: 20px; }
-        p { color: #4b5563; line-height: 1.6; }
-        .btn { display: block; width: 100%; padding: 15px; text-align: center; background: #e5e7eb; border-radius: 12px; text-decoration: none; color: #1f2937; font-weight: 600; margin-top: 20px; border: none; }
+        .content { padding: 20px; flex: 1; }
+        
+        .info-section { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; line-height: 1.5; color: #4b5563; }
+        .info-section h3 { color: #1f2937; margin-top: 0; margin-bottom: 10px; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; display: inline-block; }
+        
+        .contact-info { background: #e0f2fe; padding: 15px; border-radius: 12px; font-size: 14px; color: #0c4a6e; }
+        .contact-item { display: flex; align-items: center; margin: 8px 0; }
+        .contact-icon { width: 24px; text-align: center; margin-right: 10px; }
+        
+        .btn { display: block; width: 100%; padding: 15px; text-align: center; background: #e5e7eb; border-radius: 12px; text-decoration: none; color: #1f2937; font-weight: 600; margin-top: 20px; border: none; cursor: pointer; }
+        .btn-calc { background: #3b82f6; color: white; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg">
+            <img src="https://raw.githubusercontent.com/akhlistunov-sys/-YaRadioBot/main/RTO%20640.jpg" alt="Logo">
         </div>
+        
         <div class="content">
-            <h3>🏆 О нас</h3>
-            <p>Мы — крупнейший радиохолдинг в Ялуторовске и Заводоуковске.</p>
-            <p>✅ 10+ лет опыта<br>✅ 6 радиостанций<br>✅ Полный цикл производства аудиорекламы</p>
-            <p>Наши станции: Love Radio, Авторадио, Радио Дача, Шансон, Ретро FM, Юмор FM.</p>
-            <button class="btn" onclick="window.location.href='/index.html'">◀️ На главную</button>
+            <div class="info-section">
+                <h3>📊 МЫ В ЦИФРАХ</h3>
+                <p>• 10+ лет работы на рынке радиорекламы</p>
+                <p>• 200+ кампаний запущено в 2025 году</p>
+                <p>• 6 радиостанций федерального уровня</p>
+                <p>• ~15,100 слушателей примерный ежедневный охват</p>
+            </div>
+
+            <div class="info-section">
+                <h3>💎 ПОЧЕМУ ВЫБИРАЮТ НАС</h3>
+                <p><strong>Точный охват:</strong> подбираем станции под вашу целевую аудиторию</p>
+                <p><strong>Умные скидки:</strong> выгодные условия при работе с 3+ радиостанциями</p>
+                <p><strong>Быстрый старт:</strong> запускаем рекламу в течение 24 часов</p>
+                <p><strong>Профессиональный звук:</strong> студийное качество производства роликов</p>
+            </div>
+
+            <div class="info-section">
+                <h3>ХОТИТЕ УЗНАТЬ СТОИМОСТЬ?</h3>
+                <button class="btn btn-calc" onclick="window.location.href='/campaign.html'">
+                    🚀 РАССЧИТАТЬ КАМПАНИЮ
+                </button>
+            </div>
+
+            <div class="contact-info">
+                <h3>📞 КОНТАКТЫ</h3>
+                <div class="contact-item">
+                    <div class="contact-icon">📍</div>
+                    <div>Ялуторовск • Заводоуковск</div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📱</div>
+                    <div>+7 (922) 044-66-44</div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">✉️</div>
+                    <div>man@ya-radio.ru</div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">👤</div>
+                    <div>Telegram: @AlexeyKhlistunov</div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📄</div>
+                    <div>ОГРНИП: 315723200067362</div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="window.location.href='/index.html'">◀️ НАЗАД В МЕНЮ</button>
         </div>
     </div>
     <script>let tg=window.Telegram.WebApp; if(tg) tg.ready();</script>
