@@ -363,7 +363,7 @@ def create_excel_file_from_db(campaign_number):
         
         # 🎯 РАСЧЕТНЫЕ КОНТАКТЫ ЗА ПЕРИОД
         ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ КОНТАКТЫ ЗА ПЕРИОД:"
+        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЕ КОНТАКТЫ ЗА ПЕРИОД:"
         ws[f"A{current_row}"].font = title_font
         current_row += 1
         
