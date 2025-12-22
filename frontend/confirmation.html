@@ -3,261 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Заявка принята - РАДИО ТЮМЕНСКОЙ ОБЛАСТИ</title>
+    <title>Заявка принята</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            width: 100%;
-        }
-        
-        .container {
-            width: 100%;
-            min-height: 100vh;
-            background: white;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 25px 20px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        
-        .header h1 {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .content {
-            flex: 1;
-            padding: 25px 20px;
-            overflow-y: auto;
-            text-align: center;
-        }
-        
-        .success-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        
-        .campaign-number {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .details {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: left;
-        }
-        
-        .details h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 5px;
-        }
-        
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        
-        .next-steps {
-            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: left;
-        }
-        
-        .next-steps h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        
-        .next-steps ol {
-            padding-left: 20px;
-        }
-        
-        .next-steps li {
-            margin: 8px 0;
-            font-size: 14px;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin: 10px 0;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-        }
-        
-        .btn-excel {
-            background: linear-gradient(135deg, #1e8449, #186a3b);
-        }
-
-        .btn-share {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-        }
-        
-        .btn-cabinet {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        }
-        
-        .btn-new {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-
-        .discount-note {
-            background: #fff3cd;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        @media (min-width: 768px) {
-            .container {
-                max-width: 400px;
-                margin: 0 auto;
-                min-height: 100vh;
-            }
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin:0; }
+        .container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: #22c55e; color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 24px 24px; }
+        .content { padding: 20px; flex: 1; }
+        .card { background: #f8f9fa; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .label { color: #6c757d; }
+        .value { font-weight: 600; color: #212529; }
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 600; font-size: 15px; margin-bottom: 10px; cursor: pointer; }
+        .btn-share { background: #3b82f6; color: white; }
+        .btn-excel { background: #10b981; color: white; }
+        .btn-home { background: transparent; border: 2px solid #e9ecef; color: #495057; }
+        .btn-cabinet { background: #6b7280; color: white; }
+        .btn-new { background: #f59e0b; color: white; }
+        .loading { text-align: center; padding: 40px; }
+        .success-icon { font-size: 40px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>✅ ЗАЯВКА ПРИНЯТА</h1>
-        </div>
+        <div id="loading" class="loading">Загрузка...</div>
         
-        <div class="content">
-            <div id="loading" class="loading">
-                <div class="spinner"></div>
-                <p>Загрузка данных заявки...</p>
+        <div id="successView" style="display:none">
+            <div class="header">
+                <div class="success-icon">🎉</div>
+                <h1 style="margin:0; font-size: 24px;">Заявка принята!</h1>
+                <div id="campaignNumber" style="margin-top: 5px; opacity: 0.9;">#R-...</div>
             </div>
             
-            <div id="confirmationContent" class="hidden">
-                <div class="success-icon">🎉</div>
+            <div class="content">
+                <div class="card">
+                    <div class="row">
+                        <span class="label">Стоимость:</span>
+                        <span class="value" id="price">0 ₽</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Охват:</span>
+                        <span class="value" id="reach">~0</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Цена контакта:</span>
+                        <span class="value" style="color: #22c55e" id="cpc">0.00 ₽</span>
+                    </div>
+                </div>
                 
-                <div class="campaign-number" id="campaignNumber">
-                    #R-000000
-                </div>
-
-                <div class="discount-note">
-                    🎯 Рассчитанная стоимость: <span id="displayPrice">0</span> ₽<br>
-                    <em>*При заключении договора возможны дополнительные скидки*</em>
+                <div style="background: #e0f2fe; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 13px; color: #0369a1;">
+                    📞 <b>ЧТО ДАЛЬШЕ?</b><br>
+                    1. Мы свяжемся с вами в течение 24 часов<br>
+                    2. Подтвердим детали и запустим рекламу
                 </div>
                 
-                <div class="details">
-                    <h3>📋 ДЕТАЛИ ЗАЯВКИ</h3>
-                    <div class="detail-item">
-                        <span>Номер:</span>
-                        <span id="detailNumber">-</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Статус:</span>
-                        <span style="color: #27ae60;">Принята</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Стоимость:</span>
-                        <span id="detailPrice">-</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Охват:</span>
-                        <span id="detailReach">-</span>
-                    </div>
-                    <!-- НОВОЕ: ЦЕНА КОНТАКТА -->
-                    <div class="detail-item">
-                        <span>Цена контакта:</span>
-                        <span id="detailCpc" style="color: #22c55e; font-weight: bold;">-</span>
-                    </div>
-                </div>
-
-                <div class="next-steps">
-                    <h3>📞 ЧТО ДАЛЬШЕ</h3>
-                    <ol>
-                        <li>Мы свяжемся с вами в течение 24 часов</li>
-                        <li>Подтвердим детали кампании</li>
-                        <li>Отправим медиаплан на email</li>
-                        <li>Запустим кампанию в течение 24 часов</li>
-                    </ol>
-                </div>
-
                 <button class="btn btn-share" onclick="shareWithBoss()">
-                    📤 ПОДЕЛИТЬСЯ С РУКОВОДИТЕЛЕМ
-                </button>
-
-                <button class="btn btn-excel" onclick="sendExcelToTelegram()">
-                    📊 ОТПРАВИТЬ EXCEL В TELEGRAM
+                    📤 ПОДЕЛИТЬСЯ
                 </button>
                 
-                <button class="btn btn-cabinet" onclick="goToCabinet()">
+                <button class="btn btn-excel" onclick="sendExcel()">
+                    📥 ОТПРАВИТЬ EXCEL В TELEGRAM
+                </button>
+                
+                <button class="btn btn-cabinet" onclick="window.location.href='/cabinet.html'">
                     📋 ЛИЧНЫЙ КАБИНЕТ
                 </button>
                 
-                <button class="btn btn-new" onclick="goToNewCampaign()">
+                <button class="btn btn-new" onclick="window.location.href='/campaign.html'">
                     🚀 НОВАЯ КАМПАНИЯ
                 </button>
             </div>
@@ -265,57 +77,42 @@
     </div>
 
     <script>
-        // 📱 ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         let tg = window.Telegram.WebApp;
+        if(tg) tg.ready();
         
-        // 🗄️ ДАННЫЕ ЗАЯВКИ
-        let campaignData = null;
+        let campaignData = {};
 
-        // 🚀 ФУНКЦИИ НАВИГАЦИИ
-        function sendExcelToTelegram() {
-            if (!campaignData) return;
+        // Загрузка данных
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('campaign');
 
-            const userTelegramId = tg?.initDataUnsafe?.user?.id;
-            
-            if (!userTelegramId) {
-                alert('❌ Не удалось определить ваш Telegram ID');
-                return;
-            }
-
-            fetch('/api/send-excel/' + campaignData.campaign_number, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_telegram_id: userTelegramId
-                })
-            })
-            .then(response => response.json())
+        fetch(`/api/confirmation/${id}`)
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    alert('✅ Excel медиаплан отправлен в ваш Telegram!');
-                } else {
-                    alert('❌ Ошибка отправки: ' + data.error);
+                if(data.success) {
+                    campaignData = data.campaign;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('successView').style.display = 'block';
+                    
+                    document.getElementById('campaignNumber').innerText = '#' + campaignData.campaign_number;
+                    document.getElementById('price').innerText = formatNum(campaignData.final_price) + ' ₽';
+                    document.getElementById('reach').innerText = '~' + formatNum(campaignData.actual_reach);
+                    document.getElementById('cpc').innerText = campaignData.cost_per_contact + ' ₽';
                 }
-            })
-            .catch(error => {
-                console.error('Ошибка отправки Excel:', error);
-                alert('❌ Ошибка отправки. Попробуйте еще раз.');
             });
+
+        function formatNum(n) {
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         }
 
         function shareWithBoss() {
-            if (!campaignData) return;
-            
             const text = `📊 *Отчет по рекламе #${campaignData.campaign_number}*\n\n` +
-                         `💰 Стоимость: ${formatNumber(campaignData.final_price)} ₽\n` +
-                         `👥 Охват: ~${formatNumber(campaignData.actual_reach)} чел.\n` +
+                         `💰 Стоимость: ${formatNum(campaignData.final_price)} ₽\n` +
+                         `👥 Охват: ~${formatNum(campaignData.actual_reach)} чел.\n` +
                          `🎯 Цена контакта: ${campaignData.cost_per_contact} ₽\n` +
                          `📅 Период: ${formatDate(campaignData.start_date)} - ${formatDate(campaignData.end_date)}\n\n` +
                          `Сформировано в калькуляторе Радио ТО`;
             
-            // Используем Telegram Share Link
             const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/yaradiobot')}&text=${encodeURIComponent(text)}`;
             
             if (tg && tg.openTelegramLink) {
@@ -324,86 +121,38 @@
                 window.open(url, '_blank');
             }
         }
-
-        function goToCabinet() {
-            window.location.href = '/cabinet.html';
-        }
-
-        function goToNewCampaign() {
-            window.location.href = '/campaign.html';
-        }
-
-        // 📊 ЗАГРУЗКА ДАННЫХ ЗАЯВКИ
-        function loadCampaignData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const campaignNumber = urlParams.get('campaign');
-            
-            if (!campaignNumber) {
-                showError('Номер заявки не указан');
-                return;
-            }
-
-            fetch(`/api/confirmation/${campaignNumber}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        campaignData = data.campaign;
-                        displayConfirmationData(data.campaign);
-                    } else {
-                        showError('Заявка не найдена: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки данных:', error);
-                    showError('Ошибка загрузки данных заявки');
-                });
-        }
-
-        function displayConfirmationData(campaign) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('confirmationContent').classList.remove('hidden');
-            
-            document.getElementById('campaignNumber').textContent = `#${campaign.campaign_number}`;
-            document.getElementById('displayPrice').textContent = formatNumber(campaign.final_price);
-            document.getElementById('detailNumber').textContent = campaign.campaign_number;
-            document.getElementById('detailPrice').textContent = formatNumber(campaign.final_price) + ' ₽';
-            document.getElementById('detailReach').textContent = '~' + formatNumber(campaign.actual_reach) + ' чел.';
-            document.getElementById('detailCpc').textContent = (campaign.cost_per_contact || '0.00') + ' ₽';
-        }
-
-        function showError(message) {
-            document.getElementById('loading').innerHTML = `
-                <div style="color: #e74c3c; text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
-                    <div>${message}</div>
-                    <button class="btn" onclick="goToNewCampaign()" style="margin-top: 20px;">
-                        🚀 СОЗДАТЬ НОВУЮ ЗАЯВКУ
-                    </button>
-                </div>
-            `;
-        }
-
-        // 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        }
         
         function formatDate(d) {
             if(!d) return '';
             return new Date(d).toLocaleDateString('ru-RU');
         }
 
-        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Страница подтверждения загружена!');
-            
-            if (tg) {
-                tg.ready();
-                tg.expand();
-            }
-            
-            loadCampaignData();
-        });
+        function sendExcel() {
+             // Безопасное получение ID с фоллбэком на админа для тестов
+             let userId = tg?.initDataUnsafe?.user?.id;
+             
+             // Если ID нет (открыто в браузере), пробуем взять из localStorage или заглушку
+             if (!userId) {
+                 // Для тестов админа в браузере
+                 userId = 174046571; 
+                 // Но для клиента выводим предупреждение, если это не Telegram
+                 if (!tg.initData) {
+                     alert('⚠️ Эта функция работает только внутри Telegram!');
+                     return;
+                 }
+             }
+
+             fetch(`/api/send-excel/${campaignData.campaign_number}`, {
+                 method: 'POST',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify({user_telegram_id: userId})
+             }).then(r => r.json()).then(d => {
+                 if(d.success) alert('✅ Excel файл отправлен вам в чат!');
+                 else alert('❌ Ошибка отправки: ' + d.error);
+             }).catch(e => {
+                 alert('❌ Ошибка сети');
+             });
+        }
     </script>
 </body>
 </html>
