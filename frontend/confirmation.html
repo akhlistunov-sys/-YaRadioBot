@@ -1,5 +1,3 @@
-<!-- [file name]: frontend/confirmation.html -->
-<!-- [file content begin] -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -132,6 +130,11 @@
         .btn-excel {
             background: linear-gradient(135deg, #1e8449, #186a3b);
         }
+
+        .btn-share {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
         
         .btn-cabinet {
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
@@ -225,6 +228,11 @@
                         <span>Охват:</span>
                         <span id="detailReach">-</span>
                     </div>
+                    <!-- НОВОЕ: ЦЕНА КОНТАКТА -->
+                    <div class="detail-item">
+                        <span>Цена контакта:</span>
+                        <span id="detailCpc" style="color: #22c55e; font-weight: bold;">-</span>
+                    </div>
                 </div>
 
                 <div class="next-steps">
@@ -233,10 +241,13 @@
                         <li>Мы свяжемся с вами в течение 24 часов</li>
                         <li>Подтвердим детали кампании</li>
                         <li>Отправим медиаплан на email</li>
-                        <!-- ИЗМЕНЕНО: 24 часа вместо 3 дней -->
                         <li>Запустим кампанию в течение 24 часов</li>
                     </ol>
                 </div>
+
+                <button class="btn btn-share" onclick="shareWithBoss()">
+                    📤 ПОДЕЛИТЬСЯ С РУКОВОДИТЕЛЕМ
+                </button>
 
                 <button class="btn btn-excel" onclick="sendExcelToTelegram()">
                     📊 ОТПРАВИТЬ EXCEL В TELEGRAM
@@ -294,6 +305,26 @@
             });
         }
 
+        function shareWithBoss() {
+            if (!campaignData) return;
+            
+            const text = `📊 *Отчет по рекламе #${campaignData.campaign_number}*\n\n` +
+                         `💰 Стоимость: ${formatNumber(campaignData.final_price)} ₽\n` +
+                         `👥 Охват: ~${formatNumber(campaignData.actual_reach)} чел.\n` +
+                         `🎯 Цена контакта: ${campaignData.cost_per_contact} ₽\n` +
+                         `📅 Период: ${formatDate(campaignData.start_date)} - ${formatDate(campaignData.end_date)}\n\n` +
+                         `Сформировано в калькуляторе Радио ТО`;
+            
+            // Используем Telegram Share Link
+            const url = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/yaradiobot')}&text=${encodeURIComponent(text)}`;
+            
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
         function goToCabinet() {
             window.location.href = '/cabinet.html';
         }
@@ -337,6 +368,7 @@
             document.getElementById('detailNumber').textContent = campaign.campaign_number;
             document.getElementById('detailPrice').textContent = formatNumber(campaign.final_price) + ' ₽';
             document.getElementById('detailReach').textContent = '~' + formatNumber(campaign.actual_reach) + ' чел.';
+            document.getElementById('detailCpc').textContent = (campaign.cost_per_contact || '0.00') + ' ₽';
         }
 
         function showError(message) {
@@ -355,6 +387,11 @@
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         }
+        
+        function formatDate(d) {
+            if(!d) return '';
+            return new Date(d).toLocaleDateString('ru-RU');
+        }
 
         // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
         document.addEventListener('DOMContentLoaded', function() {
@@ -370,4 +407,3 @@
     </script>
 </body>
 </html>
-<!-- [file content end] -->
