@@ -42,7 +42,7 @@
                         <span class="value" id="price">0 ₽</span>
                     </div>
                     <div class="row">
-                        <span class="label">Охват:</span>
+                        <span class="label">КОНТАКТОВ ЗА ПЕРИОД:</span>
                         <span class="value" id="reach">~0</span>
                     </div>
                     <div class="row">
@@ -108,7 +108,7 @@
         function shareWithBoss() {
             const text = `📊 *Отчет по рекламе #${campaignData.campaign_number}*\n\n` +
                          `💰 Стоимость: ${formatNum(campaignData.final_price)} ₽\n` +
-                         `👥 Охват: ~${formatNum(campaignData.actual_reach)} чел.\n` +
+                         `👥 Контактов за период: ~${formatNum(campaignData.actual_reach)} чел.\n` +
                          `🎯 Цена контакта: ${campaignData.cost_per_contact} ₽\n` +
                          `📅 Период: ${formatDate(campaignData.start_date)} - ${formatDate(campaignData.end_date)}\n\n` +
                          `Сформировано в калькуляторе Радио ТО`;
