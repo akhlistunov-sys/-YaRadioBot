@@ -120,7 +120,7 @@ Email: {user_data.get('email', 'Не указан')}
 
 📅 ПЕРИОД: {user_data.get('start_date')} - {user_data.get('end_date')} ({user_data.get('campaign_days')} дней)
 💰 СТОИМОСТЬ: {format_number(final_price)}₽
-👥 ОХВАТ: ~{format_number(total_reach)} чел.
+👥 КОНТАКТОВ ЗА ПЕРИОД: ~{format_number(total_reach)} чел.
 👤 ЦЕНА КОНТАКТА: {cpc}₽
 """
         
@@ -192,7 +192,7 @@ Email: {row[13]}
 
 📅 <b>ПЕРИОД:</b> {row[4]} - {row[5]} ({row[6]} дней)
 💰 <b>СТОИМОСТЬ:</b> {format_number(final_price)}₽
-👥 <b>ОХВАТ:</b> ~{format_number(reach)} чел.
+👥 <b>КОНТАКТОВ ЗА ПЕРИОД:</b> ~{format_number(reach)} чел.
 👤 <b>ЦЕНА КОНТАКТА:</b> {cpc}₽
 
 📎 <i>Ваш подробный медиаплан во вложении.</i>
@@ -361,9 +361,9 @@ def create_excel_file_from_db(campaign_number):
         
         current_row += 2
         
-        # 🎯 РАСЧЕТНЫЙ ОХВАТ
+        # 🎯 РАСЧЕТНЫЕ КОНТАКТЫ ЗА ПЕРИОД
         ws.merge_cells(f"A{current_row}:B{current_row}")
-        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ ОХВАТ:"
+        ws[f"A{current_row}"] = "🎯 РАСЧЕТНЫЙ КОНТАКТЫ ЗА ПЕРИОД:"
         ws[f"A{current_row}"].font = title_font
         current_row += 1
         
@@ -380,7 +380,7 @@ def create_excel_file_from_db(campaign_number):
         current_row += 1
         ws[f"A{current_row}"] = f"• Ежедневный охват: ~{format_number(daily_coverage)} чел."
         current_row += 1
-        ws[f"A{current_row}"] = f"• Общий охват за период: ~{format_number(total_reach)} чел."
+        ws[f"A{current_row}"] = f"• Контактов за период: ~{format_number(total_reach)} чел."
         current_row += 1
         
         # 💰 ФИНАНСОВАЯ ИНФОРМАЦИЯ
